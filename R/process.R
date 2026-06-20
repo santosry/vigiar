@@ -22,8 +22,6 @@ process_vigiar <- function(dados, tabela = NULL, ...) {
   tabela <- tabela %||% attr(dados, "vigiar_tabela") %||%
     stop("Informe o nome da tabela ou use dados com atributo 'vigiar_tabela'.")
 
-  dados <- vigiar_padronizar_colunas(dados, tabela)
-
   switch(tabela,
     df_anual             = process_pm25(dados, tipo = "anual", ...),
     df_mensal            = process_pm25(dados, tipo = "mensal", ...),
@@ -39,7 +37,7 @@ process_vigiar <- function(dados, tabela = NULL, ...) {
     df_indoor_desfecho   = process_exposicao_indoor(dados, tipo = "desfecho", ...),
     df_muni              = process_municipios(dados, ...),
     # fallback: generic processing
-    vigiar_padronizar_colunas(dados, tabela)
+    dados
   )
 }
 
