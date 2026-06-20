@@ -1,0 +1,162 @@
+---
+title: "Fluxo de Download e Processamento"
+author: "Ryan Santos"
+date: "2026-06-20"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Fluxo de Download e Processamento}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Visão Geral
+
+O pacote `vigiar` segue a arquitetura do `microdatasus`:
+
+1. **Download** — dados brutos do Power BI
+2. **Processamento** — padronização e validação
+3. **Uso** — análise com dados limpos
+
+```
+vigiar_baixar("tabela")          # raw data
+  |> process_vigiar(tabela = )   # standardised + validated
+  |> vigiar_checar_dados()       # quality report
+```
+
+## Passo 1 — Download Bruto
+
+```{r}
+library(vigiar)
+
+vigiar_conectar()
+
+# Download de dados brutos
+dados_brutos <- vigiar_baixar("df_anual")
+
+# Os dados brutos têm nomes de colunas originais do Power BI
+names(dados_brutos)
+# [1] "muni"       "UF"         "ano"        "Media_pm25" "Categoria_pm25" ...
+```
+
+## Passo 2 — Processamento
+
+```{r}
+# Processamento automático (detecta o tipo pela tabela)
+dados_processados <- process_vigiar(dados_brutos, tabela = "df_anual")
+
+# Ou processamento explícito
+pm25 <- vigiar_baixar("df_anual") |> process_pm25()
+
+# Nomes padronizados
+names(pm25)
+# [1] "cod_municipio"     "sigla_uf"         "ano"
+# [4] "pm25_media_anual"  "categoria_oms"    "categoria_conama"
+```
+
+## Passo 3 — Validação
+
+```{r}
+# Diagnóstico de qualidade
+vigiar_checar_dados(pm25, "df_anual")
+
+# Validação de tipos e intervalos
+validate(pm25)
+
+# Resumo estatístico
+summary(pm25)
+```
+
+## Pipeline Completo
+
+```{r}
+# PM2.5
+pm25 <- vigiar_baixar("df_anual") |>
+  process_pm25()
+
+# Indicadores de saúde — Brasil
+saude_brasil <- vigiar_baixar("tb_brasil") |>
+  process_indicadores_saude(agregacao = "brasil")
+
+# Indicadores de saúde — UF
+saude_uf <- vigiar_baixar("tb_uf") |>
+  process_indicadores_saude(agregacao = "uf")
+
+# Fração atribuível
+fracao <- vigiar_baixar("tb_fracao") |>
+  process_fracao_atribuivel()
+
+# Exposição indoor
+indoor <- vigiar_baixar("df_indoor") |>
+  process_exposicao_indoor()
+
+# População exposta
+pop <- vigiar_baixar("pop") |>
+  process_populacao_exposta()
+
+# Cadastro de municípios
+muni <- vigiar_baixar("df_muni") |>
+  process_municipios()
+```
+
+## Mapeamento de Nomes
+
+| Original (Power BI) | Padronizado (vigiar) | Descrição |
+|---------------------|---------------------|-----------|
+| `muni` / `ID_MUNI` | `cod_municipio` | Código IBGE do município |
+| `UF` / `UF_SIGLA` | `sigla_uf` | Sigla da UF |
+| `Media_pm25` | `pm25_media_anual` | Média anual PM2.5 |
+| `pm25` | `pm25_media` | Média mensal PM2.5 |
+| `n_dias` | `n_dias_criticos` | Dias acima do limite |
+| `LAT` / `LON` | `latitude` / `longitude` | Coordenadas |
+| `Indicador` | `indicador` | Indicador epidemiológico |
+| `est` | `estimativa` | Estimativa pontual |
+| `low` / `high` | `ic_inferior` / `ic_superior` | IC 95% |
+| `desfecho` | `desfecho` | Desfecho de saúde |
+| `pop` | `populacao` | População |
+| `Code` | `cod_uf` | Código da UF |
+| `Ano` | `ano` | Ano |
+
+## Classes S3
+
+O processamento atribui classes S3 aos dados:
+
+| Classe | Domínio |
+|--------|---------|
+| `vigiar_tbl` | Classe base para todos os dados processados |
+| `vigiar_pm25` | Dados de qualidade do ar |
+| `vigiar_health` | Indicadores de saúde |
+| `vigiar_population` | Dados populacionais |
+| `vigiar_attributable_fraction` | Fração atribuível |
+| `vigiar_indoor` | Exposição indoor |
+| `vigiar_municipios` | Cadastro de municípios |
+| `vigiar_uf` | Dados agregados por UF |
+
+```{r}
+class(pm25)
+# [1] "vigiar_pm25"  "vigiar_air_quality"  "vigiar_tbl"
+# [4] "tbl_df"       "tbl"                 "data.frame"
+```
+
+## Metadados
+
+Cada tibble processado carrega atributos com metadados:
+
+```{r}
+attr(pm25, "vigiar_metadados")
+# $fonte
+# [1] "VIGIAR — Ministério da Saúde"
+# $tabela_raw
+# [1] "df_anual"
+# $unidade_pm25
+# [1] "µg/m³"
+# $processador
+# [1] "process_pm25"
+```

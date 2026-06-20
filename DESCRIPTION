@@ -1,7 +1,7 @@
 Package: vigiar
 Type: Package
-Title: Download Data from the VIGIAR Environmental Health Surveillance Dashboard
-Version: 0.1.0
+Title: Download and Process VIGIAR Environmental Health Surveillance Data
+Version: 0.2.0
 Authors@R: c(
     person(given = "Ryan",
            family = "Santos",
@@ -11,16 +11,17 @@ Authors@R: c(
     person(given = "vigiar",
            family = "team",
            role = "ctb"))
-Description: Provides a programmatic interface to download the complete
-    dataset from Brazil's VIGIAR (Vigilância em Saúde Ambiental) public
-    Power BI dashboard, maintained by the Brazilian Ministry of Health.
-    The package handles Power BI anonymous session management, automatic
-    decompression of the DSR (Data Shape Response) format including
-    dictionary resolution, and returns tidy tibbles ready for analysis.
-    Data includes PM2.5 air quality (annual/monthly), days exceeding WHO
-    and CONAMA limits, population exposure by concentration category,
-    epidemiological health indicators (attributable fractions, mortality,
-    hospitalizations), and indoor solid fuel exposure.
+Description: Provides a programmatic interface to download and process
+    the complete dataset from Brazil's VIGIAR (Vigilancia em Saude
+    Ambiental) public Power BI dashboard, maintained by the Brazilian
+    Ministry of Health. The package follows the microdatasus architecture
+    with separate download and processing layers. It handles Power BI
+    anonymous session management, automatic decompression of the DSR
+    (Data Shape Response) format, standardises column names, validates
+    IBGE municipality codes, and returns typed tibbles (vigiar_tbl) with
+    metadata. Data includes PM2.5 air quality, population exposure,
+    epidemiological health indicators, attributable fractions, and
+    indoor solid fuel exposure. Includes a complete variable dictionary.
 License: MIT + file LICENSE
 URL: https://github.com/santosry/vigiar-download,
      https://santosry.github.io/vigiar-download/
@@ -43,8 +44,10 @@ Suggests:
     knitr,
     rmarkdown,
     withr,
-    cli
+    cli,
+    pkgdown
 VignetteBuilder: knitr
+Config/Needs/website: pkgdown
 Config/testthat/edition: 3
 Config/testthat/parallel: false
 SystemRequirements: Internet access for data download

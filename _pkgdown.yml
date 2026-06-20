@@ -1,0 +1,89 @@
+url: https://santosry.github.io/vigiar-download/
+template:
+  bootstrap: 5
+
+navbar:
+  structure:
+    left:  [intro, reference, articles, news]
+    right: [search, github]
+  components:
+    reference:
+      text: Reference
+      href: reference/index.html
+    articles:
+      text: Articles
+      menu:
+      - text: "Vignettes"
+      - text: "Introdução ao pacote"
+        href: articles/vigiar.html
+      - text: "Dicionário de Variáveis"
+        href: articles/variaveis-vigiar.html
+      - text: "Fluxo de Download e Processamento"
+        href: articles/fluxo-download-processamento.html
+      - text: "PM2.5 — Qualidade do Ar"
+        href: articles/pm25.html
+      - text: "Indicadores de Saúde"
+        href: articles/indicadores-saude.html
+      - text: "Convenções VIGIAR"
+        href: articles/convencoes-vigiar.html
+    news:
+      text: News
+      href: news/index.html
+
+reference:
+- title: "Session Management"
+  desc: "Connect to and disconnect from the VIGIAR Power BI dashboard."
+  contents:
+  - vigiar_conectar
+  - vigiar_desconectar
+  - vigiar_sessao_ativa
+  - vigiar_status
+
+- title: "Raw Download"
+  desc: "Download raw data tables from the Power BI API."
+  contents:
+  - vigiar_tabelas
+  - vigiar_esquema
+  - vigiar_info
+  - vigiar_baixar
+  - vigiar_baixar_tudo
+  - vigiar_baixar_principais
+
+- title: "Processing"
+  desc: "Standardise, validate, and type VIGIAR data."
+  contents:
+  - process_vigiar
+  - process_pm25
+  - process_populacao_exposta
+  - process_indicadores_saude
+  - process_fracao_atribuivel
+  - process_exposicao_indoor
+  - process_municipios
+  - process_ufs
+
+- title: "Validation"
+  desc: "Validate data quality and schema integrity."
+  contents:
+  - vigiar_padronizar_colunas
+  - vigiar_validar_ibge
+  - vigiar_validar_datas
+  - vigiar_validar_unidades
+  - vigiar_checar_dados
+  - vigiar_diagnostico
+
+- title: "Dictionary"
+  desc: "Query the variable dictionary."
+  contents:
+  - vigiar_dicionario
+  - vigiar_variaveis
+  - vigiar_descrever_variavel
+  - vigiar_convencoes
+  - vigiar_schema
+
+- title: "S3 Classes and Methods"
+  desc: "Typed data objects for VIGIAR domains."
+  contents:
+  - new_vigiar_tbl
+  - print.vigiar_tbl
+  - summary.vigiar_tbl
+  - validate.vigiar_tbl
