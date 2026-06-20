@@ -1,6 +1,7 @@
 ^vigiar.*\.Rproj$
 ^\.Rproj\.user$
 ^README\.Rmd$
+^\.git$
 ^\.github$
 ^data-raw$
 ^_pkgdown\.yml$
