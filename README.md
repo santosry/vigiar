@@ -52,13 +52,13 @@ vigiar_esquema("df_anual")
 
 # 3. Baixar e processar dados
 pm25 <- vigiar_baixar("df_anual") |>
-  process_pm25()
+  process_vigiar(tabela = "df_anual")
 
 saude <- vigiar_baixar("tb_brasil") |>
-  process_indicadores_saude(agregacao = "brasil")
+  process_vigiar(tabela = "tb_brasil")
 
 indoor <- vigiar_baixar("df_indoor") |>
-  process_exposicao_indoor()
+  process_vigiar(tabela = "df_indoor")
 
 # 4. Validar dados
 vigiar_checar_dados(pm25, "df_anual")

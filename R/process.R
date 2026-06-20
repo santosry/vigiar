@@ -81,8 +81,10 @@ process_pm25 <- function(dados, tipo = c("anual", "mensal", "dias", "dias_conama
     Categoria_pm25_conama = "categoria_conama",
     Regiao            = "regiao",
     regiao            = "regiao",
+    "Regi\u00e3o"     = "regiao",
     Municipio         = "nome_municipio",
-    municipio         = "nome_municipio"
+    municipio         = "nome_municipio",
+    "Munic\u00edpio"  = "nome_municipio"
   )
 
   for (old_name in names(rename_map)) {

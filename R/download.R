@@ -60,14 +60,6 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
   }
   .vigiar_check_tabela(tabela)
 
-  # Large tables: automatic dual-pass for Power BI 30K row limit
-  tabelas_grandes <- c("df_anual", "df_mensal", "df_dias",
-                       "df_dias_conama", "tb_muni", "df_indoor_desfecho")
-
-  if (is.null(limite) && tabela %in% tabelas_grandes) {
-    return(.vigiar_baixar_paginado(tabela, colunas, timeout))
-  }
-
   message(sprintf("Baixando tabela '%s'...", tabela))
 
   query <- .vigiar_construir_query(
@@ -82,6 +74,16 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
     .vigiar_env$sessao, query, timeout = timeout
   )
   dados <- .vigiar_parse_dados(resposta, tabela)
+
+  # Warn if data might be truncated by API limit
+  if (is.null(limite) && nrow(dados) >= 29000) {
+    warning(
+      "A API do Power BI limitou a resposta a ", nrow(dados), " linhas. ",
+      "Para tabelas grandes (df_anual, df_mensal), os dados podem estar ",
+      "incompletos. Use vigiar_baixar_principais() para download em lote ",
+      "ou consulte a documentacao."
+    )
+  }
 
   message(sprintf(
     "Tabela '%s' baixada: %d linhas x %d colunas.",
@@ -273,52 +275,6 @@ vigiar_diagnostico <- function(amostra = 100) {
   }
 
   invisible(resultados)
-}
-
-# -- Paginated download for large tables --------------------------------------
-
-#' Dual-pass download to bypass Power BI 30K row limit
-#' @keywords internal
-.vigiar_baixar_paginado <- function(tabela, colunas, timeout) {
-  message(sprintf("Baixando tabela '%s' (grande, usando paginacao)...", tabela))
-
-  # Pass 1: ascending order (gets earlier rows)
-  message("  Passo 1/2: ordem ascendente...")
-  q1 <- .vigiar_construir_query(
-    tabela = tabela, colunas = colunas,
-    ordenar_por = if (tabela %in% c("df_anual", "df_mensal")) "ano" else NULL,
-    limite = NULL, modelo_id = .vigiar_env$sessao$model_id
-  )
-  r1 <- .vigiar_executar_query(.vigiar_env$sessao, q1, timeout = timeout)
-  d1 <- .vigiar_parse_dados(r1, tabela)
-  n1 <- nrow(d1)
-
-  # Pass 2: descending order (gets later rows)
-  message(sprintf("  Passo 2/2: ordem descendente... (Passo 1 retornou %d linhas)", n1))
-  q2 <- .vigiar_construir_query(
-    tabela = tabela, colunas = colunas,
-    ordenar_por = if (tabela %in% c("df_anual", "df_mensal")) "ano" else NULL,
-    limite = NULL, modelo_id = .vigiar_env$sessao$model_id
-  )
-  # Reverse the order: swap Direction in OrderBy after construction
-  if (!is.null(q2$queries[[1]]$Query$Commands[[1]]$SemanticQueryDataShapeCommand$Query$OrderBy)) {
-    q2$queries[[1]]$Query$Commands[[1]]$SemanticQueryDataShapeCommand$Query$OrderBy[[1]]$Direction <- 2L
-  }
-  r2 <- .vigiar_executar_query(.vigiar_env$sessao, q2, timeout = timeout)
-  d2 <- .vigiar_parse_dados(r2, tabela)
-  n2 <- nrow(d2)
-
-  # Combine and deduplicate
-  dados <- rbind(d1, d2)
-  dados <- dados[!duplicated(dados), ]
-  rownames(dados) <- NULL
-
-  message(sprintf(
-    "Tabela '%s' baixada: %d linhas x %d colunas (paginacao: %d + %d).",
-    tabela, nrow(dados), ncol(dados), n1, n2
-  ))
-
-  tibble::as_tibble(dados)
 }
 
 # -- Internal helpers ----------------------------------------------------------
