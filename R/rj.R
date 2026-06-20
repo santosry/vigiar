@@ -1,5 +1,5 @@
 # Package: vigiar
-# Rio de Janeiro state — official municipality registry
+# Rio de Janeiro state - official municipality registry
 #
 # Source: IBGE 2022 + SES-RJ health regions
 # 92 municipios, 9 macrorregioes de saude
@@ -136,25 +136,25 @@ vigiar_rj_regioes_saude <- function() {
 #' @export
 vigiar_rj_resumo <- function(dados, agregacao = c("municipio", "macrorregiao", "regiao_saude")) {
   agregacao <- match.arg(agregacao)
-  
+
   # Ensure data has cod_municipio
   col_muni <- intersect(c("cod_municipio", "muni", "id_muni", "ID_MUNI", "codigo_ibge"), names(dados))[1]
   if (is.na(col_muni)) stop("Coluna de codigo de municipio nao encontrada.")
-  
+
   # Filter to RJ only
-  dados_rj <- dados[dados[[col_muni]] >= RJ_MUNI_RANGE[1] & 
+  dados_rj <- dados[dados[[col_muni]] >= RJ_MUNI_RANGE[1] &
                      dados[[col_muni]] <= RJ_MUNI_RANGE[2], ]
-  
+
   if (nrow(dados_rj) == 0) {
     warning("Nenhum municipio do RJ encontrado nos dados.")
     return(tibble::tibble())
   }
-  
+
   # Merge with registry
-  merged <- merge(dados_rj, RJ_MUNICIPIOS, 
+  merged <- merge(dados_rj, RJ_MUNICIPIOS,
                   by.x = col_muni, by.y = "codigo_ibge",
                   all.x = TRUE)
-  
+
   # Aggregate
   if (agregacao == "municipio") {
     grp <- "municipio"
@@ -163,27 +163,27 @@ vigiar_rj_resumo <- function(dados, agregacao = c("municipio", "macrorregiao", "
   } else {
     grp <- "regiao_saude"
   }
-  
+
   # Find numerical columns to summarise
   num_cols <- names(merged)[sapply(merged, is.numeric)]
   num_cols <- setdiff(num_cols, c("cod_municipio", "ano", "mes"))
-  
+
   if (length(num_cols) == 0) {
     return(tibble::as_tibble(merged))
   }
-  
+
   result <- merged |>
     dplyr::group_by(dplyr::across(dplyr::all_of(grp))) |>
     dplyr::summarise(
       n_municipios = dplyr::n_distinct(.data[[col_muni]]),
-      dplyr::across(dplyr::all_of(num_cols), 
+      dplyr::across(dplyr::all_of(num_cols),
                     list(media = ~mean(.x, na.rm = TRUE),
                          dp = ~sd(.x, na.rm = TRUE),
                          n = ~sum(!is.na(.x))),
                     .names = "{.col}_{.fn}"),
       .groups = "drop"
     )
-  
+
   tibble::as_tibble(result)
 }
 
@@ -211,15 +211,20 @@ vigiar_validar_rj <- function(dados, col_muni = NULL) {
     col_muni <- intersect(c("cod_municipio", "muni", "id_muni", "ID_MUNI", "codigo_ibge", "cod_ibge", "codigo_municipio"), names(dados))[1]
   }
   if (is.na(col_muni)) stop("Coluna de codigo de municipio nao encontrada.")
-  
+
   codigos <- unique(dados[[col_muni]])
   codigos <- codigos[!is.na(codigos)]
-  
+
+  if (length(codigos) == 0) {
+    message("Nenhum municipio encontrado nos dados.")
+    return(invisible(list(n_total = 0, n_rj = 0, n_fora_rj = 0, valido = TRUE)))
+  }
+
   rj_codes <- RJ_MUNICIPIOS$codigo_ibge
-  
+
   in_rj <- codigos[codigos %in% rj_codes]
   fora_rj <- codigos[!codigos %in% rj_codes]
-  
+
   result <- list(
     n_total = length(codigos),
     n_rj = length(in_rj),
@@ -228,14 +233,14 @@ vigiar_validar_rj <- function(dados, col_muni = NULL) {
     municipios_rj_faltantes = setdiff(rj_codes, codigos),
     valido = length(fora_rj) == 0
   )
-  
+
   if (!result$valido) {
     warning(sprintf(
       "ATENCAO: %d codigos NAO pertencem ao RJ: %s",
       length(fora_rj), paste(fora_rj, collapse = ", ")
     ))
   }
-  
+
   if (length(result$municipios_rj_faltantes) > 0) {
     message(sprintf(
       "%d municipios do RJ nao estao nos dados.",
@@ -247,7 +252,7 @@ vigiar_validar_rj <- function(dados, col_muni = NULL) {
       length(in_rj)
     ))
   }
-  
+
   invisible(result)
 }
 
@@ -261,19 +266,26 @@ vigiar_validar_rj <- function(dados, col_muni = NULL) {
 #' @export
 vigiar_baixar_rj <- function(tabela, ...) {
   dados <- vigiar_baixar(tabela, ...)
-  
+
   col_muni <- intersect(c("cod_municipio", "muni", "id_muni", "ID_MUNI", "MUN_COD", "codigo_ibge"), names(dados))[1]
   col_uf <- intersect(c("sigla_uf", "UF", "UF_SIGLA"), names(dados))[1]
-  
+
+  # Filter by municipality code range (RJ: 330010-330620)
   if (!is.na(col_muni)) {
-    dados <- dados[dados[[col_muni]] >= RJ_MUNI_RANGE[1] & 
+    dados <- dados[dados[[col_muni]] >= RJ_MUNI_RANGE[1] &
                    dados[[col_muni]] <= RJ_MUNI_RANGE[2], ]
     message(sprintf("Filtrado para RJ: %d linhas.", nrow(dados)))
   } else if (!is.na(col_uf)) {
     dados <- dados[toupper(dados[[col_uf]]) == "RJ", ]
     message(sprintf("Filtrado para RJ (por UF): %d linhas.", nrow(dados)))
   }
-  
-  vigiar_validar_rj(dados, col_muni)
+
+  # Validate only if we have data
+  if (nrow(dados) > 0) {
+    vigiar_validar_rj(dados, col_muni)
+  } else {
+    message("Nenhum municipio do RJ encontrado. Verifique se a tabela contem dados do RJ.")
+  }
+
   tibble::as_tibble(dados)
 }
