@@ -79,8 +79,9 @@ export(`%||%`)
 importFrom(httr2, request, req_headers, req_user_agent, req_timeout,
            req_body_raw, req_method, req_perform,
            resp_body_string, resp_body_raw, resp_headers)
+importFrom(dplyr, across, all_of, filter, group_by, summarise,
+           mutate, left_join, join_by, n_distinct)
 importFrom(jsonlite, fromJSON, toJSON)
 importFrom(tibble, as_tibble)
-importFrom(utils, write.csv, browseURL, read.csv)
+importFrom(utils, write.csv, read.csv, browseURL)
 importFrom(stats, median, sd, quantile, filter)
-importFrom(grDevices, na.value)

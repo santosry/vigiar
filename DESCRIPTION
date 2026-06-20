@@ -34,12 +34,12 @@ RoxygenNote: 7.3.2
 Depends:
     R (>= 4.0.0)
 Imports:
+    dplyr,
     httr2,
     jsonlite,
     tibble
 Suggests:
     testthat (>= 3.0.0),
-    dplyr,
     ggplot2,
     sf,
     geobr,

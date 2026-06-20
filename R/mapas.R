@@ -118,8 +118,7 @@ vigiar_mapa_populacao_exposta <- function(dados, nivel = c("municipio", "uf"),
   ggplot2::ggplot(dados) +
     ggplot2::geom_sf(ggplot2::aes(fill = .data[[variavel]]),
                      colour = NA, size = 0.05) +
-    ggplot2::scale_fill_viridis_c(option = "rocket", na.value = "grey90",
-                                   labels = scales::label_number(scale = 1e-6, suffix = "M")) +
+    ggplot2::scale_fill_viridis_c(option = "rocket", na.value = "grey90") +
     ggplot2::labs(title = titulo, fill = "População") +
     ggplot2::theme_minimal() +
     ggplot2::theme(axis.text = ggplot2::element_blank(),
