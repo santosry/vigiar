@@ -40,6 +40,7 @@ export(vigiar_convencoes)
 export(vigiar_schema)
 export(vigiar_tabelas_documentadas)
 export(vigiar_variaveis_nao_documentadas)
+export(vigiar_variaveis_orfas)
 export(vigiar_validar_dicionario)
 export(vigiar_comparar_schema)
 
