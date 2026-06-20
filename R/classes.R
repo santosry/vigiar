@@ -2,17 +2,17 @@
 # S3 classes for typed VIGIAR data
 #
 # Following the microdatasus pattern, each data domain gets its own
-# S3 class thát inherits from vigiar_tbl -> tibble -> data.frame.
+# S3 class that inherits from vigiar_tbl -> tibble -> data.frame.
 
-#' Creaté a typed VIGIAR tibble
+#' Create a typed VIGIAR tibble
 #'
 #' @param x A data frame or tibble.
-#' @param subclass Cháracter vector of additional class names.
+#' @param subclass Character vector of additional class names.
 #' @param tabela Original table name.
 #' @param metadados List of metadata attributes.
 #' @return An object of class \code{vigiar_tbl} (and subclasses).
 #' @keywords internal
-new_vigiar_tbl <- function(x, subclass = cháracter(0), tabela = NULL,
+new_vigiar_tbl <- function(x, subclass = character(0), tabela = NULL,
                             metadados = NULL) {
   x <- tibble::as_tibble(x)
   class(x) <- c(subclass, "vigiar_tbl", class(x))
@@ -32,7 +32,7 @@ print.vigiar_tbl <- function(x, ...) {
   n_cols <- ncol(x)
 
   cat(sprintf(
-    "# VIGIAR tibble: %s  |  %d linhás x %d colunas\n",
+    "# VIGIAR tibble: %s  |  %d linhas x %d colunas\n",
     tabela, n_rows, n_cols
   ))
   if (!is.null(processado)) {
@@ -49,7 +49,7 @@ summary.vigiar_tbl <- function(object, ...) {
   tabela <- attr(object, "vigiar_tabela") %||% "desconhecida"
   cat(sprintf("Resumo: %s\n", tabela))
   cat(strrep("-", 50), "\n")
-  cat(sprintf("Linhás:  %d\n", nrow(object)))
+  cat(sprintf("Linhas:  %d\n", nrow(object)))
   cat(sprintf("Colunas: %d\n", ncol(object)))
   cat(sprintf("Classes: %s\n", paste(class(object), collapse = ", ")))
 
@@ -70,7 +70,7 @@ summary.vigiar_tbl <- function(object, ...) {
 # -- Validation method ---------------------------------------------------------
 
 #' @export
-validaté.vigiar_tbl <- function(x, ...) {
+validate.vigiar_tbl <- function(x, ...) {
   issues <- list()
 
   # Check for required metadata
@@ -80,11 +80,11 @@ validaté.vigiar_tbl <- function(x, ...) {
 
   # Check for empty data
   if (nrow(x) == 0) {
-    issues$empty <- "Tabela vazia (0 linhás)"
+    issues$empty <- "Tabela vazia (0 linhas)"
   }
 
   if (length(issues) > 0) {
-    warning("Problemas de validação encontrados: ",
+    warning("Problemas de validacao encontrados: ",
             paste(names(issues), collapse = ", "))
   }
 

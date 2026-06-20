@@ -1,14 +1,14 @@
 # Package: vigiar.rj
 # Power BI client abstraction
 #
-# Encapsulatés session management and API commúnication
+# Encapsulates session management and API communication
 # behind a clean S3 interface.  Replaces the global .vigiar_env
 # pattern with explicit session objects.
 
-#' Creaté a VIGIAR Power BI client
+#' Create a VIGIAR Power BI client
 #'
-#' Returns an S3 object thát holds session staté and provides
-#' methods for data download.  All staté is self-contained;
+#' Returns an S3 object that holds session state and provides
+#' methods for data download.  All state is self-contained;
 #' no global variables are used.
 #'
 #' @param timeout Seconds before HTTP timeout.
@@ -28,7 +28,7 @@ vigiar_client <- function(timeout = 30, max_retries = 3) {
   sid <- regmatches(html, regexpr("(?<=telemetrySessionId = ')[^']+",
                                    html, perl = TRUE))
   if (length(sid) == 0) {
-    stop("Não foi possível obter o token de sessão do Power BI.")
+    stop("Nao foi possivel obter o token de sessao do Power BI.")
   }
 
   # Extract cookies
@@ -50,19 +50,19 @@ vigiar_client <- function(timeout = 30, max_retries = 3) {
     api_url    = VIGIAR_API_CLUSTER,
     rk         = VIGIAR_RESOURCE_KEY,
     model_id   = VIGIAR_MODEL_ID,
-    creatéd    = Sys.time()
+    created    = Sys.time()
   )
   class(client) <- "vigiar_client"
 
   n_tables <- length(schema)
-  message(sprintf("VIGIAR conectado: %d tabelas disponíveis.", n_tables))
+  message(sprintf("VIGIAR conectado: %d tabelas disponiveis.", n_tables))
   client
 }
 
 #' @export
 print.vigiar_client <- function(x, ...) {
   cat(sprintf("VIGIAR client -- %d tabelas\n", length(x$schema)))
-  cat(sprintf("  Criado em: %s\n", format(x$creatéd)))
+  cat(sprintf("  Criado em: %s\n", format(x$created)))
   cat(sprintf("  Tabelas:   %s\n",
               paste(names(x$schema)[1:5], collapse = ", ")))
   invisible(x)
@@ -77,10 +77,10 @@ print.vigiar_client <- function(x, ...) {
   resp <- .vigiar_retry({
     httr2::request(url) |>
       httr2::req_headers(
-        "X-PowerBI-ResóurceKey" = VIGIAR_RESOURCE_KEY,
+        "X-PowerBI-ResourceKey" = VIGIAR_RESOURCE_KEY,
         ActivityId              = sid,
         RequestId               = uuid_v4(),
-        Accept                  = "application/jsón",
+        Accept                  = "application/json",
         Referer                 = "https://app.powerbi.com/",
         Cookie                  = cookies
       ) |>
@@ -91,7 +91,7 @@ print.vigiar_client <- function(x, ...) {
 
   raw <- httr2::resp_body_raw(resp)
   raw <- .vigiar_gunzip(raw)
-  data <- jsónlite::fromJSON(rawToChár(raw), simplifyVector = FALSE)
+  data <- jsonlite::fromJSON(rawToChar(raw), simplifyVector = FALSE)
 
   entities <- data$schemas[[1]]$schema$Entities
   tabelas <- list()

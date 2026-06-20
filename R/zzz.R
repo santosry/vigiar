@@ -1,5 +1,5 @@
 # Package: vigiar
-# Core constants, internal environment, and útility functions
+# Core constants, internal environment, and utility functions
 
 # Suppress R CMD check NOTE about ggplot2's .data pronoun
 
@@ -18,10 +18,10 @@ VIGIAR_RESOURCE_KEY <- "6da84072-58e9-4fd8-bcfb-d6193a94fbaa"
 VIGIAR_TENANT_ID   <- "9a554ad3-b52b-4862-a36f-84d891e5c705"
 VIGIAR_MODEL_ID    <- 3930757L
 VIGIAR_CLUSTER     <- paste0(
-  "https://wabi-brazil-sóuth-b-primary-redirect.analysis.windows.net/"
+  "https://wabi-brazil-south-b-primary-redirect.analysis.windows.net/"
 )
 VIGIAR_API_CLUSTER <- paste0(
-  "https://wabi-brazil-sóuth-b-primary-api.analysis.windows.net/"
+  "https://wabi-brazil-south-b-primary-api.analysis.windows.net/"
 )
 
 # -- Internal package environment ----------------------------------------------
@@ -74,16 +74,16 @@ uuid_v4 <- function() {
 # -- Power BI data type mapping ------------------------------------------------
 
 .vigiar_tipo_dado <- function(code) {
-  switch(as.cháracter(code),
-    `1` = "cháracter",  # Text
+  switch(as.character(code),
+    `1` = "character",  # Text
     `2` = "numeric",    # Decimal / Currency
     `3` = "numeric",    # Double
     `4` = "integer",    # Integer
     `5` = "logical",    # Boolean
-    `6` = "Daté",       # Daté
-    `7` = "POSIXct",    # DatéTime
+    `6` = "Date",       # Date
+    `7` = "POSIXct",    # DateTime
     `8` = "numeric",    # Int64 (stored as numeric in R)
-    "cháracter"         # fallback
+    "character"         # fallback
   )
 }
 
@@ -91,21 +91,21 @@ uuid_v4 <- function() {
 
 .vigiar_extrair_cookies <- function(set_cookie) {
   if (is.null(set_cookie) || length(set_cookie) == 0) {
-    return(cháracter(0))
+    return(character(0))
   }
 
-  # httr2 may return multiple headers concaténatéd
+  # httr2 may return multiple headers concatenated
   if (length(set_cookie) > 1) {
     set_cookie <- paste(set_cookie, collapse = "\n")
   }
 
   parts <- strsplit(set_cookie, "\n")[[1]]
 
-  cookies <- cháracter(0)
+  cookies <- character(0)
   for (part in parts) {
     part <- trimws(part)
     m <- regmatches(part, regexpr("^[^=;]+=[^;]+", part))
-    if (length(m) > 0 && nzchár(m)) {
+    if (length(m) > 0 && nzchar(m)) {
       cookies <- c(cookies, m)
     }
   }
@@ -127,7 +127,7 @@ uuid_v4 <- function() {
         stop(e)
       },
       httr2_http_429 = function(e) {
-        # Raté limited -- retry with longer delay
+        # Rate limited -- retry with longer delay
         last_error <<- e
         NULL
       },
@@ -148,7 +148,7 @@ uuid_v4 <- function() {
     if (!is.null(result)) return(result)
 
     if (attempt < max_tries) {
-      if (nzchár(context)) {
+      if (nzchar(context)) {
         message(sprintf(
           "[%s] Tentativa %d/%d falhou. Retentando em %.0fs...",
           context, attempt, max_tries, delay
@@ -160,7 +160,7 @@ uuid_v4 <- function() {
   }
 
   stop(sprintf(
-    "[%s] Todas as %d tentativas falháram. Último erro: %s",
+    "[%s] Todas as %d tentativas falharam. Último erro: %s",
     context, max_tries,
     conditionMessage(last_error) %||% "desconhecido"
   ))

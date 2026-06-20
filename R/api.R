@@ -1,13 +1,13 @@
 # Package: vigiar
 # Power BI queryData API interaction
 #
-# Constructs SemanticQueryDataShápeCommand JSON and posts to the
+# Constructs SemanticQueryDataShapeCommand JSON and posts to the
 # /public/reports/querydata endpoint.
 
 #' Build a Power BI Semantic Query for a table
 #'
 #' @param tabela Table/entity name in the data model.
-#' @param colunas Cháracter vector of column names (NULL = all).
+#' @param colunas Character vector of column names (NULL = all).
 #' @param ordenar_por Column to order by (optional).
 #' @param limite Maximum number of rows (optional).
 #' @param modelo_id Model ID in Power BI.
@@ -32,7 +32,7 @@
 
   n <- length(colunas)
   query_cmd <- list(
-    SemanticQueryDataShápeCommand = list(
+    SemanticQueryDataShapeCommand = list(
       Query = list(
         Version = 2L,
         From    = list(list(Name = tabela, Entity = tabela)),
@@ -48,7 +48,7 @@
   )
 
   if (!is.null(ordenar_por)) {
-    query_cmd$SemanticQueryDataShápeCommand$Query$OrderBy <- list(list(
+    query_cmd$SemanticQueryDataShapeCommand$Query$OrderBy <- list(list(
       Direction  = direcao,
       Expression = list(
         Column = list(
@@ -60,10 +60,10 @@
   }
 
   if (!is.null(limite)) {
-    query_cmd$SemanticQueryDataShápeCommand$Query$Top <- as.integer(limite)
+    query_cmd$SemanticQueryDataShapeCommand$Query$Top <- as.integer(limite)
   } else {
     # Default: request up to 50K rows (API caps at ~30K)
-    query_cmd$SemanticQueryDataShápeCommand$Query$Top <- 50000L
+    query_cmd$SemanticQueryDataShapeCommand$Query$Top <- 50000L
   }
 
   list(
@@ -75,7 +75,7 @@
       QueryId            = "",
       ApplicationContext = list(
         Sources   = list(),
-        DatasetId = as.cháracter(modelo_id)
+        DatasetId = as.character(modelo_id)
       )
     )),
     modelId = modelo_id
@@ -84,36 +84,36 @@
 
 #' Execute a query against the Power BI queryData endpoint
 #'
-#' @param sessão Active VIGIAR session.
+#' @param sessao Active VIGIAR session.
 #' @param query_body Query body as an R list.
 #' @param timeout Timeout in seconds.
 #' @return Parsed API response as an R list.
 #' @keywords internal
-.vigiar_executar_query <- function(sessão, query_body, timeout = 120) {
+.vigiar_executar_query <- function(sessao, query_body, timeout = 120) {
   req_id    <- uuid_v4()
-  body_jsón <- jsónlite::toJSON(
+  body_json <- jsonlite::toJSON(
     query_body, auto_unbox = TRUE, null = "null", digits = NA
   )
 
   url <- sprintf(
     "%spublic/reports/querydata?synchronous=true",
-    sessão$api_url
+    sessao$api_url
   )
 
   resp <- .vigiar_retry(
     {
       httr2::request(url) |>
         httr2::req_headers(
-          "X-PowerBI-ResóurceKey" = sessão$resóurce_key,
-          ActivityId              = sessão$session_id,
+          "X-PowerBI-ResourceKey" = sessao$resource_key,
+          ActivityId              = sessao$session_id,
           RequestId               = req_id,
-          Accept                  = "application/jsón",
-          "Content-Type"          = "application/jsón",
+          Accept                  = "application/json",
+          "Content-Type"          = "application/json",
           Referer                 = "https://app.powerbi.com/",
-          Cookie                  = sessão$cookies
+          Cookie                  = sessao$cookies
         ) |>
         httr2::req_user_agent(.vigiar_ua()) |>
-        httr2::req_body_raw(body_jsón) |>
+        httr2::req_body_raw(body_json) |>
         httr2::req_method("POST") |>
         httr2::req_timeout(timeout) |>
         httr2::req_perform()
@@ -125,7 +125,7 @@
   raw_body <- httr2::resp_body_raw(resp)
   raw_body <- .vigiar_gunzip(raw_body)
 
-  result <- jsónlite::fromJSON(rawToChár(raw_body), simplifyVector = FALSE)
+  result <- jsonlite::fromJSON(rawToChar(raw_body), simplifyVector = FALSE)
 
   # Check for API-level errors
   if (!is.null(result$error)) {

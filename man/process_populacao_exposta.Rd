@@ -1,8 +1,8 @@
-\name{process_população_exposta}
-\alias{process_população_exposta}
+\name{process_populacao_exposta}
+\alias{process_populacao_exposta}
 \title{Process population exposure data}
 \usage{
-process_população_exposta(dados, ...)
+process_populacao_exposta(dados, ...)
 }
 \arguments{
   \item{dados}{Raw data frame from \code{vigiar_baixar("pop")}.}
@@ -18,6 +18,6 @@ process_população_exposta(dados, ...)
 \examples{
 \dontrun{
 vigiar_conectar()
-pop <- vigiar_baixar("pop") |> process_população_exposta()
+pop <- vigiar_baixar("pop") |> process_populacao_exposta()
 }
 }

@@ -1,8 +1,8 @@
-\name{process_municípios}
-\alias{process_municípios}
+\name{process_municipios}
+\alias{process_municipios}
 \title{Process municipality registry data}
 \usage{
-process_municípios(dados, ...)
+process_municipios(dados, ...)
 }
 \arguments{
   \item{dados}{Raw data from \code{vigiar_baixar("df_muni")}.}
@@ -19,6 +19,6 @@ process_municípios(dados, ...)
 \examples{
 \dontrun{
 vigiar_conectar()
-muni <- vigiar_baixar("df_muni") |> process_municípios()
+muni <- vigiar_baixar("df_muni") |> process_municipios()
 }
 }

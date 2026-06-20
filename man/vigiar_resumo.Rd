@@ -1,16 +1,16 @@
 \name{vigiar_resumo}
 \alias{vigiar_resumo}
 \alias{vigiar_resumo_pm25}
-\alias{vigiar_resumo_saúde}
-\alias{vigiar_resumo_população}
+\alias{vigiar_resumo_saude}
+\alias{vigiar_resumo_populacao}
 \alias{vigiar_resumo_fracao_atribuível}
 \alias{vigiar_resumo_indoor}
 \title{Descriptive summaries for VIGIAR data}
 \usage{
 vigiar_resumo(x, ...)
 vigiar_resumo_pm25(x, ...)
-vigiar_resumo_saúde(x, ...)
-vigiar_resumo_população(x, ...)
+vigiar_resumo_saude(x, ...)
+vigiar_resumo_populacao(x, ...)
 vigiar_resumo_fracao_atribuível(x, ...)
 vigiar_resumo_indoor(x, ...)
 }
@@ -24,8 +24,8 @@ vigiar_resumo_indoor(x, ...)
 \description{
   Each function computes domain-specific descriptive statistics:
   \code{vigiar_resumo_pm25} reports mean, median, SD, percentiles,
-  and out-of-range values. \code{vigiar_resumo_saúde} reports
-  n_indicadores and n_desfechos. \code{vigiar_resumo_população}
+  and out-of-range values. \code{vigiar_resumo_saude} reports
+  n_indicadores and n_desfechos. \code{vigiar_resumo_populacao}
   reports total population. All return tibbles, not printed text.
 }
 \examples{

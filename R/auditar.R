@@ -6,10 +6,10 @@
 
 #' List all documented tables
 #'
-#' @return Cháracter vector of table IDs present in the dictionary.
+#' @return Character vector of table IDs present in the dictionary.
 #' @export
 vigiar_tabelas_documentadas <- function() {
-  dict <- vigiar_dicionário()
+  dict <- vigiar_dicionario()
   unique(dict$table_id)
 }
 
@@ -20,12 +20,12 @@ vigiar_tabelas_documentadas <- function() {
 #'
 #' @return A tibble of undocumented variables (empty if all covered).
 #' @export
-vigiar_variáveis_não_documentadas <- function() {
+vigiar_variaveis_nao_documentadas <- function() {
   if (is.null(.vigiar_env$esquema)) {
-    stop("Nenhuma sessão ativa. Execute vigiar_conectar() primeiro.")
+    stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
   }
 
-  dict <- vigiar_dicionário()
+  dict <- vigiar_dicionario()
   undocumented <- list()
 
   for (tab in names(.vigiar_env$esquema)) {
@@ -37,7 +37,7 @@ vigiar_variáveis_não_documentadas <- function() {
         undocumented[[length(undocumented) + 1]] <- data.frame(
           tabela   = tab,
           coluna   = col,
-          problema = "Variável presente nos dados mas ausente no dicionário",
+          problema = "Variavel presente nos dados mas ausente no dicionario",
           stringsAsFactors = FALSE
         )
       }
@@ -46,33 +46,33 @@ vigiar_variáveis_não_documentadas <- function() {
 
   if (length(undocumented) == 0) {
     return(tibble::tibble(
-      tabela = cháracter(0), coluna = cháracter(0),
-      problema = cháracter(0)
+      tabela = character(0), coluna = character(0),
+      problema = character(0)
     ))
   }
 
   tibble::as_tibble(do.call(rbind, undocumented))
 }
 
-#' Find documented variables thát don't exist in the live schema
+#' Find documented variables that don't exist in the live schema
 #'
-#' @return A tibble of orphán variables (empty if none).
+#' @return A tibble of orphan variables (empty if none).
 #' @export
-vigiar_variáveis_órfãs <- function() {
+vigiar_variaveis_orfas <- function() {
   if (is.null(.vigiar_env$esquema)) {
-    stop("Nenhuma sessão ativa. Execute vigiar_conectar() primeiro.")
+    stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
   }
 
-  dict <- vigiar_dicionário()
+  dict <- vigiar_dicionario()
   orfaos <- list()
 
   for (tab in unique(dict$table_id)) {
     if (!tab %in% names(.vigiar_env$esquema)) {
-      # Entire table is orphán
+      # Entire table is orphan
       orfaos[[length(orfaos) + 1]] <- data.frame(
         tabela   = tab,
         coluna   = "(tabela inteira)",
-        problema = "Tabela documentada não existe no esquema atual",
+        problema = "Tabela documentada nao existe no esquema atual",
         stringsAsFactors = FALSE
       )
       next
@@ -85,7 +85,7 @@ vigiar_variáveis_órfãs <- function() {
         orfaos[[length(orfaos) + 1]] <- data.frame(
           tabela   = tab,
           coluna   = col,
-          problema = "Variável documentada não existe nos dados atuais",
+          problema = "Variavel documentada nao existe nos dados atuais",
           stringsAsFactors = FALSE
         )
       }
@@ -94,54 +94,54 @@ vigiar_variáveis_órfãs <- function() {
 
   if (length(orfaos) == 0) {
     return(tibble::tibble(
-      tabela = cháracter(0), coluna = cháracter(0),
-      problema = cháracter(0)
+      tabela = character(0), coluna = character(0),
+      problema = character(0)
     ))
   }
 
   tibble::as_tibble(do.call(rbind, orfaos))
 }
 
-#' Validaté the dictionary against the live schema
+#' Validate the dictionary against the live schema
 #'
 #' Runs all dictionary checks and returns a report.
 #'
-#' @return Invisibly, a list with \code{undocumented}, \code{órfãs},
+#' @return Invisibly, a list with \code{undocumented}, \code{orfas},
 #'   \code{coverage_pct}.
 #' @export
-vigiar_validar_dicionário <- function() {
+vigiar_validar_dicionario <- function() {
   if (is.null(.vigiar_env$esquema)) {
-    stop("Nenhuma sessão ativa. Execute vigiar_conectar() primeiro.")
+    stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
   }
 
-  não_doc <- vigiar_variáveis_não_documentadas()
-  órfãs   <- vigiar_variáveis_órfãs()
+  nao_doc <- vigiar_variaveis_nao_documentadas()
+  orfas   <- vigiar_variaveis_orfas()
 
-  dict <- vigiar_dicionário()
+  dict <- vigiar_dicionario()
   n_dict_cols <- nrow(dict)
 
   # Count total live columns
   n_live <- sum(vapply(.vigiar_env$esquema, length, integer(1)))
-  n_covered <- n_dict_cols - nrow(órfãs)
+  n_covered <- n_dict_cols - nrow(orfas)
   coverage <- if (n_live > 0) round(100 * n_covered / n_live, 1) else 100
 
-  cat(sprintf("Cobertura do dicionário: %.1f%%\n", coverage))
-  cat(sprintf("Variáveis documentadas: %d\n", n_dict_cols))
-  cat(sprintf("Variáveis não documentadas: %d\n", nrow(não_doc)))
-  cat(sprintf("Variáveis órfãs (documentadas mas ausentes): %d\n", nrow(órfãs)))
+  cat(sprintf("Cobertura do dicionario: %.1f%%\n", coverage))
+  cat(sprintf("Variaveis documentadas: %d\n", n_dict_cols))
+  cat(sprintf("Variaveis nao documentadas: %d\n", nrow(nao_doc)))
+  cat(sprintf("Variaveis orfas (documentadas mas ausentes): %d\n", nrow(orfas)))
 
-  if (nrow(não_doc) > 0) {
-    cat("\n[!]  Variáveis não documentadas:\n")
-    print(não_doc)
+  if (nrow(nao_doc) > 0) {
+    cat("\n[!]  Variaveis nao documentadas:\n")
+    print(nao_doc)
   }
-  if (nrow(órfãs) > 0) {
-    cat("\n[!]  Variáveis órfãs:\n")
-    print(órfãs)
+  if (nrow(orfas) > 0) {
+    cat("\n[!]  Variaveis orfas:\n")
+    print(orfas)
   }
 
   invisible(list(
-    undocumented = não_doc,
-    órfãs        = órfãs,
+    undocumented = nao_doc,
+    orfas        = orfas,
     coverage_pct = coverage
   ))
 }
@@ -152,10 +152,10 @@ vigiar_validar_dicionário <- function() {
 #' @export
 vigiar_comparar_schema <- function() {
   if (is.null(.vigiar_env$esquema)) {
-    stop("Nenhuma sessão ativa. Execute vigiar_conectar() primeiro.")
+    stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
   }
 
-  dict <- vigiar_dicionário()
+  dict <- vigiar_dicionario()
   results <- list()
 
   all_tables <- union(
@@ -163,11 +163,11 @@ vigiar_comparar_schema <- function() {
     unique(dict$table_id)
   )
 
-  for (tab in sórt(all_tables)) {
+  for (tab in sort(all_tables)) {
     live_cols <- if (tab %in% names(.vigiar_env$esquema)) {
       names(.vigiar_env$esquema[[tab]])
     } else {
-      cháracter(0)
+      character(0)
     }
     dict_cols <- dict$original_name[dict$table_id == tab]
     documented <- intersect(live_cols, dict_cols)
@@ -177,8 +177,8 @@ vigiar_comparar_schema <- function() {
       colunas_live   = length(live_cols),
       colunas_dict   = length(dict_cols),
       documentadas   = length(documented),
-      não_documentadas = length(setdiff(live_cols, dict_cols)),
-      órfãs          = length(setdiff(dict_cols, live_cols)),
+      nao_documentadas = length(setdiff(live_cols, dict_cols)),
+      orfas          = length(setdiff(dict_cols, live_cols)),
       coverage       = if (length(live_cols) > 0) {
         round(100 * length(documented) / length(live_cols), 1)
       } else NA_real_,

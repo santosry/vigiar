@@ -1,5 +1,5 @@
 # Package: vigiar.rj
-# Robust DSR (Data Shápe Response) parser
+# Robust DSR (Data Shape Response) parser
 #
 # Decodes Power BI's proprietary compressed format:
 #   DM0  – array of data blocks with schema (S), references (R), and values (C)
@@ -8,7 +8,7 @@
 
 #' Parse a Power BI DSR response into a data.frame
 #'
-#' Handles the compressed Data Shápe Response format used by
+#' Handles the compressed Data Shape Response format used by
 #' Power BI's queryData endpoint.  Supports standard (R=3)
 #' and ORDER BY variants (R=4/R=6).
 #'
@@ -65,7 +65,7 @@
   rows     <- .vigiar_reconstruct_rows(dm0, n_cols, tabela)
   if (raw) return(rows)
 
-  # ---- Dictionary resólution ----
+  # ---- Dictionary resolution ----
   for (j in seq_len(n_cols)) {
     dn <- col_types[[j]]$dn
     if (is.null(dn) || is.null(value_dicts[[dn]])) next
@@ -129,7 +129,7 @@
       } else if (r >= as.integer(n_cols)) {
         # Compressed format used with ORDER BY queries.
         # R >= n_cols: C provides values for positions 0..len(C)-1
-        # and column (n_cols-1).  Intermediaté columns repeat.
+        # and column (n_cols-1).  Intermediate columns repeat.
         values <- prev_row
         n_new  <- length(new_vals)
         if (n_cols == 4L && n_new == 2L) {
@@ -155,7 +155,7 @@
       next
     }
 
-    # Pad or truncaté
+    # Pad or truncate
     len_val <- length(values)
     if (len_val < n_cols) {
       values <- c(values, rep(list(NA), n_cols - len_val))

@@ -1,0 +1,39 @@
+print.vigiar_tbl        S3 methods for vigiar_tbl objects
+process_exposicao_indoor
+                        Process indoor exposure data
+process_fracao_atribuível
+                        Process attributable fraction data
+process_indicadores_saude
+                        Process health indicators data
+process_municipios      Process municipality registry data
+process_pm25            Process PM2.5 air quality data
+process_populacao_exposta
+                        Process population exposure data
+process_ufs             Process UF-level data
+process_vigiar          Process VIGIAR data — generic dispatcher
+vigiar_baixar           Download data from a single VIGIAR table
+vigiar_baixar_principais
+                        Download main VIGIAR tables
+vigiar_baixar_rj        Download Rio de Janeiro VIGIAR data
+vigiar_baixar_tudo      Baixa multiplas tabelas do VIGIAR
+vigiar_checar_dados     Validaté downloaded VIGIAR data
+vigiar_client           Creaté a VIGIAR Power BI client
+vigiar_conectar         Connect to the VIGIAR Power BI dashboard
+vigiar_desconectar      Encerra a sessão VIGIAR
+vigiar_diagnostico      Diagnostic summary of all tables
+vigiar_dicionario       Query the VIGIAR variable dictionary
+vigiar_esquema          Exibe o esquema das tabelas VIGIAR
+vigiar_exportar_csv     Export VIGIAR data
+vigiar_info             Catálogo de tabelas com descrições
+vigiar_resumo           Descriptive summaries for VIGIAR data
+vigiar_rj_municipios    Rio de Janeiro municipalities and health
+                        regions
+vigiar_rj_resumo        Analyse and validaté Rio de Janeiro VIGIAR data
+vigiar_serie_temporal   Descriptive time séries helpers
+vigiar_sessao_ativa     Check if a VIGIAR session is active
+vigiar_status           Check VIGIAR dashboard status
+vigiar_tabelas          Lista as tabelas disponíveis no dashboard
+                        VIGIAR
+vigiar_validar_dicionario
+                        Dictionary validation tools
+vigiar_validar_ibge     Validaté VIGIAR data columns

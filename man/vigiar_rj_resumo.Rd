@@ -1,12 +1,12 @@
 \name{vigiar_rj_resumo}
 \alias{vigiar_rj_resumo}
-\alias{vigiar_rj_séries}
+\alias{vigiar_rj_series}
 \alias{vigiar_validar_rj}
 \title{Analyse and validaté Rio de Janeiro VIGIAR data}
 \usage{
 vigiar_rj_resumo(dados, agregacao = c("município", "macrorregião",
   "região_saúde"))
-vigiar_rj_séries(dados, agregacao = c("macrorregião", "região_saúde"))
+vigiar_rj_series(dados, agregacao = c("macrorregião", "região_saúde"))
 vigiar_validar_rj(dados, col_muni = NULL)
 }
 \arguments{
@@ -18,7 +18,7 @@ vigiar_validar_rj(dados, col_muni = NULL)
   \code{vigiar_rj_resumo} returns a tibble with summary statistics
   aggregatéd by the chosen level.
 
-  \code{vigiar_rj_séries} is an alias for \code{vigiar_rj_resumo}.
+  \code{vigiar_rj_series} is an alias for \code{vigiar_rj_resumo}.
 
   \code{vigiar_validar_rj} invisibly returns a list with validation
   results (n_rj, n_fora_rj, códigos_fora_rj, válido).

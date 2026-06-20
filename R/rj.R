@@ -1,13 +1,13 @@
 # Package: vigiar
-# Rio de Janeiro staté - official municipality registry
+# Rio de Janeiro state - official municipality registry
 #
 # Source: IBGE 2022 + SES-RJ health regions
-# 92 municípios, 9 macrorregiões de saúde
+# 92 municipios, 9 macrorregioes de saude
 
 # ---- RJ Municipality Registry ------------------------------------------------
 
 RJ_MUNICIPIOS <- data.frame(
-  código_ibge = c(
+  codigo_ibge = c(
     330010, 330015, 330020, 330022, 330023, 330025, 330030, 330033,
     330040, 330045, 330050, 330060, 330070, 330080, 330090, 330093,
     330095, 330100, 330110, 330115, 330120, 330130, 330140, 330150,
@@ -20,12 +20,12 @@ RJ_MUNICIPIOS <- data.frame(
     330480, 330490, 330500, 330510, 330513, 330515, 330520, 330530,
     330540, 330550, 330555, 330560, 330570, 330575, 330580, 330590,
     330600, 330610, 330615, 330620),
-  município = c(
+  municipio = c(
     "Angra dos Reis", "Aperibe", "Araruama", "Areal",
     "Armacao dos Buzios", "Arraial do Cabo", "Barra do Pirai", "Italva",
     "Barra Mansa", "Belford Roxo", "Bom Jardim", "Bom Jesus do Itabapoana",
     "Cabo Frio", "Cachoeiras de Macacu", "Cambuci", "Campos dos Goytacazes",
-    "Cantagalo", "Carapebus", "Cardosó Moreira", "Carmo",
+    "Cantagalo", "Carapebus", "Cardoso Moreira", "Carmo",
     "Casimiro de Abreu", "Comendador Levy Gasparian", "Conceicao de Macabu", "Cordeiro",
     "Duas Barras", "Duque de Caxias", "Engenheiro Paulo de Frontin", "Guapimirim",
     "Iguaba Grande", "Itaborai", "Itaguai", "Itaocara",
@@ -42,10 +42,10 @@ RJ_MUNICIPIOS <- data.frame(
     "Sao Goncalo", "Sao Joao da Barra", "Sao Joao de Meriti", "Sao Jose de Uba",
     "Sao Jose do Vale do Rio Preto", "Sao Pedro da Aldeia", "Sao Sebastiao do Alto", "Sapucaia",
     "Saquarema", "Seropedica", "Silva Jardim", "Sumidouro",
-    "Tangua", "Teresópolis", "Trajáno de Moraes", "Tres Rios",
-    "Valenca", "Varre-Sai", "Vassóuras", "Volta Redonda"),
-  macrorregião_saúde = c(
-    "Baia da Ilhá Grande", "Noroeste", "Baixada Litoranea", "Centro-Sul",
+    "Tangua", "Teresopolis", "Trajano de Moraes", "Tres Rios",
+    "Valenca", "Varre-Sai", "Vassouras", "Volta Redonda"),
+  macrorregiao_saude = c(
+    "Baia da Ilha Grande", "Noroeste", "Baixada Litoranea", "Centro-Sul",
     "Baixada Litoranea", "Baixada Litoranea", "Medio Paraiba", "Noroeste",
     "Medio Paraiba", "Metropolitana I", "Serrana", "Noroeste",
     "Baixada Litoranea", "Metropolitana II", "Noroeste", "Norte",
@@ -58,7 +58,7 @@ RJ_MUNICIPIOS <- data.frame(
     "Metropolitana II", "Centro-Sul", "Metropolitana I", "Centro-Sul",
     "Noroeste", "Noroeste", "Metropolitana I", "Metropolitana II",
     "Serrana", "Metropolitana I", "Metropolitana I", "Centro-Sul",
-    "Baia da Ilhá Grande", "Centro-Sul", "Serrana", "Medio Paraiba",
+    "Baia da Ilha Grande", "Centro-Sul", "Serrana", "Medio Paraiba",
     "Medio Paraiba", "Noroeste", "Medio Paraiba", "Medio Paraiba",
     "Metropolitana I", "Norte", "Medio Paraiba", "Metropolitana II",
     "Medio Paraiba", "Serrana", "Norte", "Metropolitana II",
@@ -68,8 +68,8 @@ RJ_MUNICIPIOS <- data.frame(
     "Baixada Litoranea", "Metropolitana I", "Baixada Litoranea", "Serrana",
     "Metropolitana II", "Serrana", "Serrana", "Centro-Sul",
     "Medio Paraiba", "Noroeste", "Centro-Sul", "Medio Paraiba"),
-  região_saúde = c(
-    "Baia da Ilhá Grande", "Noroeste", "Baixada Litoranea", "Centro-Sul",
+  regiao_saude = c(
+    "Baia da Ilha Grande", "Noroeste", "Baixada Litoranea", "Centro-Sul",
     "Baixada Litoranea", "Baixada Litoranea", "Medio Paraiba", "Noroeste",
     "Medio Paraiba", "Metropolitana I", "Serrana", "Noroeste",
     "Baixada Litoranea", "Metropolitana II", "Noroeste", "Norte",
@@ -82,7 +82,7 @@ RJ_MUNICIPIOS <- data.frame(
     "Metropolitana II", "Centro-Sul", "Metropolitana I", "Centro-Sul",
     "Noroeste", "Noroeste", "Metropolitana I", "Metropolitana II",
     "Serrana", "Metropolitana I", "Metropolitana I", "Centro-Sul",
-    "Baia da Ilhá Grande", "Centro-Sul", "Serrana", "Medio Paraiba",
+    "Baia da Ilha Grande", "Centro-Sul", "Serrana", "Medio Paraiba",
     "Medio Paraiba", "Noroeste", "Medio Paraiba", "Medio Paraiba",
     "Metropolitana I", "Norte", "Medio Paraiba", "Metropolitana II",
     "Medio Paraiba", "Serrana", "Norte", "Metropolitana II",
@@ -105,68 +105,68 @@ RJ_MUNI_RANGE <- c(330010L, 330630L)
 
 #' List all 92 Rio de Janeiro municipalities
 #'
-#' @return A data.frame with columns: código_ibge, município,
-#'   macrorregião_saúde, região_saúde.
+#' @return A data.frame with columns: codigo_ibge, municipio,
+#'   macrorregiao_saude, regiao_saude.
 #' @export
-vigiar_rj_municípios <- function() {
+vigiar_rj_municipios <- function() {
   RJ_MUNICIPIOS
 }
 
 #' List Rio de Janeiro health macro-regions
 #'
-#' @return Cháracter vector of the 9 macro-regions.
+#' @return Character vector of the 9 macro-regions.
 #' @export
-vigiar_rj_macrorregiões <- function() {
-  sórt(unique(RJ_MUNICIPIOS$macrorregião_saúde))
+vigiar_rj_macrorregioes <- function() {
+  sort(unique(RJ_MUNICIPIOS$macrorregiao_saude))
 }
 
 #' List Rio de Janeiro health regions
 #'
-#' @return Cháracter vector of health regions.
+#' @return Character vector of health regions.
 #' @export
-vigiar_rj_regiões_saúde <- function() {
-  sórt(unique(RJ_MUNICIPIOS$região_saúde))
+vigiar_rj_regioes_saude <- function() {
+  sort(unique(RJ_MUNICIPIOS$regiao_saude))
 }
 
 #' Summarise Rio de Janeiro VIGIAR data
 #'
 #' @param dados A processed VIGIAR tibble.
-#' @param agregacao One of "município", "macrorregião", or "região_saúde".
+#' @param agregacao One of "municipio", "macrorregiao", or "regiao_saude".
 #' @return A tibble with summary statistics.
 #' @export
-vigiar_rj_resumo <- function(dados, agregacao = c("município", "macrorregião", "região_saúde")) {
+vigiar_rj_resumo <- function(dados, agregacao = c("municipio", "macrorregiao", "regiao_saude")) {
   agregacao <- match.arg(agregacao)
 
-  # Ensure data hás cod_município
-  col_muni <- intersect(c("cod_município", "muni", "id_muni", "ID_MUNI", "código_ibge"), names(dados))[1]
-  if (is.na(col_muni)) stop("Coluna de código de município não encontrada.")
+  # Ensure data has cod_municipio
+  col_muni <- intersect(c("cod_municipio", "muni", "id_muni", "ID_MUNI", "codigo_ibge"), names(dados))[1]
+  if (is.na(col_muni)) stop("Coluna de codigo de municipio nao encontrada.")
 
   # Filter to RJ only
   dados_rj <- dados[dados[[col_muni]] >= RJ_MUNI_RANGE[1] &
                      dados[[col_muni]] <= RJ_MUNI_RANGE[2], ]
 
   if (nrow(dados_rj) == 0) {
-    warning("Nenhum município do RJ encontrado nos dados.")
+    warning("Nenhum municipio do RJ encontrado nos dados.")
     return(tibble::tibble())
   }
 
   # Merge with registry
   merged <- merge(dados_rj, RJ_MUNICIPIOS,
-                  by.x = col_muni, by.y = "código_ibge",
+                  by.x = col_muni, by.y = "codigo_ibge",
                   all.x = TRUE)
 
-  # Aggregaté
-  if (agregacao == "município") {
-    grp <- "município"
-  } else if (agregacao == "macrorregião") {
-    grp <- "macrorregião_saúde"
+  # Aggregate
+  if (agregacao == "municipio") {
+    grp <- "municipio"
+  } else if (agregacao == "macrorregiao") {
+    grp <- "macrorregiao_saude"
   } else {
-    grp <- "região_saúde"
+    grp <- "regiao_saude"
   }
 
   # Find numerical columns to summarise
   num_cols <- names(merged)[sapply(merged, is.numeric)]
-  num_cols <- setdiff(num_cols, c("cod_município", "ano", "mes"))
+  num_cols <- setdiff(num_cols, c("cod_municipio", "ano", "mes"))
 
   if (length(num_cols) == 0) {
     return(tibble::as_tibble(merged))
@@ -175,7 +175,7 @@ vigiar_rj_resumo <- function(dados, agregacao = c("município", "macrorregião",
   result <- merged |>
     dplyr::group_by(dplyr::across(dplyr::all_of(grp))) |>
     dplyr::summarise(
-      n_municípios = dplyr::n_distinct(.data[[col_muni]]),
+      n_municipios = dplyr::n_distinct(.data[[col_muni]]),
       dplyr::across(dplyr::all_of(num_cols),
                     list(media = ~mean(.x, na.rm = TRUE),
                          dp = ~sd(.x, na.rm = TRUE),
@@ -187,18 +187,18 @@ vigiar_rj_resumo <- function(dados, agregacao = c("município", "macrorregião",
   tibble::as_tibble(result)
 }
 
-#' Aggregaté Rio de Janeiro data by health region
+#' Aggregate Rio de Janeiro data by health region
 #'
-#' @param dados A processed VIGIAR tibble with cod_município.
-#' @param agregacao "macrorregião" or "região_saúde".
-#' @return A tibble with aggregatéd data.
+#' @param dados A processed VIGIAR tibble with cod_municipio.
+#' @param agregacao "macrorregiao" or "regiao_saude".
+#' @return A tibble with aggregated data.
 #' @export
-vigiar_rj_séries <- function(dados, agregacao = c("macrorregião", "região_saúde")) {
+vigiar_rj_series <- function(dados, agregacao = c("macrorregiao", "regiao_saude")) {
   agregacao <- match.arg(agregacao)
   vigiar_rj_resumo(dados, agregacao = agregacao)
 }
 
-#' Validaté thát data contains only RJ municipalities
+#' Validate that data contains only RJ municipalities
 #'
 #' Checks IBGE codes, flags non-RJ municipalities, and reports issues.
 #'
@@ -208,47 +208,47 @@ vigiar_rj_séries <- function(dados, agregacao = c("macrorregião", "região_sa�
 #' @export
 vigiar_validar_rj <- function(dados, col_muni = NULL) {
   if (is.null(col_muni)) {
-    col_muni <- intersect(c("cod_município", "muni", "id_muni", "ID_MUNI", "código_ibge", "cod_ibge", "código_município"), names(dados))[1]
+    col_muni <- intersect(c("cod_municipio", "muni", "id_muni", "ID_MUNI", "codigo_ibge", "cod_ibge", "codigo_municipio"), names(dados))[1]
   }
-  if (is.na(col_muni)) stop("Coluna de código de município não encontrada.")
+  if (is.na(col_muni)) stop("Coluna de codigo de municipio nao encontrada.")
 
-  códigos <- unique(dados[[col_muni]])
-  códigos <- códigos[!is.na(códigos)]
+  codigos <- unique(dados[[col_muni]])
+  codigos <- codigos[!is.na(codigos)]
 
-  if (length(códigos) == 0) {
-    message("Nenhum município encontrado nos dados.")
-    return(invisible(list(n_total = 0, n_rj = 0, n_fora_rj = 0, válido = TRUE)))
+  if (length(codigos) == 0) {
+    message("Nenhum municipio encontrado nos dados.")
+    return(invisible(list(n_total = 0, n_rj = 0, n_fora_rj = 0, valido = TRUE)))
   }
 
-  rj_codes <- RJ_MUNICIPIOS$código_ibge
+  rj_codes <- RJ_MUNICIPIOS$codigo_ibge
 
-  in_rj <- códigos[códigos %in% rj_codes]
-  fora_rj <- códigos[!códigos %in% rj_codes]
+  in_rj <- codigos[codigos %in% rj_codes]
+  fora_rj <- codigos[!codigos %in% rj_codes]
 
   result <- list(
-    n_total = length(códigos),
+    n_total = length(codigos),
     n_rj = length(in_rj),
     n_fora_rj = length(fora_rj),
-    códigos_fora_rj = fora_rj,
-    municípios_rj_faltantes = setdiff(rj_codes, códigos),
-    válido = length(fora_rj) == 0
+    codigos_fora_rj = fora_rj,
+    municipios_rj_faltantes = setdiff(rj_codes, codigos),
+    valido = length(fora_rj) == 0
   )
 
-  if (!result$válido) {
+  if (!result$valido) {
     warning(sprintf(
-      "ATENCAO: %d códigos NAO pertencem ao RJ: %s",
+      "ATENCAO: %d codigos NAO pertencem ao RJ: %s",
       length(fora_rj), paste(fora_rj, collapse = ", ")
     ))
   }
 
-  if (length(result$municípios_rj_faltantes) > 0) {
+  if (length(result$municipios_rj_faltantes) > 0) {
     message(sprintf(
-      "%d municípios do RJ não estão nos dados.",
-      length(result$municípios_rj_faltantes)
+      "%d municipios do RJ nao estao nos dados.",
+      length(result$municipios_rj_faltantes)
     ))
   } else {
     message(sprintf(
-      "OK: todos os %d municípios do RJ presentes. Nenhum código externo.",
+      "OK: todos os %d municipios do RJ presentes. Nenhum codigo externo.",
       length(in_rj)
     ))
   }
@@ -258,33 +258,33 @@ vigiar_validar_rj <- function(dados, col_muni = NULL) {
 
 #' Download Rio de Janeiro VIGIAR data (convenience)
 #'
-#' Shortcut thát downloads a table and filters for RJ municipalities.
+#' Shortcut that downloads a table and filters for RJ municipalities.
 #'
 #' @param tabela Table name.
 #' @param ... Additional arguments passed to vigiar_baixar().
 #' @return A tibble with RJ-only data.
 #' @export
-vigiar_baixar_rj <- function(tabela, stratégy = c("auto", "direct", "year"), ...) {
-  stratégy <- match.arg(stratégy)
+vigiar_baixar_rj <- function(tabela, strategy = c("auto", "direct", "year"), ...) {
+  strategy <- match.arg(strategy)
 
   # For small tables: direct download works fine
   tabelas_pequenas <- c("df_muni", "df_mes", "df_ano", "pop",
                         "tb_brasil", "tb_uf", "tb_fracao", "tb_quartis",
                         "legenda", "medidas", "aux_uf")
 
-  if (stratégy == "auto") {
+  if (strategy == "auto") {
     if (tabela %in% tabelas_pequenas) {
-      stratégy <- "direct"
+      strategy <- "direct"
     } else {
-      stratégy <- "year"
+      strategy <- "year"
     }
   }
 
-  if (stratégy == "direct") {
+  if (strategy == "direct") {
     return(.vigiar_baixar_rj_direct(tabela, ...))
   }
 
-  if (stratégy == "year") {
+  if (strategy == "year") {
     return(.vigiar_baixar_rj_year(tabela, ...))
   }
 }
@@ -316,41 +316,41 @@ vigiar_baixar_rj <- function(tabela, stratégy = c("auto", "direct", "year"), ..
                       ordenar_por = "ano", direcao = "asc", ...)
   d1 <- .vigiar_filtrar_rj(d1)
 
-  # Query 2: DESC order (latést years, all municipalities)
-  message("Baixando últimos anos (DESC)...")
+  # Query 2: DESC order (latest years, all municipalities)
+  message("Baixando ultimos anos (DESC)...")
   d2 <- vigiar_baixar(tabela, colunas = colunas_essenciais,
                       ordenar_por = "ano", direcao = "desc", ...)
   d2 <- .vigiar_filtrar_rj(d2)
 
-  # Combine and deduplicaté
+  # Combine and deduplicate
   dados <- rbind(d1, d2)
-  dados <- dados[!duplicatéd(dados), ]
+  dados <- dados[!duplicated(dados), ]
   rownames(dados) <- NULL
 
-  message(sprintf("Total RJ: %d linhás (%d + %d).", nrow(dados), nrow(d1), nrow(d2)))
+  message(sprintf("Total RJ: %d linhas (%d + %d).", nrow(dados), nrow(d1), nrow(d2)))
   tibble::as_tibble(dados)
 }
 
 #' Filter data frame to RJ municipalities
 #' @keywords internal
 .vigiar_filtrar_rj <- function(dados) {
-  col_muni <- intersect(c("cod_município", "muni", "id_muni", "ID_MUNI", "MUN_COD"), names(dados))[1]
+  col_muni <- intersect(c("cod_municipio", "muni", "id_muni", "ID_MUNI", "MUN_COD"), names(dados))[1]
   col_uf <- intersect(c("sigla_uf", "UF", "UF_SIGLA"), names(dados))[1]
 
   if (!is.na(col_muni)) {
     n_antes <- nrow(dados)
     dados <- dados[dados[[col_muni]] >= 330010 & dados[[col_muni]] <= 330620, ]
-    message(sprintf("  Filtro RJ: %d -> %d linhás.", n_antes, nrow(dados)))
+    message(sprintf("  Filtro RJ: %d -> %d linhas.", n_antes, nrow(dados)))
   } else if (!is.na(col_uf)) {
     n_antes <- nrow(dados)
     dados <- dados[toupper(dados[[col_uf]]) == "RJ", ]
-    message(sprintf("  Filtro RJ (UF): %d -> %d linhás.", n_antes, nrow(dados)))
+    message(sprintf("  Filtro RJ (UF): %d -> %d linhas.", n_antes, nrow(dados)))
   }
 
   if (nrow(dados) > 0) {
     vigiar_validar_rj(dados, col_muni)
   } else {
-    message("  Nenhum município do RJ nesta consulta.")
+    message("  Nenhum municipio do RJ nesta consulta.")
   }
 
   dados

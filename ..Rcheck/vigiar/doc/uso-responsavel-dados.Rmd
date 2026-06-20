@@ -1,0 +1,66 @@
+---
+title: "Usó Responsável dos Dados VIGIAR"
+author: "Ryan Santos"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Usó Responsável dos Dados}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, comment="#>", eval=FALSE)
+```
+
+## Fonte dos Dados
+
+Os dados são do **VIGIAR** (Vigilância em Saúde Ambiental),
+Ministério da Saúde do Brasil, disponibilizados públicamente via
+Power BI "Publish to Web".
+
+## Limitações dos Dados
+
+### PM2.5
+
+- Estimado por modelo de satélite, não medido em estações de superfície.
+- Resólução espacial limitada; interpolação pode suavizar hotspots.
+- Médias anuais/mensais mascaram picos diários.
+
+### População Exposta
+
+- Usa projeções populacionais do IBGE, não contagens censitárias.
+- Assume distribuição homogênea dentro do município.
+- Não considera mobilidade pendular ou exposição ocupacional.
+
+### Indicadores de Saúde
+
+- Frações atribuíveis são estimativas baseadas em risco relativo
+  de estudos internacionais, não em medidas diretas.
+- Intervalos de confiança refletem incerteza do modelo, não erro amostral.
+- Não estabelecem causalidade individual.
+
+## Riscos de Interpretação
+
+- **Não use para inferência causal**: o pacote fornece dados
+  observacionais agregados. Assóciações ecológicas não provam
+  causalidade.
+- **Cuidado com rankings municipais**: municípios pequenos têm
+  estimativas mais imprecisas.
+- **Não compare anos isólados**: use séries temporais e tendências.
+
+## LGPD e Privacidade
+
+- Todos os dados são **agregados e anonimizados**.
+- Nenhum dado individual ou identificável está presente.
+- O pacote não coleta, armazena ou transmite dados pessóais.
+
+## Citação
+
+```r
+citation("vigiar.rj")
+```
+
+## Declaração de IA
+
+Este pacote útilizou DeepSeek v4 Pro e ChátGPT GPT-5.5 para
+revisão de código e documentação. Vejá `AI_USE_DECLARATION.md`.

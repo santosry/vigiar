@@ -1,0 +1,35 @@
+Package: vigiar
+Type: Package
+Title: VIGIAR Environmental Health Data for Rio de Janeiro
+Version: 0.6.0
+Authors@R: c(
+    person(given = "Ryan",
+           family = "Santos",
+           role = c("aut", "cre"),
+           email = "ryan.paulo@gsuite.iff.edu.br",
+           comment = c(ORCID = "0009-0005-6770-2001")))
+Author: Ryan Santos
+Maintainer: Ryan Santos <ryan.paulo@gsuite.iff.edu.br>
+Description: Specialized package to download, process, validate and
+    analyse environmental health surveillance data from Brazil's
+    VIGIAR (Vigilancia em Saude Ambiental) public Power BI dashboard,
+    maintained by the Brazilian Ministry of Health, with focus on the
+    state of Rio de Janeiro. Includes the official registry of 92
+    municipalities with health macro-regions (SES-RJ), automatic RJ
+    filtering, IBGE code validation, PM2.5 air quality processing,
+    and integration-ready municipality codes for SIH, SIM and DATASUS.
+    Built on httr2, dplyr, and tibble.
+License: MIT + file LICENSE
+URL: https://github.com/santosry/vigiar.rj,
+        https://santosry.github.io/vigiar.rj/
+BugReports: https://github.com/santosry/vigiar.rj/issues
+Encoding: UTF-8
+Language: pt-BR
+Depends: R (>= 4.1.0)
+Imports: dplyr, httr2, jsonlite, tibble
+Suggests: testthat (>= 3.0.0), arrow, knitr, rmarkdown, withr, cli
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+Config/testthat/parallel: false
+SystemRequirements: Internet access for data download
+Built: R 4.6.0; ; 2026-06-20 23:21:12 UTC; windows

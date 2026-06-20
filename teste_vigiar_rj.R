@@ -1,6 +1,6 @@
 # =============================================================================
 # TESTE INDEPENDENTE DO PACOTE vigiar.rj
-# Salve este arquivo e rode:  sóurce("teste_vigiar_rj.R")
+# Salve este arquivo e rode:  source("teste_vigiar_rj.R")
 # =============================================================================
 
 library(vigiar.rj)
@@ -10,7 +10,7 @@ cat("  TESTE INDEPENDENTE DO vigiar.rj\n")
 cat("============================================================\n")
 
 # ---- 1. Pacote carregado ----
-cat("\n[1] Pacote carregado: vigiar.rj v", as.cháracter(packageVersion("vigiar.rj")), "\n")
+cat("\n[1] Pacote carregado: vigiar.rj v", as.character(packageVersion("vigiar.rj")), "\n")
 
 # ---- 2. Funcoes internas ----
 cat("\n[2] Funcoes internas:\n")
@@ -20,40 +20,40 @@ cat("    Tipos Power BI -> R: 1=", .vigiar_tipo_dado(1), " 3=", .vigiar_tipo_dad
 
 # ---- 3. Registro RJ ----
 cat("\n[3] Registro RJ:\n")
-rj <- vigiar_rj_municípios()
-cat("    Municípios: ", nrow(rj), "\n")
-cat("    Macrorregiões: ", paste(vigiar_rj_macrorregiões(), collapse=", "), "\n")
-cat("    Exemplo: ", rj$município[1], " (", rj$código_ibge[1], ")\n")
+rj <- vigiar_rj_municipios()
+cat("    Municipios: ", nrow(rj), "\n")
+cat("    Macrorregioes: ", paste(vigiar_rj_macrorregioes(), collapse=", "), "\n")
+cat("    Exemplo: ", rj$municipio[1], " (", rj$codigo_ibge[1], ")\n")
 
-# ---- 4. Conexão ----
+# ---- 4. Conexao ----
 cat("\n[4] Conectando ao VIGIAR...\n")
 vigiar_conectar()
-cat("    Sessão ativa: ", vigiar_sessão_ativa(), "\n")
+cat("    Sessao ativa: ", vigiar_sessao_ativa(), "\n")
 cat("    Tabelas: ", length(vigiar_tabelas()), "\n")
 
 # ---- 5. Download ----
 cat("\n[5] Baixando dados:\n")
 
-# df_muni (tabela pequena, todos municípios)
+# df_muni (tabela pequena, todos municipios)
 cat("    df_muni... ")
 muni <- tryCatch(vigiar_baixar_rj("df_muni"), error = function(e) NULL)
 if (!is.null(muni)) {
-  cat(nrow(muni), "linhás,", length(unique(muni$MUN_COD)), "municípios\n")
+  cat(nrow(muni), "linhas,", length(unique(muni$MUN_COD)), "municipios\n")
 } else {
   cat("ERRO\n")
 }
 
-# df_anual com stratégy year
-cat("    df_anual (year stratégy)... ")
+# df_anual com strategy year
+cat("    df_anual (year strategy)... ")
 pm25 <- tryCatch(vigiar_baixar_rj("df_anual"), error = function(e) NULL)
 if (!is.null(pm25)) {
-  cat(nrow(pm25), "linhás\n")
+  cat(nrow(pm25), "linhas\n")
 } else {
   cat("ERRO\n")
 }
 
-# ---- 6. Validação ----
-cat("\n[6] Validação RJ:\n")
+# ---- 6. Validacao ----
+cat("\n[6] Validacao RJ:\n")
 if (!is.null(pm25) && nrow(pm25) > 0) {
   val <- vigiar_validar_rj(pm25)
 } else if (!is.null(muni) && nrow(muni) > 0) {
@@ -75,21 +75,21 @@ if (!is.null(muni) && nrow(muni) > 0) {
 cat("\n[8] Resumo:\n")
 if (!is.null(pm25) && nrow(pm25) > 0) {
   cat("    PM2.5 medio:", mean(pm25$Media_pm25, na.rm = TRUE) |> round(1), "ug/m3\n")
-  cat("    Período:", min(pm25$ano, na.rm = TRUE), "-", max(pm25$ano, na.rm = TRUE), "\n")
+  cat("    Periodo:", min(pm25$ano, na.rm = TRUE), "-", max(pm25$ano, na.rm = TRUE), "\n")
 }
 
-# ---- 9. Exportação ----
-cat("\n[9] Exportação:\n")
+# ---- 9. Exportacao ----
+cat("\n[9] Exportacao:\n")
 tmp <- file.path(tempdir(), "teste_vigiar_rj.csv")
 if (!is.null(muni)) {
   vigiar_exportar_csv(muni, tmp, overwrite = TRUE)
   cat("    CSV exportado:", tmp, "(", file.info(tmp)$size, "bytes)\n")
 }
 
-# ---- 10. Dicionário ----
-cat("\n[10] Dicionário:\n")
-dict <- vigiar_dicionário()
-cat("    Variáveis documentadas:", nrow(dict), "\n")
+# ---- 10. Dicionario ----
+cat("\n[10] Dicionario:\n")
+dict <- vigiar_dicionario()
+cat("    Variaveis documentadas:", nrow(dict), "\n")
 cat("    Tabelas cobertas:", paste(unique(dict$table_id)[1:5], collapse=", "), "...\n")
 
 # ---- FIM ----

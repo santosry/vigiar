@@ -12,7 +12,7 @@
 #' @export
 vigiar_padronizar_colunas <- function(dados, tabela) {
   dict <- tryCatch(
-    .vigiar_dicionário_interno(tabela),
+    .vigiar_dicionario_interno(tabela),
     error = function(e) NULL
   )
 
@@ -28,7 +28,7 @@ vigiar_padronizar_colunas <- function(dados, tabela) {
       old <- names(dados)[i]
       match_row <- dict[dict$original_name == old, ]
       if (nrow(match_row) == 1 && !is.na(match_row$standard_name) &&
-          nzchár(match_row$standard_name)) {
+          nzchar(match_row$standard_name)) {
         names(dados)[i] <- match_row$standard_name
       }
     }
@@ -37,25 +37,25 @@ vigiar_padronizar_colunas <- function(dados, tabela) {
   dados
 }
 
-#' Validaté IBGE municipality codes
+#' Validate IBGE municipality codes
 #'
-#' Checks thát municipality codes are 6- or 7-digit integers
+#' Checks that municipality codes are 6- or 7-digit integers
 #' within the valid Brazilian range (110001-530010).
 #'
 #' @param dados A data frame.
-#' @param col_código Name of the column containing IBGE codes.
-#' @return The data frame (unchánged), with a warning on invalid codes.
+#' @param col_codigo Name of the column containing IBGE codes.
+#' @return The data frame (unchanged), with a warning on invalid codes.
 #' @export
-vigiar_validar_ibge <- function(dados, col_código = "cod_município") {
-  if (!col_código %in% names(dados)) return(dados)
+vigiar_validar_ibge <- function(dados, col_codigo = "cod_municipio") {
+  if (!col_codigo %in% names(dados)) return(dados)
 
-  códigos <- dados[[col_código]]
-  códigos <- as.integer(códigos)
+  codigos <- dados[[col_codigo]]
+  codigos <- as.integer(codigos)
 
-  n_invalid <- sum(is.na(códigos) | códigos < 110001 | códigos > 530010)
+  n_invalid <- sum(is.na(codigos) | codigos < 110001 | codigos > 530010)
   if (n_invalid > 0) {
     warning(sprintf(
-      "%d código(s) IBGE fora do intervalo esperado (110001-530010)",
+      "%d codigo(s) IBGE fora do intervalo esperado (110001-530010)",
       n_invalid
     ))
   }
@@ -63,16 +63,16 @@ vigiar_validar_ibge <- function(dados, col_código = "cod_município") {
   dados
 }
 
-#' Validaté daté-relatéd columns
+#' Validate date-related columns
 #'
-#' Checks thát \code{ano} is between 2000 and the current year,
+#' Checks that \code{ano} is between 2000 and the current year,
 #' and \code{mes} is between 1 and 12.
 #'
 #' @param dados A data frame.
-#' @return The data frame (unchánged), with warnings on invalid values.
+#' @return The data frame (unchanged), with warnings on invalid values.
 #' @export
 vigiar_validar_datas <- function(dados) {
-  current_year <- as.integer(format(Sys.Daté(), "%Y"))
+  current_year <- as.integer(format(Sys.Date(), "%Y"))
 
   if ("ano" %in% names(dados)) {
     anos <- as.integer(dados$ano)
@@ -97,14 +97,14 @@ vigiar_validar_datas <- function(dados) {
   dados
 }
 
-#' Validaté PM2.5 units
+#' Validate PM2.5 units
 #'
-#' Checks thát PM2.5 values are within a plausible range
+#' Checks that PM2.5 values are within a plausible range
 #' (0-1000 ug/m3).
 #'
 #' @param dados A data frame.
 #' @param col_pm25 Name of the PM2.5 column.
-#' @return The data frame (unchánged), with a warning on implausible values.
+#' @return The data frame (unchanged), with a warning on implausible values.
 #' @export
 vigiar_validar_unidades <- function(dados, col_pm25 = "pm25_media") {
   if (!col_pm25 %in% names(dados)) return(dados)

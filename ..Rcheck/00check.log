@@ -1,0 +1,235 @@
+* using log directory 'C:/Users/oorie/OneDrive/Documentos/TRABALHOS/PACOTEVIGIAR/vigiar/..Rcheck'
+* using R version 4.6.0 (2026-04-24 ucrt)
+* using platform: x86_64-w64-mingw32
+* R was compiled by
+    gcc.exe (GCC) 14.3.0
+    GNU Fortran (GCC) 14.3.0
+* running under: Windows 11 x64 (build 26200)
+* using session charset: UTF-8
+* current time: 2026-06-20 23:20:59 UTC
+* using options '--no-examples --no-tests --no-manual'
+* checking for file './DESCRIPTION' ... OK
+* checking extension type ... Package
+* this is package 'vigiar' version '0.6.0'
+* package encoding: UTF-8
+* checking package namespace information ... OK
+* checking package dependencies ... OK
+* checking if this is a source package ... OK
+* checking if there is a namespace ... OK
+* checking for executable files ... OK
+* checking for hidden files and directories ... NOTE
+Found the following hidden files and directories:
+  .Rhistory
+  .gitignore
+  inst/doc/.gitkeep
+  ..Rcheck
+  .git
+  .github
+These were most likely included in error. See section 'Package
+structure' in the 'Writing R Extensions' manual.
+* checking for portable file names ... OK
+* checking whether package 'vigiar' can be installed ... OK
+* checking installed package size ... OK
+* checking package directory ... OK
+* checking DESCRIPTION meta-information ... NOTE
+Checking should be performed on sources prepared by 'R CMD build'.
+* checking top-level files ... OK
+* checking for left-over files ... OK
+* checking index information ... OK
+* checking package subdirectories ... WARNING
+Found the following directory with the name of a check directory:
+  ./..Rcheck
+Most likely, these were included erroneously.
+Found the following CITATION file in a non-standard place:
+  CITATION.cff
+Most likely 'inst/CITATION' should be used instead.
+* checking code files for non-ASCII characters ... WARNING
+Found the following file with non-ASCII characters:
+  R/zzz.R
+Portable packages must use only ASCII characters in their R code and
+NAMESPACE directives, except perhaps in comments.
+Use \uxxxx escapes for other characters.
+Function 'tools::showNonASCIIfile' can help in finding non-ASCII
+characters in files.
+* checking R files for syntax errors ... OK
+* checking whether the package can be loaded ... OK
+* checking whether the package can be loaded with stated dependencies ... OK
+* checking whether the package can be unloaded cleanly ... OK
+* checking whether the namespace can be loaded with stated dependencies ... OK
+* checking whether the namespace can be unloaded cleanly ... OK
+* checking loading without being on the library search path ... OK
+* checking dependencies in R code ... OK
+* checking S3 generic/method consistency ... OK
+* checking replacement functions ... OK
+* checking foreign function calls ... OK
+* checking R code for possible problems ... NOTE
+.vigiar_parse_dados: no visible global function definition for
+  '.vigiar_converter_coluna'
+vigiar_rj_resumo: no visible binding for global variable '.data'
+Undefined global functions or variables:
+  .data .vigiar_converter_coluna
+* checking Rd files ... NOTE
+checkRd: (-1) process_fracao_atribuivel.Rd:1: \name should only contain printable ASCII characters
+* checking Rd metadata ... NOTE
+Invalid package aliases in Rd file 'vigiar-package.Rd':
+  'vigiar.rj-package'
+* checking Rd cross-references ... OK
+* checking for missing documentation entries ... WARNING
+Objetos de código não documentados:
+  'process_fracao_atribuivel' 'validate.vigiar_tbl'
+  'vigiar_resumo_fracao_atribuivel' 'vigiar_variaveis_nao_documentadas'
+  'vigiar_variaveis_orfas'
+All user-level objects in a package should have documentation entries.
+See chapter 'Writing R documentation files' in the 'Writing R
+Extensions' manual.
+* checking for code/documentation mismatches ... WARNING
+Functions or methods with usage in Rd file 'process_fracao_atribuivel.Rd' but not in code:
+  'process_fracao_atribuível'
+
+Functions or methods with usage in Rd file 'vigiar_resumo.Rd' but not in code:
+  'vigiar_resumo_fracao_atribuível'
+
+Functions or methods with usage in Rd file 'vigiar_tbl-methods.Rd' but not in code:
+  'validaté.vigiar_tbl'
+
+Functions or methods with usage in Rd file 'vigiar_validar_dicionario.Rd' but not in code:
+  'vigiar_variaveis_não_documentadas' 'vigiar_variaveis_órfãs'
+
+Codoc mismatches from Rd file 'process_exposicao_indoor.Rd':
+process_exposicao_indoor
+  Código: function(dados, tipo = c("exposicao", "desfecho"), ...)
+  Docs: function(dados, tipo = c("exposição", "desfecho"), ...)
+  Falhas na correspondência de valores padrões de argumentos:
+    Name: 'tipo' Code: c("exposicao", "desfecho") Docs: c("exposição", "desfecho")
+
+Codoc mismatches from Rd file 'process_indicadores_saude.Rd':
+process_indicadores_saude
+  Código: function(dados, agregacao = c("brasil", "uf", "municipio",
+                 "quartis"), ...)
+  Docs: function(dados, agregacao = c("brasil", "uf", "município",
+                 "quartis"), ...)
+  Falhas na correspondência de valores padrões de argumentos:
+    Name: 'agregacao' Code: c("brasil", "uf", "municipio", "quartis") Docs: c("brasil", "uf", "município", "quartis")
+
+Codoc mismatches from Rd file 'vigiar_baixar.Rd':
+vigiar_baixar
+  Código: function(tabela, colunas = NULL, ordenar_por = NULL, limite =
+                 NULL, timeout = 120, uf = "RJ", direcao = c("asc",
+                 "desc"))
+  Docs: function(tabela, colunas = NULL, ordenar_por = NULL, limite =
+                 NULL, timeout = 120, uf = NULL, direcao = c("asc",
+                 "desc"))
+  Falhas na correspondência de valores padrões de argumentos:
+    Name: 'uf' Code: "RJ" Docs: NULL
+
+Codoc mismatches from Rd file 'vigiar_baixar_rj.Rd':
+vigiar_baixar_rj
+  Código: function(tabela, strategy = c("auto", "direct", "year"), ...)
+  Docs: function(tabela, stratégy = c("auto", "direct", "year"), ...)
+  Nomes de argumentos no código que não estão nos documentos:
+    strategy
+  Nomes de argumentos nos documentos que não estão no código:
+    stratégy
+  Falas na correspondência de nomes de argumentos:
+    Position: 2 Code: strategy Docs: stratégy
+
+Codoc mismatches from Rd file 'vigiar_dicionario.Rd':
+vigiar_variaveis
+  Código: function(dominio = c("pm25", "populacao_exposta",
+                 "indicadores_saude", "fracao_atribuivel",
+                 "exposicao_indoor", "municipios", "all"))
+  Docs: function(dominio = c("pm25", "população_exposta",
+                 "indicadores_saúde", "fracao_atribuível",
+                 "exposição_indoor", "municípios", "all"))
+  Falhas na correspondência de valores padrões de argumentos:
+    Name: 'dominio'
+    Code: c("pm25", "populacao_exposta", "indicadores_saude", "fracao_atribuivel", 
+          "exposicao_indoor", "municipios", "all")
+    Docs: c("pm25", "população_exposta", "indicadores_saúde", "fracao_atribuível", 
+          "exposição_indoor", "municípios", "all")
+vigiar_descrever_variavel
+  Código: function(dominio, variavel)
+  Docs: function(dominio, variável)
+  Nomes de argumentos no código que não estão nos documentos:
+    variavel
+  Nomes de argumentos nos documentos que não estão no código:
+    variável
+  Falas na correspondência de nomes de argumentos:
+    Position: 2 Code: variavel Docs: variável
+
+Codoc mismatches from Rd file 'vigiar_rj_resumo.Rd':
+vigiar_rj_resumo
+  Código: function(dados, agregacao = c("municipio", "macrorregiao",
+                 "regiao_saude"))
+  Docs: function(dados, agregacao = c("município", "macrorregião",
+                 "região_saúde"))
+  Falhas na correspondência de valores padrões de argumentos:
+    Name: 'agregacao' Code: c("municipio", "macrorregiao", "regiao_saude") Docs: c("município", "macrorregião", "região_saúde")
+vigiar_rj_series
+  Código: function(dados, agregacao = c("macrorregiao",
+                 "regiao_saude"))
+  Docs: function(dados, agregacao = c("macrorregião", "região_saúde"))
+  Falhas na correspondência de valores padrões de argumentos:
+    Name: 'agregacao' Code: c("macrorregiao", "regiao_saude") Docs: c("macrorregião", "região_saúde")
+
+Codoc mismatches from Rd file 'vigiar_series.Rd':
+vigiar_serie_temporal
+  Código: function(dados, nivel = c("nacional", "uf", "municipio"))
+  Docs: function(dados, nivel = c("nacional", "uf", "município"))
+  Falhas na correspondência de valores padrões de argumentos:
+    Name: 'nivel' Code: c("nacional", "uf", "municipio") Docs: c("nacional", "uf", "município")
+vigiar_tendencia_descritiva
+  Código: function(dados, variavel = NULL, janela_media_movel = 3)
+  Docs: function(dados, variável = NULL, jánela_media_movel = 3)
+  Nomes de argumentos no código que não estão nos documentos:
+    variavel janela_media_movel
+  Nomes de argumentos nos documentos que não estão no código:
+    variável jánela_media_movel
+  Falas na correspondência de nomes de argumentos:
+    Position: 2 Code: variavel Docs: variável
+    Position: 3 Code: janela_media_movel Docs: jánela_media_movel
+vigiar_agregar_tempo
+  Código: function(dados, agregar_por = c("ano"), variavel = NULL,
+                 funcoes = list(media = function(x) mean(x, na.rm =
+                 TRUE), n = length))
+  Docs: function(dados, agregar_por = c("ano"), variável = NULL,
+                 funcoes = list(media = function(x) mean(x, na.rm =
+                 TRUE), n = length))
+  Nomes de argumentos no código que não estão nos documentos:
+    variavel
+  Nomes de argumentos nos documentos que não estão no código:
+    variável
+  Falas na correspondência de nomes de argumentos:
+    Position: 3 Code: variavel Docs: variável
+
+Codoc mismatches from Rd file 'vigiar_validar.Rd':
+vigiar_validar_ibge
+  Código: function(dados, col_codigo = "cod_municipio")
+  Docs: function(dados, col_código = "cod_município")
+  Nomes de argumentos no código que não estão nos documentos:
+    col_codigo
+  Nomes de argumentos nos documentos que não estão no código:
+    col_código
+  Falas na correspondência de nomes de argumentos:
+    Position: 2 Code: col_codigo Docs: col_código
+
+* checking Rd \usage sections ... OK
+* checking Rd contents ... OK
+* checking for unstated dependencies in examples ... OK
+* checking installed files from 'inst/doc' ... OK
+* checking files in 'vignettes' ... WARNING
+Files in the 'vignettes' directory newer than all files in 'inst/doc':
+  'convencoes-vigiar.Rmd' 'fluxo-download-processamento.Rmd'
+  'uso-responsavel-dados.Rmd' 'variaveis-vigiar.Rmd' 'vigiar.Rmd'
+* checking examples ... SKIPPED
+* checking for unstated dependencies in vignettes ... OK
+* checking package vignettes ... NOTE
+Package vignettes without corresponding tangle output:
+  'convencoes-vigiar.Rmd'
+  'fluxo-download-processamento.Rmd'
+  'uso-responsavel-dados.Rmd'
+  'variaveis-vigiar.Rmd'
+  'vigiar.Rmd'
+* checking re-building of vignette outputs ... OK
+* DONE
+Status: 5 WARNINGs, 6 NOTEs

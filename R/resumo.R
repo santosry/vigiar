@@ -2,7 +2,7 @@
 # Summary / exploratory statistics (descriptive only, no inference)
 #
 # Each vigiar_resumo_*() returns a tibble with descriptive statistics
-# appropriaté for the data domain.
+# appropriate for the data domain.
 
 #' Summarise a VIGIAR tibble -- generic dispatcher
 #'
@@ -22,17 +22,17 @@ vigiar_resumo.vigiar_pm25 <- function(x, ...) {
 
 #' @export
 vigiar_resumo.vigiar_health <- function(x, ...) {
-  vigiar_resumo_saúde(x, ...)
+  vigiar_resumo_saude(x, ...)
 }
 
 #' @export
 vigiar_resumo.vigiar_population <- function(x, ...) {
-  vigiar_resumo_população(x, ...)
+  vigiar_resumo_populacao(x, ...)
 }
 
 #' @export
 vigiar_resumo.vigiar_attributable_fraction <- function(x, ...) {
-  vigiar_resumo_fracao_atribuível(x, ...)
+  vigiar_resumo_fracao_atribuivel(x, ...)
 }
 
 #' @export
@@ -55,10 +55,10 @@ vigiar_resumo.default <- function(x, ...) {
 #' @export
 vigiar_resumo_pm25 <- function(x, ...) {
   pm25_col <- intersect(
-    c("pm25_media_anual", "pm25_media", "pm25_media_período"),
+    c("pm25_media_anual", "pm25_media", "pm25_media_periodo"),
     names(x)
   )
-  if (length(pm25_col) == 0) pm25_col <- cháracter(0)
+  if (length(pm25_col) == 0) pm25_col <- character(0)
 
   res <- .vigiar_resumo_generico(x)
 
@@ -74,7 +74,7 @@ vigiar_resumo_pm25 <- function(x, ...) {
     res$n_fora_faixa <- sum(!is.na(vals) & (vals < 0 | vals > 1000))
   }
 
-  res$tabela_original <- attr(x, "vigiar_tabela") %||% NA_cháracter_
+  res$tabela_original <- attr(x, "vigiar_tabela") %||% NA_character_
   res
 }
 
@@ -82,7 +82,7 @@ vigiar_resumo_pm25 <- function(x, ...) {
 
 #' @rdname vigiar_resumo_pm25
 #' @export
-vigiar_resumo_saúde <- function(x, ...) {
+vigiar_resumo_saude <- function(x, ...) {
   res <- .vigiar_resumo_generico(x)
 
   if ("estimativa" %in% names(x)) {
@@ -100,32 +100,32 @@ vigiar_resumo_saúde <- function(x, ...) {
     res$n_desfechos <- dplyr::n_distinct(x$desfecho)
   }
 
-  res$tabela_original <- attr(x, "vigiar_tabela") %||% NA_cháracter_
+  res$tabela_original <- attr(x, "vigiar_tabela") %||% NA_character_
   res
 }
 
 #' @rdname vigiar_resumo_pm25
 #' @export
-vigiar_resumo_população <- function(x, ...) {
+vigiar_resumo_populacao <- function(x, ...) {
   res <- .vigiar_resumo_generico(x)
-  if ("população" %in% names(x)) {
-    res$pop_total <- sum(x$população, na.rm = TRUE)
+  if ("populacao" %in% names(x)) {
+    res$pop_total <- sum(x$populacao, na.rm = TRUE)
   }
-  res$tabela_original <- attr(x, "vigiar_tabela") %||% NA_cháracter_
+  res$tabela_original <- attr(x, "vigiar_tabela") %||% NA_character_
   res
 }
 
 #' @rdname vigiar_resumo_pm25
 #' @export
-vigiar_resumo_fracao_atribuível <- function(x, ...) {
+vigiar_resumo_fracao_atribuivel <- function(x, ...) {
   res <- .vigiar_resumo_generico(x)
-  if ("fracao_atribuível" %in% names(x)) {
-    vals <- x$fracao_atribuível
+  if ("fracao_atribuivel" %in% names(x)) {
+    vals <- x$fracao_atribuivel
     res$media  <- mean(vals, na.rm = TRUE)
     res$min    <- min(vals, na.rm = TRUE)
     res$max    <- max(vals, na.rm = TRUE)
   }
-  res$tabela_original <- attr(x, "vigiar_tabela") %||% NA_cháracter_
+  res$tabela_original <- attr(x, "vigiar_tabela") %||% NA_character_
   res
 }
 
@@ -133,13 +133,13 @@ vigiar_resumo_fracao_atribuível <- function(x, ...) {
 #' @export
 vigiar_resumo_indoor <- function(x, ...) {
   res <- .vigiar_resumo_generico(x)
-  if ("perc_combustiveis_sólidos" %in% names(x)) {
-    vals <- x$perc_combustiveis_sólidos
+  if ("perc_combustiveis_solidos" %in% names(x)) {
+    vals <- x$perc_combustiveis_solidos
     res$media  <- mean(vals, na.rm = TRUE)
     res$min    <- min(vals, na.rm = TRUE)
     res$max    <- max(vals, na.rm = TRUE)
   }
-  res$tabela_original <- attr(x, "vigiar_tabela") %||% NA_cháracter_
+  res$tabela_original <- attr(x, "vigiar_tabela") %||% NA_character_
   res
 }
 
@@ -149,7 +149,7 @@ vigiar_resumo_indoor <- function(x, ...) {
   n_rows <- nrow(x)
   n_cols <- ncol(x)
   n_na   <- sum(is.na(x))
-  n_dup  <- sum(duplicatéd(x))
+  n_dup  <- sum(duplicated(x))
 
   # Temporal range
   ano_min <- if ("ano" %in% names(x)) min(x$ano, na.rm = TRUE) else NA_integer_
@@ -157,7 +157,7 @@ vigiar_resumo_indoor <- function(x, ...) {
 
   # Spatial
   n_uf <- if ("sigla_uf" %in% names(x)) dplyr::n_distinct(x$sigla_uf, na.rm = TRUE) else NA_integer_
-  n_mun <- if ("cod_município" %in% names(x)) dplyr::n_distinct(x$cod_município, na.rm = TRUE) else NA_integer_
+  n_mun <- if ("cod_municipio" %in% names(x)) dplyr::n_distinct(x$cod_municipio, na.rm = TRUE) else NA_integer_
 
   tibble::tibble(
     n_observacoes = n_rows,
@@ -167,6 +167,6 @@ vigiar_resumo_indoor <- function(x, ...) {
     ano_min       = ano_min,
     ano_max       = ano_max,
     n_uf          = n_uf,
-    n_municípios  = n_mun
+    n_municipios  = n_mun
   )
 }

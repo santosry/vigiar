@@ -1,8 +1,8 @@
-\name{process_exposição_indoor}
-\alias{process_exposição_indoor}
+\name{process_exposicao_indoor}
+\alias{process_exposicao_indoor}
 \title{Process indoor exposure data}
 \usage{
-process_exposição_indoor(dados, tipo = c("exposição", "desfecho"), ...)
+process_exposicao_indoor(dados, tipo = c("exposição", "desfecho"), ...)
 }
 \arguments{
   \item{dados}{Raw data from \code{vigiar_baixar("df_indoor")} or \code{"df_indoor_desfecho"}.}
@@ -18,6 +18,6 @@ process_exposição_indoor(dados, tipo = c("exposição", "desfecho"), ...)
 \examples{
 \dontrun{
 vigiar_conectar()
-indoor <- vigiar_baixar("df_indoor") |> process_exposição_indoor()
+indoor <- vigiar_baixar("df_indoor") |> process_exposicao_indoor()
 }
 }

@@ -1,15 +1,15 @@
-\name{vigiar_validar_dicionário}
-\alias{vigiar_validar_dicionário}
+\name{vigiar_validar_dicionario}
+\alias{vigiar_validar_dicionario}
 \alias{vigiar_tabelas_documentadas}
-\alias{vigiar_variáveis_não_documentadas}
-\alias{vigiar_variáveis_órfãs}
+\alias{vigiar_variaveis_não_documentadas}
+\alias{vigiar_variaveis_órfãs}
 \alias{vigiar_comparar_schema}
 \title{Dictionary validation tools}
 \usage{
 vigiar_tabelas_documentadas()
-vigiar_variáveis_não_documentadas()
-vigiar_variáveis_órfãs()
-vigiar_validar_dicionário()
+vigiar_variaveis_não_documentadas()
+vigiar_variaveis_órfãs()
+vigiar_validar_dicionario()
 vigiar_comparar_schema()
 }
 \value{
@@ -23,7 +23,7 @@ vigiar_comparar_schema()
 \examples{
 \dontrun{
 vigiar_conectar()
-vigiar_validar_dicionário()
+vigiar_validar_dicionario()
 vigiar_comparar_schema()
 }
 }

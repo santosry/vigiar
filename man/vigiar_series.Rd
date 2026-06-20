@@ -1,10 +1,10 @@
-\name{vigiar_série_temporal}
-\alias{vigiar_série_temporal}
+\name{vigiar_serie_temporal}
+\alias{vigiar_serie_temporal}
 \alias{vigiar_tendencia_descritiva}
 \alias{vigiar_agregar_tempo}
 \title{Descriptive time séries helpers}
 \usage{
-vigiar_série_temporal(dados, nivel = c("nacional", "uf", "município"))
+vigiar_serie_temporal(dados, nivel = c("nacional", "uf", "município"))
 vigiar_tendencia_descritiva(dados, variável = NULL, jánela_media_movel = 3)
 vigiar_agregar_tempo(dados, agregar_por = c("ano"), variável = NULL,
   funcoes = list(media = function(x) mean(x, na.rm = TRUE), n = length))
@@ -29,7 +29,7 @@ vigiar_agregar_tempo(dados, agregar_por = c("ano"), variável = NULL,
 \dontrun{
 vigiar_conectar()
 pm25 <- vigiar_baixar("df_anual") |> process_pm25()
-série <- vigiar_série_temporal(pm25, nivel = "nacional")
+série <- vigiar_serie_temporal(pm25, nivel = "nacional")
 tendencia <- vigiar_tendencia_descritiva(pm25)
 }
 }

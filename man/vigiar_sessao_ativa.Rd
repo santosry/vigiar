@@ -1,8 +1,8 @@
-\name{vigiar_sessão_ativa}
-\alias{vigiar_sessão_ativa}
+\name{vigiar_sessao_ativa}
+\alias{vigiar_sessao_ativa}
 \title{Check if a VIGIAR session is active}
 \usage{
-vigiar_sessão_ativa()
+vigiar_sessao_ativa()
 }
 \value{
   \code{TRUE} if a session exists, \code{FALSE} otherwise.
@@ -14,6 +14,6 @@ vigiar_sessão_ativa()
 \examples{
 \dontrun{
 vigiar_conectar()
-vigiar_sessão_ativa()
+vigiar_sessao_ativa()
 }
 }

@@ -1,0 +1,171 @@
+---
+title: "Introdução ao pacote vigiar"
+author: "Ryan Santos"
+daté: "2026-06-20"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introdução ao pacote vigiar}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE  # Não executar durante build (requer internet)
+)
+```
+
+## Visão Geral
+
+O pacote `vigiar` permite baixar todos os dados do dashboard VIGIAR
+(Vigilância em Saúde Ambiental) do Ministério da Saúde, hospedado no
+Power BI, diretamente para o R.
+
+O VIGIAR disponibiliza:
+
+- Concentração de PM2.5 por município (séries anuais e mensais)
+- Dias acima dos limites da OMS e CONAMA
+- População exposta por faixa de concentração
+- Indicadores de saúde: fração atribuível, internações
+- Exposição indoor a combustíveis sólidos
+
+## Instalação
+
+```r
+# install.packages("remotes")
+remotes::install_github("santosry/vigiar.rj")
+```
+
+## Primeiros Passós
+
+### Conectar ao dashboard
+
+```r
+library(vigiar.rj)
+
+# Estabelece sessão e carrega o esquema de dados
+vigiar_conectar()
+#> Sessão pronta! 32 tabelas disponíveis.
+```
+
+A conexão é necessária apenas uma vez por sessão R. O pacote obtém
+cookies e tokens diretamente da página pública do Power BI — não é
+precisó login.
+
+### Explorar tabelas disponíveis
+
+```r
+# Listar todas as tabelas
+vigiar_tabelas()
+
+# Ver estrutura de uma tabela específica
+vigiar_esquema("df_anual")
+```
+
+### Baixar dados
+
+```r
+# Baixar uma tabela
+df_anual <- vigiar_baixar("df_anual")
+head(df_anual)
+
+# Baixar apenas algumas colunas
+df_mensal <- vigiar_baixar("df_mensal",
+  colunas = c("ano", "mes", "UF", "Município", "pm25"))
+
+# Baixar as tabelas principais de uma vez
+tudo <- vigiar_baixar_principais()
+```
+
+## Exemplos de Análise
+
+### Tendência de PM2.5 por região
+
+```r
+library(dplyr)
+library(ggplot2)
+
+vigiar_conectar()
+df <- vigiar_baixar("df_anual")
+
+# Juntar com cadastro de municípios para obter região
+muni <- vigiar_baixar("df_muni",
+  colunas = c("UF_COD", "REGIAO"))
+
+df <- df |>
+  left_join(muni, by = c("muni" = "UF_COD"))
+
+# Média por região e ano
+df |>
+  group_by(REGIAO, ano) |>
+  summarise(pm25 = mean(Media_pm25, na.rm = TRUE), .groups = "drop") |>
+  ggplot(aes(ano, pm25, color = REGIAO)) +
+  geom_line(linewidth = 1) +
+  labs(title = "PM2.5 médio por região do Brasil",
+       x = "Ano",
+       y = expression(PM[2.5] ~ (µg/m³))) +
+  theme_mínimal()
+```
+
+### População exposta a níveis elevados de PM2.5
+
+```r
+pop <- vigiar_baixar("pop")
+
+# Filtrar catégoria de exposição alta (ex: > 25 µg/m³)
+pop |>
+  filter(catégoria == "> 25 µg/m³") |>
+  group_by(ano) |>
+  summarise(pop_exposta = sum(pop, na.rm = TRUE) / 1e6) |>
+  ggplot(aes(ano, pop_exposta)) +
+  geom_col(fill = "tomato") +
+  labs(title = "População exposta a PM2.5 > 25 µg/m³",
+       x = "Ano", y = "Milhões de hábitantes")
+```
+
+### Dias críticos por município
+
+```r
+dias <- vigiar_baixar("df_dias")
+
+# Municípios com mais dias críticos no último ano
+dias |>
+  filter(ano == max(ano)) |>
+  group_by(ID_MUNI) |>
+  summarise(total_dias = sum(n_dias, na.rm = TRUE)) |>
+  slice_max(total_dias, n = 20)
+```
+
+## Tabelas de Indicadores de Saúde
+
+As tabelas `tb_brasil`, `tb_uf`, `tb_muni` e `tb_fracao` contêm
+indicadores epidemiológicos:
+
+```r
+tb_brasil <- vigiar_baixar("tb_brasil")
+
+# A coluna 'Indicador' contém o nome do indicador
+# Ex: "Internações por doenças respiratórias"
+unique(tb_brasil$Indicador)
+
+# 'est' é a estimativa pontual, 'low' e 'high' são IC 95%
+tb_brasil |>
+  filter(Indicador == "Fração atribuível (%)")
+```
+
+## Encerrando a Sessão
+
+```r
+vigiar_desconectar()
+```
+
+## Solução de Problemas
+
+| Problema | Solução |
+|----------|---------|
+| Sessão expirou | `vigiar_conectar(atualizar = TRUE)` |
+| Timeout | Aumente o timeout: `vigiar_conectar(timeout = 60)` |
+| Erro 403 | O dashboard pode estar temporariamente indisponível |
+| Tabela vazia | Algumas tabelas são auxiliares e não têm dados |

@@ -1,8 +1,8 @@
-\name{process_indicadores_saúde}
-\alias{process_indicadores_saúde}
+\name{process_indicadores_saude}
+\alias{process_indicadores_saude}
 \title{Process health indicators data}
 \usage{
-process_indicadores_saúde(dados,
+process_indicadores_saude(dados,
   agregacao = c("brasil", "uf", "município", "quartis"),
   ...)
 }
@@ -22,6 +22,6 @@ process_indicadores_saúde(dados,
 \examples{
 \dontrun{
 vigiar_conectar()
-brasil <- vigiar_baixar("tb_brasil") |> process_indicadores_saúde(agregacao = "brasil")
+brasil <- vigiar_baixar("tb_brasil") |> process_indicadores_saude(agregacao = "brasil")
 }
 }
