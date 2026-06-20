@@ -28,4 +28,4 @@
 \author{
   \strong{Maintainer}: Ryan Santos \email{ryan.paulo@gsuite.iff.edu.br}
 }
-\keyword{package}
+\keyword{internal}
