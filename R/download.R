@@ -87,9 +87,10 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
 #'
 #' @param tabelas Character vector of table names. `NULL` = all.
 #' @param progress Show progress messages.
+#' @param delay Seconds to wait between downloads (rate limiting). Default 0.5.
 #' @return Named list of tibbles.
 #' @export
-vigiar_baixar_tudo <- function(tabelas = NULL, progress = TRUE) {
+vigiar_baixar_tudo <- function(tabelas = NULL, progress = TRUE, delay = 0.5) {
   if (is.null(.vigiar_env$sessao)) {
     stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
   }
@@ -122,6 +123,7 @@ vigiar_baixar_tudo <- function(tabelas = NULL, progress = TRUE) {
         NULL
       }
     )
+    if (delay > 0 && i < length(tabelas)) Sys.sleep(delay)
   }
 
   n_ok <- sum(!vapply(resultado, is.null, logical(1)))

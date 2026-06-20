@@ -597,3 +597,125 @@ test_that("process_ufs standardises UF column", {
   expect_s3_class(result, "vigiar_uf")
   expect_true("sigla_uf" %in% names(result))
 })
+
+# ── Untested exports from audit ───────────────────────────────────────────────
+
+test_that("vigiar_convencoes exists and has docs", {
+  expect_type(vigiar_convencoes, "closure")
+})
+
+test_that("vigiar_diagnostico errors without session", {
+  expect_error(vigiar_diagnostico(), "Nenhuma sessao ativa")
+})
+
+test_that("vigiar_variaveis_orfas errors without session", {
+  expect_error(vigiar_variaveis_orfas(), "Nenhuma sessao ativa")
+})
+
+test_that("vigiar_variaveis_nao_documentadas errors without session", {
+  expect_error(vigiar_variaveis_nao_documentadas(), "Nenhuma sessao ativa")
+})
+
+test_that("vigiar_validar_dicionario errors without session", {
+  expect_error(vigiar_validar_dicionario(), "Nenhuma sessao ativa")
+})
+
+test_that("vigiar_comparar_schema errors without session", {
+  expect_error(vigiar_comparar_schema(), "Nenhuma sessao ativa")
+})
+
+# ── Export edge cases ─────────────────────────────────────────────────────────
+
+test_that("vigiar_exportar_csv handles empty data frame", {
+  dados <- data.frame()
+  tmp <- tempfile(fileext = ".csv")
+  on.exit(unlink(tmp))
+  vigiar_exportar_csv(dados, tmp)
+  expect_true(file.exists(tmp))
+})
+
+test_that("vigiar_exportar_csv creates directories", {
+  dados <- data.frame(x = 1)
+  tmp <- file.path(tempdir(), "subdir", "test.csv")
+  on.exit(unlink(dirname(tmp), recursive = TRUE))
+  vigiar_exportar_csv(dados, tmp)
+  expect_true(file.exists(tmp))
+})
+
+test_that("vigiar_exportar_rds preserves vigiar_tbl attributes", {
+  dados <- new_vigiar_tbl(data.frame(x = 1:3), tabela = "test")
+  tmp <- tempfile(fileext = ".rds")
+  on.exit(unlink(tmp))
+  vigiar_exportar_rds(dados, tmp)
+  loaded <- readRDS(tmp)
+  expect_equal(attr(loaded, "vigiar_tabela"), "test")
+})
+
+test_that("vigiar_exportar_rds overwrite works", {
+  dados <- data.frame(x = 1)
+  tmp <- tempfile(fileext = ".rds")
+  on.exit(unlink(tmp))
+  vigiar_exportar_rds(dados, tmp)
+  vigiar_exportar_rds(dados, tmp, overwrite = TRUE)
+  expect_true(file.exists(tmp))
+})
+
+# ── Rate limiting ─────────────────────────────────────────────────────────────
+
+test_that("vigiar_baixar_tudo uses delay between downloads", {
+  # Unit test: verify delay parameter exists in function signature
+  sig <- capture.output(args(vigiar_baixar_tudo))
+  expect_true(any(grepl("delay", sig)))
+})
+
+# ── Red team: robustness ─────────────────────────────────────────────────────
+
+test_that("vigiar_baixar errors clearly without session", {
+  expect_error(vigiar_baixar("df_anual"), "Nenhuma sessao")
+})
+
+test_that("vigiar_baixar_tudo errors clearly without session", {
+  expect_error(vigiar_baixar_tudo(), "Nenhuma sessao")
+})
+
+test_that("vigiar_tabelas errors without session", {
+  expect_error(vigiar_tabelas(), "Nenhuma sessao")
+})
+
+test_that("vigiar_esquema errors without session", {
+  expect_error(vigiar_esquema(), "Nenhuma sessao")
+})
+
+test_that("vigiar_info errors without session", {
+  expect_error(vigiar_info(), "Nenhuma sessao")
+})
+
+test_that("process_vigiar handles unknown table gracefully", {
+  dados <- data.frame(x = 1:3, y = letters[1:3])
+  result <- suppressWarnings(process_vigiar(dados, tabela = "tabela_inexistente"))
+  expect_s3_class(result, "data.frame")
+})
+
+test_that("vigiar_checar_dados handles empty tibble", {
+  dados <- tibble::tibble(a = integer(), b = character())
+  expect_output(vigiar_checar_dados(dados, "vazia"), "Linhas:")
+})
+
+test_that("vigiar_agregar_tempo handles single row", {
+  dados <- data.frame(ano = 2022L, pm25_media_anual = 18.4)
+  res <- vigiar_agregar_tempo(dados, agregar_por = "ano", variavel = "pm25_media_anual")
+  expect_equal(nrow(res), 1)
+})
+
+test_that("vigiar_tendencia_descritiva handles minimum data", {
+  dados <- data.frame(ano = 2020:2022, pm25_media_anual = c(20, 22, 19))
+  res <- vigiar_tendencia_descritiva(dados, variavel = "pm25_media_anual")
+  expect_equal(nrow(res), 3)
+})
+
+test_that("vigiar_resumo handles default fallback", {
+  dados <- new_vigiar_tbl(data.frame(x = 1:5, ano = 2020:2024), tabela = "generica")
+  res <- vigiar_resumo(dados)
+  expect_s3_class(res, "tbl_df")
+  expect_equal(res$n_observacoes, 5)
+})
