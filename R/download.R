@@ -175,9 +175,103 @@ vigiar_baixar_principais <- function() {
     "df_anual", "df_mensal", "df_muni", "pop",
     "tb_brasil", "tb_uf", "tb_muni",
     "df_indoor", "df_indoor_desfecho",
-    "df_dias", "df_dias_conama"
+    "df_dias", "df_dias_conama",
+    "tb_fracao", "tb_quartis"
   )
 
   disponiveis <- intersect(principais, names(.vigiar_env$esquema))
   vigiar_baixar_tudo(disponiveis, progresso = TRUE)
+}
+
+#' Catálogo de tabelas com descrições
+#'
+#' Retorna um data.frame com todas as tabelas, número de colunas
+#' e descrição do conteúdo.
+#'
+#' @return Um tibble com colunas: tabela, colunas, descricao, categoria.
+#' @export
+vigiar_info <- function() {
+  if (is.null(.vigiar_env$esquema)) {
+    stop("Nenhuma sessão ativa. Execute vigiar_conectar() primeiro.")
+  }
+
+  catalogo <- .vigiar_catalogo_tabelas()
+
+  tabelas <- names(.vigiar_env$esquema)
+  n_cols <- sapply(.vigiar_env$esquema, length)
+
+  result <- data.frame(
+    tabela = tabelas,
+    colunas = n_cols,
+    stringsAsFactors = FALSE
+  )
+
+  # Adicionar descrições e categorias do catálogo
+  result$descricao <- catalogo$descricao[match(tabelas, catalogo$tabela)]
+  result$categoria <- catalogo$categoria[match(tabelas, catalogo$tabela)]
+
+  # Preencher NA com placeholder
+  result$descricao[is.na(result$descricao)] <- "Tabela auxiliar do dashboard"
+  result$categoria[is.na(result$categoria)] <- "Auxiliar"
+
+  tibble::as_tibble(result)[order(result$categoria, result$tabela), ]
+}
+
+#' Catálogo interno com descrições das tabelas
+#' @return data.frame com colunas tabela, descricao, categoria
+#' @keywords internal
+.vigiar_catalogo_tabelas <- function() {
+  data.frame(
+    tabela = c(
+      "df_anual", "df_mensal", "df_dias", "df_dias_conama",
+      "pop", "df_muni", "df_mes", "df_ano",
+      "tb_brasil", "tb_uf", "tb_muni", "tb_fracao", "tb_quartis",
+      "df_indoor", "df_indoor_desfecho",
+      "medidas", "legenda", "legenda_conama", "legenda_quartis", "legenda_indoor",
+      "Ano", "Selecao", "referencia", "referencia_conama", "seletor_indicador",
+      "aux_uf", "dados_ate", "last_update", "att_em"
+    ),
+    descricao = c(
+      "Médias anuais de PM2.5 por município",
+      "Médias mensais de PM2.5 por município (com coordenadas LAT/LON)",
+      "Dias acima do limite OMS (PM2.5 > 15 µg/m³ diário)",
+      "Dias acima do limite CONAMA (PM2.5 > 50 µg/m³ diário)",
+      "População residente por município, ano e categoria de exposição",
+      "Cadastro de municípios: região, UF, coordenadas, nomes",
+      "Tabela auxiliar de meses (número → nome)",
+      "Anos disponíveis na base",
+      "Indicadores de saúde agregados — BRASIL (frações atribuíveis, óbitos, internações)",
+      "Indicadores de saúde agregados — UF (est, low, high, desfecho, ano)",
+      "Indicadores de saúde por MUNICÍPIO (com código IBGE, lat, long)",
+      "Fração atribuível por indicador e desfecho",
+      "Quartis dos indicadores (q1, q2, q3)",
+      "Exposição a combustíveis sólidos em domicílios (indoor) por estado",
+      "Desfechos de saúde associados à poluição indoor",
+      "Tabela de medidas calculadas (61 colunas): alertas, rankings, proporções, médias móveis",
+      "Legenda de cores para concentração de PM2.5 (OMS)",
+      "Legenda de cores para concentração de PM2.5 (CONAMA)",
+      "Legenda de cores para quartis",
+      "Legenda de cores para exposição indoor",
+      "Seletor de ano (filtro do dashboard)",
+      "Seletor de indicador (filtro do dashboard)",
+      "Referência de valores OMS para o dashboard",
+      "Referência de valores CONAMA para o dashboard",
+      "Seletor de indicador de saúde",
+      "Tabela auxiliar de UF (código → nome)",
+      "Data dos últimos dados disponíveis",
+      "Data da última atualização do banco",
+      "Timestamp de atualização"
+    ),
+    categoria = c(
+      "Qualidade do Ar", "Qualidade do Ar", "Qualidade do Ar", "Qualidade do Ar",
+      "População", "Cadastro", "Auxiliar", "Auxiliar",
+      "Indicadores de Saúde", "Indicadores de Saúde", "Indicadores de Saúde",
+      "Indicadores de Saúde", "Indicadores de Saúde",
+      "Exposição Indoor", "Exposição Indoor",
+      "Medidas", "Auxiliar", "Auxiliar", "Auxiliar", "Auxiliar",
+      "Filtros", "Filtros", "Filtros", "Filtros", "Filtros",
+      "Auxiliar", "Metadados", "Metadados", "Metadados"
+    ),
+    stringsAsFactors = FALSE
+  )
 }

@@ -9,6 +9,7 @@ export(vigiar_tabelas)
 export(vigiar_baixar)
 export(vigiar_baixar_tudo)
 export(vigiar_baixar_principais)
+export(vigiar_info)
 
 # Imports
 importFrom(httr2, request, req_headers, req_user_agent, req_timeout,
