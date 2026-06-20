@@ -1,22 +1,26 @@
-# Package: vigiar.rj
-# Robust DSR (Data Shape Response) parser
+# R/parse.R
 #
-# Decodes Power BI's proprietary compressed format:
-#   DM0  – array of data blocks with schema (S), references (R), and values (C)
-#   Dict – ValueDicts for text column compression (0-based indices)
-#   Gzip – transparent decompression
+# DSR (Data Shape Response) parser for Power BI public endpoint.
+#
+# The Power BI queryData endpoint returns a compressed columnar format
+# called DSR.  Each row in the DM0 array carries:
+#   - "C": values for columns that CHANGED relative to the previous row
+#   - "R": bitmask indicating which columns REPEAT from previous row
+#          (bit i set => column i repeats).  R=3 (0b011) means cols 0,1
+#          repeat; R=6 (0b110) means cols 1,2 repeat.
+#   - ValueDicts: integer indices into a string dictionary (0‑based).
+#
+# This is a reverse‑engineered format — no official specification exists.
+# It may change without notice.  The parser validates structural
+# assumptions and fails loudly on mismatch.
 
 #' Parse a Power BI DSR response into a data.frame
 #'
-#' Handles the compressed Data Shape Response format used by
-#' Power BI's queryData endpoint.  Supports standard (R=3)
-#' and ORDER BY variants (R=4/R=6).
-#'
-#' @param resposta Raw API response list.
-#' @param tabela Table name for diagnostics.
-#' @param raw If TRUE, returns unprocessed rows list for debugging.
-#' @param schema_check If TRUE, warns on schema mismatch vs expected columns.
-#' @return A data.frame with decoded, type-converted columns.
+#' @param resposta Raw API response list from queryData endpoint.
+#' @param tabela Table name for diagnostic messages.
+#' @param raw If TRUE, return unprocessed rows list for debugging.
+#' @param schema_check If TRUE, warn on column count mismatch.
+#' @return A data.frame with decoded, type‑converted columns.
 #' @keywords internal
 .vigiar_parse_dados <- function(resposta, tabela,
                                  raw = FALSE, schema_check = TRUE) {
@@ -37,48 +41,73 @@
   }
 
   # ---- Schema extraction ----
-  first_entry <- dm0[[1L]]
-  if (is.null(first_entry$S)) {
-    warning(sprintf("[%s] Schema (S) ausente no primeiro bloco DM0.", tabela))
-    return(data.frame())
-  }
+  descriptor <- data_section$descriptor
+  col_names  <- vapply(descriptor$Select, `[[`, "", "Name", USE.NAMES = FALSE)
+  n_cols     <- length(col_names)
 
-  schema     <- first_entry$S
-  n_cols     <- length(schema)
-  col_names  <- vapply(data_section$descriptor$Select, `[[`, "",
-                       "Name", USE.NAMES = FALSE)
-
-  if (schema_check && length(col_names) != n_cols) {
-    warning(sprintf(
-      "[%s] Descriptor tem %d colunas mas schema tem %d.",
-      tabela, length(col_names), n_cols
-    ))
-    col_names <- vapply(schema, `[[`, "", "N", USE.NAMES = FALSE)
-  }
-
-  col_types <- lapply(schema, function(s) {
-    list(type = s$T, dn = s$DN %||% NULL)
-  })
   value_dicts <- ds$ValueDicts %||% list()
 
-  # ---- Row reconstruction ----
-  rows     <- .vigiar_reconstruct_rows(dm0, n_cols, tabela)
-  if (raw) return(rows)
+  # ---- Row reconstruction (bitmask‑based) ----
+  prev_row <- rep(NA, n_cols)
+  rows     <- vector("list", length(dm0))
+  out_idx  <- 0L
 
-  # ---- Dictionary resolution ----
-  for (j in seq_len(n_cols)) {
-    dn <- col_types[[j]]$dn
-    if (is.null(dn) || is.null(value_dicts[[dn]])) next
-    dict <- value_dicts[[dn]]
-    for (i in seq_along(rows)) {
-      val <- rows[[i]][[j]]
-      if (is.numeric(val) && val >= 0 && val < length(dict)) {
-        rows[[i]][[j]] <- dict[[as.integer(val) + 1L]]
+  for (i in seq_along(dm0)) {
+    entry <- dm0[[i]]
+    if (!is.list(entry)) next
+
+    repeat_mask <- as.integer(entry$R %||% 0L)
+    null_mask   <- as.integer(entry$`Ø` %||% entry[["S0"]] %||% 0L)
+    changed     <- entry$C %||% list()
+
+    row_vals <- vector("list", n_cols)
+    cursor   <- 1L
+
+    for (col in seq_len(n_cols)) {
+      bit <- bitwShiftL(1L, col - 1L)
+      repete <- bitwAnd(repeat_mask, bit) != 0L
+      nulo   <- bitwAnd(null_mask, bit) != 0L
+
+      if (repete) {
+        if (i == 1L) {
+          warning(sprintf("[%s] Linha 1 com mascara R=%d inesperada.",
+                          tabela, repeat_mask))
+          row_vals[[col]] <- NA
+        } else {
+          row_vals[[col]] <- prev_row[[col]]
+        }
+      } else if (nulo) {
+        row_vals[[col]] <- NA
+      } else if (cursor <= length(changed)) {
+        val <- changed[[cursor]]
+        cursor <- cursor + 1L
+        # Resolve dictionary if applicable
+        if (is.numeric(val) && col <= length(value_dicts)) {
+          dict <- value_dicts[[col]]
+          if (!is.null(dict)) {
+            idx <- as.integer(val) + 1L  # 0‑based dict
+            if (idx >= 1L && idx <= length(dict)) {
+              val <- dict[[idx]]
+            }
+          }
+        }
+        row_vals[[col]] <- val
+      } else {
+        row_vals[[col]] <- NA
       }
     }
+
+    prev_row     <- row_vals
+    out_idx      <- out_idx + 1L
+    rows[[out_idx]] <- row_vals
   }
+  rows <- rows[seq_len(out_idx)]
+
+  if (raw) return(rows)
 
   # ---- Build data.frame ----
+  if (length(rows) == 0L) return(data.frame())
+
   n_rows <- length(rows)
   df <- as.data.frame(matrix(nrow = n_rows, ncol = n_cols),
                       stringsAsFactors = FALSE)
@@ -92,81 +121,30 @@
 
   # ---- Type conversion ----
   for (j in seq_len(n_cols)) {
-    df[[j]] <- .vigiar_converter_coluna(df[[j]], col_types[[j]]$type)
+    col_type <- descriptor$Select[[j]]$Type %||% 1L
+    df[[j]] <- .vigiar_converter_coluna(df[[j]], col_type)
   }
 
   df
 }
 
-#' Reconstruct rows from DM0 entries
-#'
-#' Handles standard (R < n_cols), ORDER BY (R >= n_cols),
-#' and plain C entries.
-#'
-#' @param dm0 DM0 array from Power BI response.
-#' @param n_cols Number of columns expected.
-#' @param tabela Table name for warnings.
-#' @return List of rows (each row is a list of values).
+#' Convert a column to the appropriate R type
+#' @param x Column vector.
+#' @param type_code Power BI data type code.
+#' @return Converted vector.
 #' @keywords internal
-.vigiar_reconstruct_rows <- function(dm0, n_cols, tabela) {
-  prev_row <- NULL
-  rows     <- vector("list", length(dm0))
-  out_idx  <- 0L
+.vigiar_converter_coluna <- function(x, type_code) {
+  x <- lapply(x, function(v) if (is.null(v)) NA else v)
 
-  for (i in seq_along(dm0)) {
-    entry <- dm0[[i]]
-
-    if (!is.null(entry$S)) {
-      # Schema-carrying entry — always a full row
-      values <- entry$C
-    } else if (!is.null(entry$R)) {
-      r        <- entry$R
-      new_vals <- entry$C
-      keep     <- as.integer(r) - 1L
-
-      if (is.null(prev_row)) {
-        values <- new_vals
-      } else if (r >= as.integer(n_cols)) {
-        # Compressed format used with ORDER BY queries.
-        # R >= n_cols: C provides values for positions 0..len(C)-1
-        # and column (n_cols-1).  Intermediate columns repeat.
-        values <- prev_row
-        n_new  <- length(new_vals)
-        if (n_cols == 4L && n_new == 2L) {
-          values[[1L]] <- new_vals[[1L]]       # muni
-          values[[4L]] <- new_vals[[2L]]       # PM2.5
-        } else if (n_cols == 4L && n_new == 3L) {
-          values[[1L]] <- new_vals[[1L]]
-          values[[2L]] <- new_vals[[2L]]
-          values[[4L]] <- new_vals[[3L]]
-        } else {
-          for (k in seq_len(min(n_new, n_cols))) {
-            values[[k]] <- new_vals[[k]]
-          }
-        }
-      } else if (keep > 0L) {
-        values <- c(prev_row[seq_len(keep)], new_vals)
-      } else {
-        values <- new_vals
-      }
-    } else if (!is.null(entry$C)) {
-      values <- entry$C
-    } else {
-      next
-    }
-
-    # Pad or truncate
-    len_val <- length(values)
-    if (len_val < n_cols) {
-      values <- c(values, rep(list(NA), n_cols - len_val))
-    } else if (len_val > n_cols) {
-      values <- values[seq_len(n_cols)]
-    }
-
-    prev_row     <- values
-    out_idx      <- out_idx + 1L
-    rows[[out_idx]] <- values
-  }
-
-  rows[seq_len(out_idx)]
+  switch(as.character(type_code),
+    `1` = as.character(unlist(x)),
+    `2` = as.numeric(unlist(x)),
+    `3` = as.numeric(unlist(x)),
+    `4` = as.integer(unlist(x)),
+    `5` = as.logical(unlist(x)),
+    `6` = as.Date(unlist(x)),
+    `7` = as.POSIXct(unlist(x), origin = "1970-01-01", tz = "UTC"),
+    `8` = as.numeric(unlist(x)),
+    as.character(unlist(x))
+  )
 }
