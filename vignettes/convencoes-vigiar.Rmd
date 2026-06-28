@@ -1,5 +1,5 @@
 ---
-title: "Convencoes VIGIAR — Padronização de Variáveis"
+title: "Convencoes VIGIAR - Padronização de Variáveis"
 author: "Ryan Santos"
 date: "2026-06-20"
 output: rmarkdown::html_vignette
@@ -36,8 +36,8 @@ padronização adotadas pelo pacote `vigiar`.
 
 | Original | Padronizado | Tipo | Unidade |
 |----------|------------|------|---------|
-| `muni`, `ID_MUNI` | `cod_município` | integer | — |
-| `UF` | `sigla_uf` | cháracter | — |
+| `muni`, `ID_MUNI` | `cod_município` | integer | - |
+| `UF` | `sigla_uf` | cháracter | - |
 | `Media_pm25` | `pm25_media_anual` | numeric | µg/m³ |
 | `pm25` | `pm25_media` | numeric | µg/m³ |
 | `t_dias` | `pm25_media_período` | numeric | µg/m³ |
@@ -45,27 +45,27 @@ padronização adotadas pelo pacote `vigiar`.
 | `n_dias_conama` | `n_dias_criticos_conama` | integer | dias |
 | `LAT` | `latitude` | numeric | graus decimais |
 | `LON` | `longitude` | numeric | graus decimais |
-| `Catégoria_pm25` | `catégoria_oms` | cháracter | — |
-| `Catégoria_pm25_conama` | `catégoria_conama` | cháracter | — |
+| `Catégoria_pm25` | `catégoria_oms` | cháracter | - |
+| `Catégoria_pm25_conama` | `catégoria_conama` | cháracter | - |
 
 ### Indicadores de Saúde
 
 | Original | Padronizado | Tipo | Unidade |
 |----------|------------|------|---------|
-| `Indicador` | `indicador` | cháracter | — |
+| `Indicador` | `indicador` | cháracter | - |
 | `n` | `população_exposta` | numeric | hábitantes |
 | `est` | `estimativa` | numeric | varia |
 | `low` | `ic_inferior` | numeric | varia |
 | `high` | `ic_superior` | numeric | varia |
-| `desfecho` | `desfecho` | cháracter | — |
+| `desfecho` | `desfecho` | cháracter | - |
 | `q1`, `q2`, `q3` | `quartil_1`, `quartil_2`, `quartil_3` | numeric | varia |
 
 ### Exposição Indoor
 
 | Original | Padronizado | Tipo | Unidade |
 |----------|------------|------|---------|
-| `Code` | `cod_uf` | integer | — |
-| `Ano` | `ano` | integer | — |
+| `Code` | `cod_uf` | integer | - |
+| `Ano` | `ano` | integer | - |
 | `comb_sól` | `prop_combustiveis_sólidos` | numeric | proporção |
 | `percent_comb` | `percentual_combustiveis` | numeric | % |
 | `pop_exposta` | `população_exposta` | numeric | hábitantes |

@@ -1,10 +1,10 @@
 ---
-title: "Introdução ao pacote vigiar"
+title: "Introducao ao pacote vigiar"
 author: "Ryan Santos"
 date: "2026-06-20"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Introdução ao pacote vigiar}
+  %\VignetteIndexEntry{Introducao ao pacote vigiar}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
