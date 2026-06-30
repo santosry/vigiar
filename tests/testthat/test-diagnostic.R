@@ -2,7 +2,7 @@
 library(testthat)
 library(vigiar)
 
-# ── Helper data ───────────────────────────────────────────────────────────────
+# -- Helper data ---------------------------------------------------------------
 
 .make_pm25_data <- function(n_muni = 10, years = 2018:2022, with_issues = FALSE) {
   municipios <- c(330010, 330015, 330020, 330022, 330023,
@@ -55,7 +55,7 @@ library(vigiar)
   tibble::as_tibble(do.call(rbind, rows))
 }
 
-# ── Diagnostic construction ───────────────────────────────────────────────────
+# -- Diagnostic construction ---------------------------------------------------
 
 test_that("new_vigiar_diagnostic creates proper structure", {
   dados <- data.frame(x = 1:3)
@@ -95,7 +95,7 @@ test_that("vigiar_diagnosticar_serie errors on missing columns", {
   expect_equal(diag$severidade, "critico")
 })
 
-# ── Individual checks ─────────────────────────────────────────────────────────
+# -- Individual checks ---------------------------------------------------------
 
 test_that("vigiar_checar_ibge detects invalid codes", {
   dados <- data.frame(cod_municipio = c(355030L, 999999L, 110001L))
@@ -204,7 +204,7 @@ test_that("vigiar_classificar_alertas returns ok when no issues", {
   expect_equal(diag$severidade, "ok")
 })
 
-# ── S3 methods ────────────────────────────────────────────────────────────────
+# -- S3 methods ----------------------------------------------------------------
 
 test_that("print.vigiar_diagnostic works without error", {
   dados <- data.frame(x = 1:3)
@@ -226,7 +226,7 @@ test_that("vigiar_relatorio_diagnostico works without error", {
   expect_no_error(vigiar_relatorio_diagnostico(diag))
 })
 
-# ── Edge cases ────────────────────────────────────────────────────────────────
+# -- Edge cases ----------------------------------------------------------------
 
 test_that("vigiar_diagnosticar_serie handles empty data", {
   dados <- data.frame(
@@ -269,14 +269,14 @@ test_that("diagnostic functions dont break with extra columns", {
   expect_s3_class(diag, "vigiar_diagnostic")
 })
 
-test_that("error messages are in Portuguese", {
+test_that("missing-column diagnostic message is clear", {
   dados <- data.frame(x = 1:3)
   diag <- vigiar_diagnosticar_serie(dados)
   msgs <- vapply(diag$resultados, `[[`, "", "mensagem")
-  expect_true(any(grepl("encontrada", msgs)))
+  expect_true(any(grepl("not found|nao encontrada|nao encontrado", msgs)))
 })
 
-# ── Scope parameter ───────────────────────────────────────────────────────────
+# -- Scope parameter -----------------------------------------------------------
 
 test_that("vigiar_diagnosticar_serie respects escopo = nacional", {
   dados <- data.frame(

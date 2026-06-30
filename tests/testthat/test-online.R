@@ -16,3 +16,20 @@ if (!online_tests) {
 }
 
 # If we get here, online tests are enabled
+
+test_that("vigiar_baixar_rj downloads RJ data and computes coverage", {
+  vigiar_conectar()
+  withr::defer(vigiar_desconectar(), testthat::teardown_env())
+
+  dados <- suppressWarnings(vigiar_baixar_rj("df_anual", validar_cobertura = TRUE))
+  cov <- vigiar_rj_cobertura(dados)
+  ausentes <- vigiar_rj_municipios_ausentes(dados)
+
+  expect_s3_class(dados, "tbl_df")
+  expect_true(nrow(dados) > 0)
+  expect_s3_class(cov, "tbl_df")
+  expect_true(cov$n_municipios_presentes > 0)
+  expect_lte(cov$n_municipios_presentes, 92)
+  expect_s3_class(ausentes, "tbl_df")
+  expect_true(all(dados$codigo_ibge_6 %in% vigiar_rj_municipios()$codigo_ibge_6))
+})

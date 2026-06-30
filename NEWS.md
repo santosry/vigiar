@@ -1,3 +1,29 @@
+# vigiar 0.7.1.9000
+
+## Rio de Janeiro completeness hardening
+
+* Added `vigiar_baixar_rj()` with RJ registry filtering, 92-municipality
+  coverage metadata, optional cache, optional snapshots, and explicit failure
+  when full RJ coverage is required but not present.
+* Added `vigiar_rj_cobertura()` and `vigiar_rj_municipios_ausentes()` for
+  coverage checks overall, by year, by month, by year-month, by health
+  macro-region, and by health region.
+* Added safe municipality code normalization for 6-digit and 7-digit IBGE
+  codes. The package standard remains the 6-digit IBGE municipality code, with
+  7-digit RJ codes stored in the internal registry for interoperability.
+* Added `vigiar_baixar_rj_completo()` as an honest preparatory interface for
+  partitioned downloads. It does not claim completeness when validated
+  server-side filters are unavailable.
+* Added `vigiar_plot_pm25_rj()` for optional exploratory PM2.5 plots when
+  `ggplot2` is installed.
+* Integrated RJ coverage and possible API truncation into
+  `vigiar_diagnosticar_serie(..., escopo = "rj")`.
+* Added offline RJ completeness tests, an optional online RJ download test, and
+  `data-raw/check-rj-download-completeness.R` for manual source validation.
+* Updated README, pkgdown reference, and vignettes with offline-safe RJ
+  examples and scientific caveats about aggregate data, source availability,
+  truncation, and ecological inference.
+
 # vigiar 0.7.0
 
 ## New: Benchmark & Performance

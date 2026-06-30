@@ -69,8 +69,7 @@ vigiar_diagnosticar_serie <- function(dados,
 
   # Auto-detect columns
   if (is.null(col_muni)) {
-    col_muni <- intersect(c("cod_municipio", "muni", "ID_MUNI", "id_muni",
-                            "codigo_ibge", "cod_ibge", "MUN_COD"), names(dados))[1]
+    col_muni <- .vigiar_coluna_municipio(dados)
   }
   if (is.null(col_pm25)) {
     col_pm25 <- intersect(c("pm25_media_anual", "pm25_media", "pm25",
@@ -148,45 +147,44 @@ vigiar_checar_ibge <- function(diag, dados, col_muni, uf = "RJ",
       sprintf("Coluna '%s' nao encontrada nos dados.", col_muni)))
   }
 
-  codigos <- as.integer(dados[[col_muni]])
-  codigos <- codigos[!is.na(codigos)]
+  codigos_raw <- dados[[col_muni]]
+  codigos_norm <- .vigiar_normalizar_codigo_municipio(codigos_raw)
+  codigos <- codigos_norm[!is.na(codigos_norm)]
   n_total <- length(codigos)
 
   if (n_total == 0) {
     return(.vigiar_add_issue(diag, "critico",
-      "Nenhum codigo IBGE valido encontrado (todos NA)."))
+      "No valid municipality code was detected."))
   }
 
-  # Valid range check
-  invalidos <- codigos[codigos < 110001 | codigos > 530010]
-  n_invalid <- length(invalidos)
+  n_invalid <- sum(is.na(codigos_norm) & !is.na(codigos_raw))
 
   if (n_invalid > 0) {
     diag <- .vigiar_add_issue(diag, "critico",
-      sprintf("%d codigos IBGE fora do intervalo esperado (110001-530010): %s",
-              n_invalid, paste(utils::head(invalidos, 10), collapse = ", ")))
+      sprintf("%d municipality code(s) could not be safely normalized to 6-digit IBGE codes.",
+              n_invalid))
   }
 
   # NA check
-  n_na <- sum(is.na(dados[[col_muni]]))
+  n_na <- sum(is.na(codigos_raw))
   if (n_na > 0) {
     pct <- round(100 * n_na / nrow(dados), 1)
     if (pct > 50) {
       diag <- .vigiar_add_issue(diag, "problema",
-        sprintf("%d (%.1f%%) codigos IBGE ausentes.", n_na, pct))
+        sprintf("%d (%.1f%%) municipality codes are missing.", n_na, pct))
     } else if (pct > 0) {
       diag <- .vigiar_add_issue(diag, "aviso",
-        sprintf("%d (%.1f%%) codigos IBGE ausentes.", n_na, pct))
+        sprintf("%d (%.1f%%) municipality codes are missing.", n_na, pct))
     }
   }
 
   # RJ check
   if (!is.null(uf) && toupper(uf) == "RJ" && escopo == "rj") {
-    rj_codes <- RJ_MUNICIPIOS$codigo_ibge
+    rj_codes <- RJ_MUNICIPIOS$codigo_ibge_6
     fora_rj <- setdiff(unique(codigos), rj_codes)
     if (length(fora_rj) > 0) {
       diag <- .vigiar_add_issue(diag, "problema",
-        sprintf("%d codigos nao pertencem ao RJ: %s",
+        sprintf("%d code(s) do not belong to Rio de Janeiro: %s",
                 length(fora_rj), paste(utils::head(fora_rj, 10), collapse = ", ")))
     }
   }
@@ -196,7 +194,7 @@ vigiar_checar_ibge <- function(diag, dados, col_muni, uf = "RJ",
   diag$metricas$n_ibge_ausentes <- n_na
 
   if (n_invalid == 0 && n_na == 0) {
-    .vigiar_add_issue(diag, "ok", sprintf("IBGE: %d codigos validos.", n_total))
+    .vigiar_add_issue(diag, "ok", sprintf("IBGE: %d valid municipality code(s).", n_total))
   }
 
   diag
@@ -321,71 +319,111 @@ vigiar_checar_cobertura_espacial <- function(diag, dados,
                                               escopo = "rj") {
   if (!col_muni %in% names(dados)) return(diag)
 
-  codigos <- unique(as.integer(dados[[col_muni]]))
+  codigos <- unique(.vigiar_normalizar_codigo_municipio(dados[[col_muni]]))
   codigos <- codigos[!is.na(codigos)]
   n_muni <- length(codigos)
   diag$metricas$n_municipios <- n_muni
 
   if (n_muni == 0) {
     return(.vigiar_add_issue(diag, "critico",
-      "Nenhum municipio encontrado na cobertura espacial."))
+      "Critical: no valid RJ municipality code was detected."))
   }
 
   # RJ-specific checks
   if (!is.null(uf) && toupper(uf) == "RJ" && escopo == "rj") {
-    rj_codes <- RJ_MUNICIPIOS$codigo_ibge
-    presentes <- intersect(codigos, rj_codes)
-    faltantes <- setdiff(rj_codes, codigos)
-    pct <- round(100 * length(presentes) / 92, 1)
+    cobertura <- suppressWarnings(vigiar_rj_cobertura(dados, por = "geral"))
+    presentes <- cobertura$n_municipios_presentes[[1]]
+    faltantes <- cobertura$n_ausentes[[1]]
+    pct <- cobertura$cobertura_pct[[1]]
 
-    diag$metricas$rj_presentes <- length(presentes)
-    diag$metricas$rj_faltantes <- length(faltantes)
+    diag$metricas$rj_presentes <- presentes
+    diag$metricas$rj_faltantes <- faltantes
     diag$metricas$rj_cobertura_pct <- pct
+    diag$metricas$rj_municipios_ausentes <- cobertura$municipios_ausentes[[1]]
+    diag$metricas$rj_macrorregioes_incompletas <- cobertura$macrorregioes_incompletas[[1]]
 
     if (pct < 5) {
       diag <- .vigiar_add_issue(diag, "critico",
-        sprintf("Cobertura RJ: apenas %.0f%% (%d/92) municipios.", pct, length(presentes)))
+        "Critical: no valid Rio de Janeiro municipality code was detected.")
     } else if (pct < 30) {
       diag <- .vigiar_add_issue(diag, "problema",
-        sprintf("Cobertura RJ baixa: %.0f%% (%d/92) municipios. Inferencias limitadas.", pct, length(presentes)))
+        sprintf("Problem: low RJ coverage, %d/92 municipalities (%.0f%%).",
+                presentes, pct))
     } else if (pct < 60) {
       diag <- .vigiar_add_issue(diag, "aviso",
-        sprintf("Cobertura RJ parcial: %.0f%% (%d/92) municipios. %d ausentes.",
-                pct, length(presentes), length(faltantes)))
+        sprintf("Warning: partial RJ coverage, %d/92 municipalities. %d absent.",
+                presentes, faltantes))
     } else if (pct < 100) {
       diag <- .vigiar_add_issue(diag, "aviso",
-        sprintf("Cobertura RJ: %.0f%% (%d/92) municipios. %d ausentes.",
-                pct, length(presentes), length(faltantes)))
+        sprintf("Warning: RJ coverage is incomplete, %d/92 municipalities. %d absent.",
+                presentes, faltantes))
     } else {
       .vigiar_add_issue(diag, "ok",
-        sprintf("Cobertura RJ: 100%% (%d municipios).", 92))
+        "OK: complete RJ coverage, 92/92 municipalities.")
     }
 
-    # Macro-region coverage
-    merged <- merge(
-      data.frame(codigo_ibge = codigos),
-      RJ_MUNICIPIOS,
-      by = "codigo_ibge", all.x = TRUE
-    )
-    by_region <- table(merged$macrorregiao_saude)
+    if (isTRUE(attr(dados, "vigiar_possivel_truncamento"))) {
+      diag <- .vigiar_add_issue(diag, "problema",
+        "Possible truncation: response reached an approximate API limit; use partitioned download.")
+    }
+
+    by_region <- table(RJ_MUNICIPIOS$macrorregiao_saude[
+      RJ_MUNICIPIOS$codigo_ibge_6 %in% codigos
+    ])
     diag$metricas$macroregioes <- as.list(by_region)
 
-    for (regiao in names(by_region)) {
+    for (regiao in cobertura$macrorregioes_incompletas[[1]]) {
       expected <- sum(RJ_MUNICIPIOS$macrorregiao_saude == regiao)
-      observed <- as.integer(by_region[regiao])
+      observed <- if (regiao %in% names(by_region)) as.integer(by_region[regiao]) else 0L
       if (observed < 3 && expected > 3) {
         diag <- .vigiar_add_issue(diag, "problema",
-          sprintf("Macrorregiao '%s': apenas %d/%d municipios.", regiao, observed, expected))
+          sprintf("Macro-region '%s': only %d/%d municipalities.", regiao, observed, expected))
       } else if (observed < expected * 0.5) {
         diag <- .vigiar_add_issue(diag, "aviso",
-          sprintf("Macrorregiao '%s': baixa cobertura (%d/%d).", regiao, observed, expected))
+          sprintf("Macro-region '%s': low coverage (%d/%d).", regiao, observed, expected))
+      }
+    }
+
+    if ("ano" %in% names(dados)) {
+      cobertura_ano <- suppressWarnings(vigiar_rj_cobertura(dados, por = "ano"))
+      incomplete_years <- cobertura_ano[!cobertura_ano$completo, , drop = FALSE]
+      diag$metricas$rj_cobertura_por_ano <- cobertura_ano
+      for (i in seq_len(nrow(incomplete_years))) {
+        row <- incomplete_years[i, ]
+        if (row$cobertura_pct < 40) {
+          diag <- .vigiar_add_issue(diag, "problema",
+            sprintf("Problem: low RJ coverage in %d, %d/92 municipalities.",
+                    row$ano, row$n_municipios_presentes))
+        } else if (row$cobertura_pct < 100) {
+          diag <- .vigiar_add_issue(diag, "aviso",
+            sprintf("Warning: incomplete RJ coverage in %d, %d/92 municipalities.",
+                    row$ano, row$n_municipios_presentes))
+        }
+      }
+    }
+
+    if (all(c("ano", "mes") %in% names(dados))) {
+      cobertura_ano_mes <- suppressWarnings(vigiar_rj_cobertura(dados, por = "ano_mes"))
+      incomplete_ano_mes <- cobertura_ano_mes[!cobertura_ano_mes$completo, , drop = FALSE]
+      diag$metricas$rj_cobertura_por_ano_mes <- cobertura_ano_mes
+      for (i in seq_len(nrow(incomplete_ano_mes))) {
+        row <- incomplete_ano_mes[i, ]
+        if (row$cobertura_pct < 40) {
+          diag <- .vigiar_add_issue(diag, "problema",
+            sprintf("Problem: low RJ coverage in %d-%02d, %d/92 municipalities.",
+                    row$ano, row$mes, row$n_municipios_presentes))
+        } else if (row$cobertura_pct < 100) {
+          diag <- .vigiar_add_issue(diag, "aviso",
+            sprintf("Warning: incomplete RJ coverage in %d-%02d, %d/92 municipalities.",
+                    row$ano, row$mes, row$n_municipios_presentes))
+        }
       }
     }
   }
 
   if (n_muni < 5 && escopo != "nacional") {
     diag <- .vigiar_add_issue(diag, "aviso",
-      sprintf("Apenas %d municipios na base. Inferencias espaciais limitadas.", n_muni))
+      sprintf("Only %d municipalities are present. Spatial inference is limited.", n_muni))
   }
 
   diag
@@ -699,28 +737,32 @@ summary.vigiar_diagnostic <- function(object, ...) {
 }
 
 .vigiar_gerar_recomendacoes <- function(diag) {
-  recs <- character(0)
+  recs <- c(
+    "[INFO] VIGIAR data are aggregated public surveillance data; available data are not automatically complete data.",
+    "[INFO] PM2.5 may be estimated or modelled; verify suitability before epidemiologic inference.",
+    "[INFO] Avoid individual-level or causal claims from municipal aggregate series without an appropriate study design."
+  )
 
   for (r in diag$resultados) {
     if (r$severidade == "critico") {
-      recs <- c(recs, paste0("[CRITICO] ", r$mensagem, " Corrija antes de qualquer analise."))
+      recs <- c(recs, paste0("[CRITICAL] ", r$mensagem, " Resolve this before analysis."))
     }
     if (r$severidade == "problema") {
-      recs <- c(recs, paste0("[PROBLEMA] ", r$mensagem, " Investigue a causa antes de modelar."))
+      recs <- c(recs, paste0("[PROBLEM] ", r$mensagem, " Investigate before modelling."))
     }
   }
 
   # Contextual recommendations
   if (diag$tem_coluna_mes %||% FALSE) {
-    recs <- c(recs, "[INFO] Dados mensais detectados. Verifique completude por municipio-mes antes de agregar.")
+    recs <- c(recs, "[INFO] Monthly data detected. Check municipality-month completeness before aggregation.")
   }
 
   if (!is.null(diag$metricas$rj_cobertura_pct) && diag$metricas$rj_cobertura_pct < 80) {
-    recs <- c(recs, "[AVISO] Cobertura municipal insuficiente para inferencias por macrorregiao. Considere analise exploratoria apenas.")
+    recs <- c(recs, "[WARNING] Municipal coverage is insufficient for robust macro-region inference.")
   }
 
   if (!is.null(diag$metricas$pm25_pct_ausente) && diag$metricas$pm25_pct_ausente > 20) {
-    recs <- c(recs, "[AVISO] Alta taxa de dados faltantes de PM2.5. Imputacao pode introduzir vies.")
+    recs <- c(recs, "[WARNING] High PM2.5 missingness. Imputation may introduce bias.")
   }
 
   diag$recomendacoes <- recs
