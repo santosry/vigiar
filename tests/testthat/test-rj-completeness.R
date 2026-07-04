@@ -61,6 +61,18 @@ library(vigiar)
       mes = list(nome = "mes", tipo = "integer"),
       n_dias = list(nome = "n_dias", tipo = "integer")
     ),
+    df_dias_conama = list(
+      ID_MUNI = list(nome = "ID_MUNI", tipo = "integer"),
+      ano = list(nome = "ano", tipo = "integer"),
+      mes = list(nome = "mes", tipo = "integer"),
+      n_dias_conama = list(nome = "n_dias_conama", tipo = "integer")
+    ),
+    pop = list(
+      muni = list(nome = "muni", tipo = "integer"),
+      ano = list(nome = "ano", tipo = "integer"),
+      pop = list(nome = "pop", tipo = "numeric"),
+      UF = list(nome = "UF", tipo = "character")
+    ),
     tb_uf = list(
       UF = list(nome = "UF", tipo = "character"),
       ano = list(nome = "ano", tipo = "integer"),
@@ -206,8 +218,10 @@ test_that("Campos dos Goytacazes is a sentinel RJ municipality", {
   expect_equal(campos$codigo_ibge_7, 3301009)
   expect_equal(campos$municipio, "Campos dos Goytacazes")
   expect_equal(campos$macrorregiao_saude, "Norte")
-  expect_false(any(rj$municipio[rj$codigo_ibge_6 == 330100] %in%
-    c("Carapebus", "Cambuci", "Cardoso Moreira")))
+  expect_false(any(
+    rj$municipio[rj$codigo_ibge_6 == 330100] %in%
+      c("Carapebus", "Cambuci", "Cardoso Moreira")
+  ))
 })
 
 test_that("municipality code normalization handles 6 and 7 digits safely", {
@@ -282,6 +296,15 @@ test_that("RJ table completeness uses expected table grains", {
     vigiar_rj_completude_tabela(daily, tabela = "df_dias", require_complete = TRUE),
     "incomplete"
   )
+
+  pop <- rbind(
+    .make_rj_data(.rj_codes6(), years = 2020L),
+    .make_rj_data(.rj_codes6(20), years = 2021L)
+  )
+  cov_pop <- vigiar_rj_completude_tabela(pop, tabela = "pop")
+  expect_equal(unique(cov_pop$grade), "municipio x ano")
+  expect_true(cov_pop$completo[cov_pop$ano == 2020L])
+  expect_false(cov_pop$completo[cov_pop$ano == 2021L])
 })
 
 test_that("RJ coverage detects full and partial municipality sets", {
@@ -523,6 +546,179 @@ test_that("RJ snapshot preserves completeness metadata", {
     loaded <- readRDS(tmp)
     expect_equal(attr(loaded, "vigiar_uf"), "RJ")
     expect_equal(attr(loaded, "vigiar_n_municipios_presentes"), 3)
+  })
+})
+
+test_that("RJ online audit saves complete artifacts with preserved metadata", {
+  complete <- .make_rj_data(.rj_codes6(), years = c(2021L, 2022L))
+  out_root <- tempfile("vigiar-rj-audit-")
+
+  .with_mock_vigiar_session({
+    testthat::local_mocked_bindings(
+      vigiar_baixar = function(...) complete,
+      .package = "vigiar"
+    )
+
+    audit <- vigiar_auditar_rj_online(
+      "df_anual",
+      salvar = TRUE,
+      dir = out_root,
+      require_complete = TRUE,
+      timestamp = as.POSIXct("2026-01-02 03:04:05", tz = "UTC")
+    )
+
+    report_dir <- attr(audit, "vigiar_audit_dir")
+    expect_equal(audit$conclusion, "complete")
+    expect_true(audit$campos_dos_goytacazes_presente)
+    expect_true(file.exists(file.path(report_dir, "manifest.csv")))
+    expect_true(file.exists(file.path(report_dir, "manifest.json")))
+    expect_true(file.exists(file.path(report_dir, "audit.rds")))
+    expect_true(file.exists(file.path(report_dir, "df_anual-coverage-table-grain.csv")))
+
+    loaded <- readRDS(file.path(report_dir, "audit.rds"))
+    expect_equal(attr(loaded, "vigiar_audit_dir"), report_dir)
+    expect_equal(loaded$conclusion, "complete")
+
+    manifest <- jsonlite::read_json(file.path(report_dir, "manifest.json"))
+    expect_equal(manifest$tables[[1]]$summary$conclusion, "complete")
+    expect_equal(manifest$tables[[1]]$summary$tabela, "df_anual")
+  })
+})
+
+test_that("RJ online audit detects partial coverage and absent Campos", {
+  partial <- .make_rj_data(.rj_codes6(10), years = 2022L)
+  no_campos <- .make_rj_data(setdiff(.rj_codes6(), 330100L), years = 2022L)
+
+  .with_mock_vigiar_session({
+    testthat::local_mocked_bindings(
+      vigiar_baixar = function(...) partial,
+      .package = "vigiar"
+    )
+
+    audit <- suppressWarnings(vigiar_auditar_rj_online(
+      "df_anual",
+      salvar = FALSE
+    ))
+    expect_equal(audit$conclusion, "partial")
+    expect_equal(audit$n_municipios_presentes, 10)
+    expect_error(
+      suppressWarnings(vigiar_auditar_rj_online(
+        "df_anual",
+        salvar = FALSE,
+        require_complete = TRUE
+      )),
+      "not complete"
+    )
+  })
+
+  .with_mock_vigiar_session({
+    testthat::local_mocked_bindings(
+      vigiar_baixar = function(...) no_campos,
+      .package = "vigiar"
+    )
+
+    audit <- suppressWarnings(vigiar_auditar_rj_online(
+      "df_anual",
+      salvar = FALSE
+    ))
+    expect_equal(audit$conclusion, "partial")
+    expect_false(audit$campos_dos_goytacazes_presente)
+    expect_true(
+      "Campos dos Goytacazes" %in%
+        audit$municipios_ausentes[[1]]$municipio
+    )
+  })
+})
+
+test_that("RJ online audit detects missing municipal columns and truncation", {
+  no_muni <- tibble::tibble(UF = "RJ", ano = 2022L, est = 1)
+  truncated <- .make_rj_data(.rj_codes6(), years = 2022L)
+  attr(truncated, "vigiar_possivel_truncamento") <- TRUE
+
+  .with_mock_vigiar_session({
+    testthat::local_mocked_bindings(
+      vigiar_baixar = function(...) no_muni,
+      .package = "vigiar"
+    )
+
+    audit <- suppressWarnings(vigiar_auditar_rj_online(
+      "tb_uf",
+      salvar = FALSE
+    ))
+    expect_equal(audit$conclusion, "failed")
+    expect_match(audit$erro, "Municipality code column")
+    expect_error(
+      suppressWarnings(vigiar_auditar_rj_online(
+        "tb_uf",
+        salvar = FALSE,
+        require_complete = TRUE
+      )),
+      "Municipality code"
+    )
+  })
+
+  .with_mock_vigiar_session({
+    testthat::local_mocked_bindings(
+      vigiar_baixar = function(...) truncated,
+      .package = "vigiar"
+    )
+
+    expect_warning(
+      audit <- vigiar_auditar_rj_online("df_anual", salvar = FALSE),
+      "Possible truncation"
+    )
+    expect_equal(audit$conclusion, "truncated")
+    expect_true(audit$possivel_truncamento)
+    expect_error(
+      suppressWarnings(vigiar_auditar_rj_online(
+        "df_anual",
+        salvar = FALSE,
+        require_complete = TRUE
+      )),
+      "truncated"
+    )
+  })
+})
+
+test_that("RJ online audit detects schema hash absence", {
+  complete <- .make_rj_data(.rj_codes6(), years = 2022L)
+
+  .with_mock_vigiar_session({
+    testthat::local_mocked_bindings(
+      vigiar_baixar = function(...) complete,
+      .vigiar_schema_hash = function(tabela) NA_character_,
+      .package = "vigiar"
+    )
+
+    audit <- vigiar_auditar_rj_online("df_anual", salvar = FALSE)
+    expect_equal(audit$conclusion, "schema_changed")
+    expect_true(is.na(audit$schema_hash))
+  })
+})
+
+test_that("RJ online audit detects monthly gaps", {
+  monthly <- .make_rj_data(.rj_codes6(), years = 2022L, months = 1:2)
+  monthly <- monthly[!(monthly$cod_municipio == 330100L & monthly$mes == 2L), ]
+
+  .with_mock_vigiar_session({
+    testthat::local_mocked_bindings(
+      vigiar_baixar = function(...) monthly,
+      .package = "vigiar"
+    )
+
+    audit <- suppressWarnings(vigiar_auditar_rj_online(
+      "df_mensal",
+      salvar = FALSE
+    ))
+    expect_equal(audit$conclusion, "partial")
+    expect_equal(audit$completeness_grade, "municipio x ano x mes")
+    expect_equal(audit$n_incomplete_groups, 1L)
+
+    month_gap <- audit$completude_tabela[[1]]
+    month_gap <- month_gap[month_gap$ano == 2022L & month_gap$mes == 2L, ]
+    expect_equal(nrow(month_gap), 1)
+    expect_false(month_gap$completo)
+    expect_true(330100L %in% month_gap$codigos_ausentes[[1]])
   })
 })
 

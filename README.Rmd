@@ -185,8 +185,9 @@ vigiar_rj_cobertura(pm25_rj, por = "regiao_saude")
 
 For table-aware completeness, use `vigiar_rj_completude_tabela()`. It applies the
 expected grid for common VIGIAR tables: municipality x year for annual tables,
-municipality x year x month for monthly PM2.5 tables, and municipality x year x
-month for daily-reference tables when `ano` and `mes` are available.
+municipality x year for `pop`, municipality x year x month for monthly PM2.5
+tables, and municipality x year x month for daily-reference tables when `ano`
+and `mes` are available.
 
 ```{r}
 vigiar_rj_completude_tabela(pm25_rj, tabela = "df_anual")
@@ -202,6 +203,46 @@ vigiar_rj_completude_tabela(
 adds clear messages such as complete RJ coverage, partial RJ coverage, low
 coverage in a specific year, no valid RJ municipality code, or possible API
 truncation.
+
+## Release-Grade Online RJ Audit
+
+Use `vigiar_auditar_rj_online()` before formal scientific use or before
+archiving a release. It downloads the requested RJ tables, computes checksum and
+schema hash, evaluates table-grain completeness, lists absent municipalities,
+records temporal gaps, flags possible Power BI truncation, and writes CSV, JSON,
+and RDS artifacts under `data-raw/rj-download-completeness-output/`.
+
+```{r}
+vigiar_conectar()
+
+audit <- vigiar_auditar_rj_online(
+  tabelas = c("df_anual", "df_mensal", "df_dias", "pop"),
+  salvar = TRUE,
+  require_complete = FALSE
+)
+
+audit[, c(
+  "tabela",
+  "n_rows",
+  "checksum",
+  "completeness_grade",
+  "n_incomplete_groups",
+  "possivel_truncamento",
+  "conclusion"
+)]
+
+vigiar_desconectar()
+```
+
+When `require_complete = TRUE`, the audit stops if any table is partial,
+truncated, lacks a municipality code, lacks a schema hash, or otherwise fails.
+This is intentionally stricter than checking that `nrow(dados) > 0`.
+
+The objective conclusion is one of `complete`, `partial`, `truncated`,
+`schema_changed`, or `failed`. `complete` means that the expected RJ grid was
+observed for the audited table and time grain. It does not prove causal
+validity, exposure measurement validity, model adequacy, or epidemiological
+identifiability.
 
 ## Processing
 

@@ -10,7 +10,14 @@
   macro-region, and by health region.
 * Added `vigiar_rj_completude_tabela()` for table-aware RJ completeness checks,
   including municipality x year for annual tables and municipality x year x
-  month for monthly tables.
+  month for monthly tables. `pop` is assessed as municipality x year, and
+  `df_dias` / `df_dias_conama` are assessed as municipality x year x month when
+  month is available.
+* Added `vigiar_auditar_rj_online()` for release-grade online RJ auditing. It
+  downloads `df_anual`, `df_mensal`, `df_dias`, `pop`, or any requested table,
+  computes checksums and schema hashes, saves JSON/CSV/RDS artifacts, records
+  missing municipalities and temporal gaps, and reports `complete`, `partial`,
+  `truncated`, `schema_changed`, or `failed`.
 * Added `vigiar_baixar_municipio()` for code-based municipality downloads with
   metadata, coverage status, and truncation alerts. Campos dos Goytacazes is
   covered by a sentinel test using `330100` and `3301009`.
@@ -34,7 +41,7 @@
 * Strengthened PM2.5 diagnostics for negative values, suspicious zeros,
   implausible extremes, long missing blocks, and abrupt series changes.
 * Added offline RJ completeness tests, an optional online RJ audit for
-  `df_anual`, `df_mensal`, and `df_dias`, and
+  `df_anual`, `df_mensal`, `df_dias`, and `pop`, and
   `data-raw/check-rj-download-completeness.R` for manual source validation with
   release-bound output directories, checksums, table-grain coverage,
   missing-municipality reports, missing-year reports, missing-month reports,

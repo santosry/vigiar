@@ -110,8 +110,9 @@ coverage_fun(pm25_years, por = "ano")
 
 `vigiar_rj_completude_tabela()` applies the expected municipal grid for common
 VIGIAR tables. For `df_anual`, the expected grid is municipality by year. For
-`df_mensal`, `df_dias`, and `df_dias_conama`, the expected grid is municipality
-by year by month when `ano` and `mes` are available.
+`pop`, the expected grid is also municipality by year. For `df_mensal`,
+`df_dias`, and `df_dias_conama`, the expected grid is municipality by year by
+month when `ano` and `mes` are available.
 
 ```{r}
 if (exists("vigiar_rj_completude_tabela", mode = "function")) {
@@ -173,6 +174,33 @@ pm25_rj_complete <- vigiar_baixar_rj(
 
 vigiar_desconectar()
 ```
+
+## Release-Grade Online Audit
+
+For a reproducible scientific audit, use `vigiar_auditar_rj_online()`. The
+function writes `manifest.csv`, `manifest.json`, `audit.rds`, and per-table
+coverage CSV files. These outputs include the table name, execution time,
+package version, commit SHA when available, checksum, schema hash, row and
+column counts, general coverage, table-grain completeness, missing
+municipalities, incomplete macro-regions, possible truncation, and an objective
+conclusion.
+
+```{r, eval = FALSE}
+vigiar_conectar()
+
+audit <- vigiar_auditar_rj_online(
+  tabelas = c("df_anual", "df_mensal", "df_dias", "pop"),
+  salvar = TRUE,
+  dir = "data-raw/rj-download-completeness-output",
+  require_complete = TRUE
+)
+
+vigiar_desconectar()
+```
+
+The `require_complete = TRUE` mode turns partial coverage, possible truncation,
+missing municipality codes, missing schema hashes, and failed downloads into a
+clear error. Use it for release validation, not for exploratory checks.
 
 ## Possible Truncation
 

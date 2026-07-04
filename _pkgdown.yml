@@ -114,6 +114,7 @@ reference:
   - vigiar_rj_cobertura
   - vigiar_rj_completude_tabela
   - vigiar_rj_municipios_ausentes
+  - vigiar_auditar_rj_online
   - vigiar_plot_pm25_rj
 - title: Audit & Compliance
   contents:

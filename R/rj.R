@@ -839,7 +839,7 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
     return("ano_mes")
   }
 
-  if (identical(tabela, "df_anual")) {
+  if (tabela %in% c("df_anual", "pop")) {
     if ("ano" %in% names(dados)) {
       return("ano")
     }
