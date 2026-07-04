@@ -20,6 +20,8 @@ A tibble with RJ coverage metrics at the expected table grain.
 \description{
 This function distinguishes "data were downloaded" from "the expected RJ
 panel is complete". For `df_mensal`, completeness is assessed by
-municipality x year x month. For `df_anual` and `df_dias`, completeness is
-assessed by municipality x year when a year column exists.
+municipality x year x month. For `df_anual`, completeness is assessed by
+municipality x year. For `df_dias` and `df_dias_conama`, completeness is
+assessed by municipality x year x month when month is available, otherwise
+by municipality x year.
 }

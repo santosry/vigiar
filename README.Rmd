@@ -137,6 +137,16 @@ The internal normalizer accepts integer, numeric, and character inputs such as
 `330455`, `3304557`, `"330455"`, and `" 330455 "`. Values that cannot be safely
 normalized return `NA`.
 
+The internal RJ registry is locked against offline reference fixtures generated
+from official sources:
+
+- `inst/extdata/rj_municipios_ibge_reference.csv` locks the 92 RJ municipality
+  names and 7-digit codes from the IBGE Localidades API.
+- `inst/extdata/rj_regioes_saude_sesrj_reference.csv` locks the 9 SES-RJ health
+  regions used by the package.
+- `inst/extdata/rj_official_sources.csv` records the official source URLs and
+  access date used for these fixtures.
+
 For municipality-specific work, prefer code-based downloads instead of filtering
 by municipality name. This avoids fragile joins caused by spelling, accents, or
 source-specific name variants.
@@ -175,8 +185,8 @@ vigiar_rj_cobertura(pm25_rj, por = "regiao_saude")
 
 For table-aware completeness, use `vigiar_rj_completude_tabela()`. It applies the
 expected grid for common VIGIAR tables: municipality x year for annual tables,
-municipality x year x month for monthly PM2.5 tables, and the best available
-municipal time grid for daily-reference tables.
+municipality x year x month for monthly PM2.5 tables, and municipality x year x
+month for daily-reference tables when `ano` and `mes` are available.
 
 ```{r}
 vigiar_rj_completude_tabela(pm25_rj, tabela = "df_anual")
@@ -235,10 +245,12 @@ vigiar_esquema_verificar_critico(error = TRUE)
 ```
 
 The manual validation script `data-raw/check-rj-download-completeness.R` writes
-timestamped reports, checksums, coverage tables, and missing-municipality lists
-under `data-raw/rj-download-completeness-output/`. These generated files are
-intended to be archived with a release or local validation record, not committed
-as package data.
+timestamped release reports for `df_muni`, `df_anual`, `df_mensal`, `df_dias`,
+and `df_dias_conama`, including checksums, table-grain coverage tables, and
+missing-municipality lists under `data-raw/rj-download-completeness-output/`.
+Set `VIGIAR_VALIDATION_RELEASE` before running the script to bind the output to
+a formal release. Generated reports are intended to be archived with a release
+or local validation record, not committed as package data.
 
 ## Exploratory Plot
 

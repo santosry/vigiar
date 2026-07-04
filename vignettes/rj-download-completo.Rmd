@@ -110,11 +110,24 @@ coverage_fun(pm25_years, por = "ano")
 
 `vigiar_rj_completude_tabela()` applies the expected municipal grid for common
 VIGIAR tables. For `df_anual`, the expected grid is municipality by year. For
-`df_mensal`, the expected grid is municipality by year by month.
+`df_mensal`, `df_dias`, and `df_dias_conama`, the expected grid is municipality
+by year by month when `ano` and `mes` are available.
 
 ```{r}
 if (exists("vigiar_rj_completude_tabela", mode = "function")) {
   vigiar_rj_completude_tabela(pm25_years, tabela = "df_anual")
+}
+```
+
+```{r}
+pm25_months <- merge(
+  pm25_complete,
+  data.frame(mes = 1:2),
+  by = NULL
+)
+
+if (exists("vigiar_rj_completude_tabela", mode = "function")) {
+  vigiar_rj_completude_tabela(pm25_months, tabela = "df_mensal")
 }
 ```
 

@@ -87,6 +87,23 @@ test_that("critical schema verification fails on missing columns", {
   })
 })
 
+test_that("critical schema verification covers coordinates and population variables", {
+  schema <- .critical_schema()
+  schema$df_muni$LAT <- NULL
+  schema$df_muni$LON <- NULL
+  schema$pop$pop <- NULL
+
+  .with_schema(schema, {
+    expect_error(
+      vigiar_esquema_verificar_critico(.critical_lock(), error = TRUE),
+      "Critical schema changed"
+    )
+    diffs <- vigiar_esquema_verificar_critico(.critical_lock(), error = FALSE)
+    expect_equal(diffs$missing_columns$df_muni, c("LAT", "LON"))
+    expect_equal(diffs$missing_columns$pop, "pop")
+  })
+})
+
 test_that("schema lock verification detects critical type changes", {
   schema <- .critical_schema()
   schema$df_anual$Media_pm25$tipo <- "character"

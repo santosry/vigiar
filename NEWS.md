@@ -20,6 +20,8 @@
 * Added an IBGE reference fixture for the 92 RJ municipality codes and sentinel
   tests for Campos dos Goytacazes, Sao Francisco de Itabapoana, Sao Joao da
   Barra, and all 9 health macro-regions.
+* Added SES-RJ health-region and official-source fixtures so the RJ registry is
+  tested against both IBGE municipality codes and SES-RJ regionalization names.
 * Added `vigiar_baixar_rj_completo()` as an honest preparatory interface for
   partitioned downloads. It does not claim completeness when validated
   server-side filters are unavailable.
@@ -32,7 +34,9 @@
 * Strengthened PM2.5 diagnostics for negative values, suspicious zeros,
   implausible extremes, long missing blocks, and abrupt series changes.
 * Added offline RJ completeness tests, an optional online RJ download test, and
-  `data-raw/check-rj-download-completeness.R` for manual source validation.
+  `data-raw/check-rj-download-completeness.R` for manual source validation with
+  release-bound output directories, checksums, table-grain coverage, and
+  missing-municipality reports.
 * Updated README, pkgdown reference, and vignettes with offline-safe RJ
   examples and scientific caveats about aggregate data, source availability,
   truncation, ecological inference, and the package boundary around causal

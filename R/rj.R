@@ -3,6 +3,8 @@
 #
 # Municipality codes use the 6-digit IBGE code as the package standard.
 # The registry also stores the official 7-digit IBGE code for interoperability.
+# Reference fixtures in inst/extdata lock the IBGE municipality list and the
+# SES-RJ health-region names used by this registry.
 
 # ---- RJ Municipality Registry ------------------------------------------------
 
@@ -106,10 +108,14 @@ RJ_MUNI_RANGE <- c(330010L, 330630L)
 #' returned as `codigo_ibge_7` for joins with sources that use the check digit.
 #'
 #' @return A tibble with municipality codes, municipality names, health
-#'   macro-regions, and health regions.
+#'   macro-regions, health regions, and source metadata attributes.
 #' @export
 vigiar_rj_municipios <- function() {
-  tibble::as_tibble(RJ_MUNICIPIOS)
+  out <- tibble::as_tibble(RJ_MUNICIPIOS)
+  attr(out, "vigiar_rj_sources") <- system.file(
+    "extdata", "rj_official_sources.csv", package = "vigiar"
+  )
+  out
 }
 
 #' List Rio de Janeiro health macro-regions
@@ -648,8 +654,10 @@ vigiar_rj_cobertura <- function(
 #'
 #' This function distinguishes "data were downloaded" from "the expected RJ
 #' panel is complete". For `df_mensal`, completeness is assessed by
-#' municipality x year x month. For `df_anual` and `df_dias`, completeness is
-#' assessed by municipality x year when a year column exists.
+#' municipality x year x month. For `df_anual`, completeness is assessed by
+#' municipality x year. For `df_dias` and `df_dias_conama`, completeness is
+#' assessed by municipality x year x month when month is available, otherwise
+#' by municipality x year.
 #'
 #' @param dados A data frame with municipality codes.
 #' @param tabela Optional table name. Defaults to the `vigiar_tabela` attribute.
@@ -824,7 +832,17 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
     return("ano_mes")
   }
 
-  if (tabela %in% c("df_anual", "df_dias", "df_dias_conama")) {
+  if (identical(tabela, "df_anual")) {
+    if ("ano" %in% names(dados)) {
+      return("ano")
+    }
+    return("geral")
+  }
+
+  if (tabela %in% c("df_dias", "df_dias_conama")) {
+    if (all(c("ano", "mes") %in% names(dados))) {
+      return("ano_mes")
+    }
     if ("ano" %in% names(dados)) {
       return("ano")
     }

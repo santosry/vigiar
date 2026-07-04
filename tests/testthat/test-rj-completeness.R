@@ -79,6 +79,7 @@ test_that("RJ registry has the expected 92 municipalities", {
 
 test_that("RJ registry matches the official IBGE municipality code reference", {
   ref_path <- system.file("extdata", "rj_municipios_ibge_reference.csv", package = "vigiar")
+  expect_true(nzchar(ref_path))
   ibge <- utils::read.csv(ref_path, stringsAsFactors = FALSE)
   rj <- vigiar_rj_municipios()
 
@@ -93,6 +94,30 @@ test_that("RJ registry matches the official IBGE municipality code reference", {
   expect_equal(merged$codigo_ibge_7[merged$codigo_ibge_6 == 330475], 3304755)
   expect_equal(merged$codigo_ibge_7[merged$codigo_ibge_6 == 330500], 3305000)
   expect_equal(length(unique(rj$macrorregiao_saude)), 9)
+})
+
+test_that("RJ registry matches the official SES-RJ health-region reference", {
+  ref_path <- system.file("extdata", "rj_regioes_saude_sesrj_reference.csv", package = "vigiar")
+  source_path <- system.file("extdata", "rj_official_sources.csv", package = "vigiar")
+  expect_true(nzchar(ref_path))
+  expect_true(nzchar(source_path))
+
+  ses <- utils::read.csv(ref_path, stringsAsFactors = FALSE)
+  sources <- utils::read.csv(source_path, stringsAsFactors = FALSE)
+  rj <- vigiar_rj_municipios()
+  region_counts <- table(rj$macrorregiao_saude)
+
+  expect_equal(nrow(ses), 9)
+  expect_setequal(vigiar_rj_macrorregioes(), ses$regiao_saude_package)
+  expect_setequal(vigiar_rj_regioes_saude(), ses$regiao_saude_package)
+  expect_equal(sum(ses$municipios_esperados), 92)
+  expect_equal(
+    as.integer(region_counts[ses$regiao_saude_package]),
+    ses$municipios_esperados
+  )
+  expect_true(all(nzchar(ses$fonte_url)))
+  expect_true(all(c("ibge_localidades", "sesrj_regionalizacao") %in% sources$source_id))
+  expect_true(nzchar(attr(rj, "vigiar_rj_sources")))
 })
 
 test_that("Campos dos Goytacazes is a sentinel RJ municipality", {
@@ -125,6 +150,24 @@ test_that("municipality code normalization handles 6 and 7 digits safely", {
   expect_true(is.na(.vigiar_normalizar_codigo_municipio("330455X")))
 })
 
+test_that("processing and RJ joins use normalized municipality codes, not names", {
+  raw <- data.frame(
+    muni = 3301009L,
+    UF = "RJ",
+    ano = 2022L,
+    Media_pm25 = 12,
+    Municipio = "Carapebus",
+    stringsAsFactors = FALSE
+  )
+
+  processed <- process_pm25(raw, tipo = "anual")
+  expect_equal(processed$cod_municipio, 330100L)
+
+  resumo <- vigiar_rj_resumo(processed, agregacao = "municipio")
+  expect_equal(nrow(resumo), 1)
+  expect_equal(resumo$municipio, "Campos dos Goytacazes")
+})
+
 test_that("RJ table completeness uses expected table grains", {
   annual <- rbind(
     .make_rj_data(.rj_codes6(), years = 2020L),
@@ -145,6 +188,20 @@ test_that("RJ table completeness uses expected table grains", {
   expect_false(cov_monthly$completo[cov_monthly$mes == 2L])
   expect_error(
     vigiar_rj_completude_tabela(monthly, tabela = "df_mensal", require_complete = TRUE),
+    "incomplete"
+  )
+
+  daily <- .make_rj_data(.rj_codes6(), years = 2022L, months = 1:2)
+  daily <- daily[!(daily$cod_municipio == .rj_codes6(1) & daily$mes == 2L), ]
+  daily$pm25_media_periodo <- daily$pm25_media_anual
+  daily$n_dias_criticos <- 1L
+  cov_daily <- vigiar_rj_completude_tabela(daily, tabela = "df_dias")
+  expect_equal(unique(cov_daily$grade), "municipio x ano x mes")
+  expect_equal(nrow(cov_daily), 2)
+  expect_true(cov_daily$completo[cov_daily$mes == 1L])
+  expect_false(cov_daily$completo[cov_daily$mes == 2L])
+  expect_error(
+    vigiar_rj_completude_tabela(daily, tabela = "df_dias", require_complete = TRUE),
     "incomplete"
   )
 })

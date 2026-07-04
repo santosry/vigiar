@@ -41,12 +41,25 @@ print_absent <- function(dados, label, por = "geral") {
   invisible(missing)
 }
 
-manifest_row <- function(tab, dados, cobertura) {
+manifest_row <- function(tab, dados, cobertura, completude = NULL) {
+  table_grade <- if (!is.null(completude) && "grade" %in% names(completude)) {
+    paste(unique(completude$grade), collapse = "; ")
+  } else {
+    NA_character_
+  }
+  n_groups <- if (!is.null(completude)) nrow(completude) else NA_integer_
+  n_incomplete <- if (!is.null(completude) && "completo" %in% names(completude)) {
+    sum(!completude$completo)
+  } else {
+    NA_integer_
+  }
+
   data.frame(
     run_id = run_id,
     release = release_id,
     checked_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z"),
     tabela = tab,
+    completeness_grade = table_grade,
     n_rows = nrow(dados),
     n_cols = ncol(dados),
     checksum = vigiar_checksum(dados),
@@ -54,6 +67,9 @@ manifest_row <- function(tab, dados, cobertura) {
     n_municipios_esperados = cobertura$n_municipios_esperados[[1]],
     cobertura_pct = cobertura$cobertura_pct[[1]],
     n_ausentes = cobertura$n_ausentes[[1]],
+    n_completeness_groups = n_groups,
+    n_incomplete_groups = n_incomplete,
+    complete_at_table_grain = identical(n_incomplete, 0L),
     possivel_truncamento = isTRUE(attr(dados, "vigiar_possivel_truncamento")),
     stringsAsFactors = FALSE
   )
@@ -62,11 +78,11 @@ manifest_row <- function(tab, dados, cobertura) {
 vigiar_conectar()
 on.exit(vigiar_desconectar(), add = TRUE)
 
-tables <- c("df_muni", "df_anual", "df_mensal")
+tables <- c("df_muni", "df_anual", "df_mensal", "df_dias", "df_dias_conama")
 
 for (tab in tables) {
   message("\nChecking ", tab, "...")
-  should_process <- tab %in% c("df_anual", "df_mensal")
+  should_process <- tab %in% c("df_anual", "df_mensal", "df_dias", "df_dias_conama")
   dados <- tryCatch(
     vigiar_baixar_rj(tab, validar_cobertura = TRUE, processar = should_process),
     error = function(e) {
@@ -81,18 +97,33 @@ for (tab in tables) {
 
   cov_general <- vigiar_rj_cobertura(dados)
   write_report(cov_general, paste0(tab, "-coverage-general.csv"))
-  manifest[[tab]] <- manifest_row(tab, dados, cov_general)
-  print_absent(dados, tab)
+  cov_table <- tryCatch(
+    vigiar_rj_completude_tabela(dados, tabela = tab),
+    error = function(e) {
+      warning("Completeness-by-table failed for ", tab, ": ", conditionMessage(e), call. = FALSE)
+      NULL
+    }
+  )
+  if (!is.null(cov_table)) {
+    write_report(cov_table, paste0(tab, "-coverage-table-grain.csv"))
+  }
+
+  manifest[[tab]] <- manifest_row(tab, dados, cov_general, cov_table)
+  missing_general <- print_absent(dados, tab)
+  write_report(missing_general, paste0(tab, "-missing-general.csv"))
 
   if ("ano" %in% names(dados)) {
     cov_year <- vigiar_rj_cobertura(dados, por = "ano")
     write_report(cov_year, paste0(tab, "-coverage-year.csv"))
-    print_absent(dados, tab, por = "ano")
+    missing_year <- print_absent(dados, tab, por = "ano")
+    write_report(missing_year, paste0(tab, "-missing-year.csv"))
   }
 
   if (all(c("ano", "mes") %in% names(dados))) {
     cov_year_month <- vigiar_rj_cobertura(dados, por = "ano_mes")
     write_report(cov_year_month, paste0(tab, "-coverage-year-month.csv"))
+    missing_year_month <- print_absent(dados, tab, por = "ano_mes")
+    write_report(missing_year_month, paste0(tab, "-missing-year-month.csv"))
   }
 
   saveRDS(dados, file.path(out_dir, paste0(tab, "-rj.rds")))
