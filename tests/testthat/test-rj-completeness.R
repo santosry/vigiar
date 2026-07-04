@@ -55,6 +55,12 @@ library(vigiar)
       LAT = list(nome = "LAT", tipo = "numeric"),
       LON = list(nome = "LON", tipo = "numeric")
     ),
+    df_dias = list(
+      ID_MUNI = list(nome = "ID_MUNI", tipo = "integer"),
+      ano = list(nome = "ano", tipo = "integer"),
+      mes = list(nome = "mes", tipo = "integer"),
+      n_dias = list(nome = "n_dias", tipo = "integer")
+    ),
     tb_uf = list(
       UF = list(nome = "UF", tipo = "character"),
       ano = list(nome = "ano", tipo = "integer"),
@@ -63,6 +69,78 @@ library(vigiar)
   )
   force(code)
 }
+
+test_that("Power BI server-side filters are encoded in SemanticQuery", {
+  .with_mock_vigiar_session({
+    query <- .vigiar_construir_query(
+      "df_anual",
+      colunas = c("muni", "UF", "ano"),
+      modelo_id = .vigiar_env$sessao$model_id,
+      filtros = list(UF = "RJ", muni = c(330100L, 330455L))
+    )
+    where <- query$queries[[1]]$Query$Commands[[1]]$
+      SemanticQueryDataShapeCommand$Query$Where
+
+    expect_length(where, 2)
+    expect_equal(where[[1]]$Condition$In$Expressions[[1]]$Column$Property, "UF")
+    expect_equal(where[[1]]$Condition$In$Values[[1]][[1]]$Literal$Value, "'RJ'")
+    expect_equal(where[[2]]$Condition$In$Expressions[[1]]$Column$Property, "muni")
+    expect_equal(
+      vapply(where[[2]]$Condition$In$Values, function(x) x[[1]]$Literal$Value, character(1)),
+      c("330100L", "330455L")
+    )
+  })
+})
+
+test_that("RJ downloads request server-side RJ filters", {
+  mock_data <- tibble::tibble(
+    muni = c(330455L, 330010L),
+    UF = "RJ",
+    ano = 2022L,
+    Media_pm25 = c(12, 14)
+  )
+  captured <- new.env(parent = emptyenv())
+
+  .with_mock_vigiar_session({
+    testthat::local_mocked_bindings(
+      vigiar_baixar = function(...) {
+        captured$args <- list(...)
+        mock_data
+      },
+      .package = "vigiar"
+    )
+
+    out <- suppressWarnings(vigiar_baixar_rj("df_anual", validar_cobertura = FALSE))
+
+    expect_equal(captured$args$filtros$UF, "RJ")
+    expect_equal(unique(out$UF), "RJ")
+  })
+
+  captured <- new.env(parent = emptyenv())
+  dias_data <- tibble::tibble(
+    ID_MUNI = c(330100L, 330475L),
+    ano = 2022L,
+    mes = 1L,
+    n_dias = c(2L, 3L)
+  )
+
+  .with_mock_vigiar_session({
+    testthat::local_mocked_bindings(
+      vigiar_baixar = function(...) {
+        captured$args <- list(...)
+        dias_data
+      },
+      .package = "vigiar"
+    )
+
+    out <- suppressWarnings(vigiar_baixar_rj("df_dias", validar_cobertura = FALSE))
+
+    expect_named(captured$args$filtros, "ID_MUNI")
+    expect_length(captured$args$filtros$ID_MUNI, 92)
+    expect_true(330100L %in% captured$args$filtros$ID_MUNI)
+    expect_equal(nrow(out), 2)
+  })
+})
 
 test_that("RJ registry has the expected 92 municipalities", {
   rj <- vigiar_rj_municipios()

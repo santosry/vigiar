@@ -242,11 +242,21 @@ vigiar_esquema_verificar_critico(error = TRUE)
 The manual validation script `data-raw/check-rj-download-completeness.R`
 writes timestamped release reports for `df_muni`, `df_anual`,
 `df_mensal`, `df_dias`, and `df_dias_conama`, including checksums,
-table-grain coverage tables, and missing-municipality lists under
-`data-raw/rj-download-completeness-output/`. Set
-`VIGIAR_VALIDATION_RELEASE` before running the script to bind the output
-to a formal release. Generated reports are intended to be archived with
-a release or local validation record, not committed as package data.
+table-grain coverage tables, and missing-municipality, missing-year, and
+missing-month reports under `data-raw/rj-download-completeness-output/`.
+Set `VIGIAR_VALIDATION_RELEASE` before running the script to bind the
+output to a formal release. Generated reports are intended to be
+archived with a release or local validation record, not committed as
+package data.
+
+The optional online test is also an audit, not only a smoke test. With
+`VIGIAR_RUN_ONLINE_TESTS=true`, it downloads `df_anual`, `df_mensal`,
+and `df_dias`, writes a manifest with timestamp, row count, checksum,
+missing municipalities, missing years, and missing months, and validates
+the expected table grain for each table. Set `VIGIAR_ONLINE_REPORT_DIR`
+to choose the output directory and set
+`VIGIAR_REQUIRE_ONLINE_COMPLETENESS=true` for formal release checks that
+must fail when table-grain completeness or truncation is detected.
 
 ## Exploratory Plot
 

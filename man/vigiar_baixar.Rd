@@ -11,7 +11,8 @@ vigiar_baixar(
   limite = NULL,
   timeout = 120,
   uf = "RJ",
-  direcao = c("asc", "desc")
+  direcao = c("asc", "desc"),
+  filtros = NULL
 )
 }
 \arguments{
@@ -28,6 +29,9 @@ vigiar_baixar(
 \item{uf}{UF filter. Filters data client-side. Use `NULL` for no filter. Default `"RJ"`.}
 
 \item{direcao}{Sort direction: `"asc"` (ascending) or `"desc"` (descending).}
+
+\item{filtros}{Optional named list of server-side equality filters. This is
+primarily used internally for audited RJ downloads.}
 }
 \value{
 A [tibble::tibble()] with the downloaded data.

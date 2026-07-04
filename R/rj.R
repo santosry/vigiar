@@ -311,6 +311,12 @@ vigiar_baixar_rj <- function(
   }
   dots$uf <- NULL
   dots$strategy <- NULL
+  user_filters <- dots$filtros
+  dots$filtros <- NULL
+  filtros <- .vigiar_combinar_filtros(
+    user_filters,
+    .vigiar_filtro_servidor_rj(tabela)
+  )
   schema_hash <- .vigiar_schema_hash(tabela)
   cache_file <- NULL
 
@@ -321,7 +327,7 @@ vigiar_baixar_rj <- function(
       ordenar_por = ordenar_por,
       limite = limite,
       schema_hash = schema_hash,
-      dots = dots
+      dots = c(dots, list(filtros = filtros))
     )
     if (file.exists(cache_file)) {
       cached <- readRDS(cache_file)
@@ -337,7 +343,8 @@ vigiar_baixar_rj <- function(
       ordenar_por = ordenar_por,
       limite = limite,
       timeout = timeout,
-      uf = NULL
+      uf = NULL,
+      filtros = filtros
     ),
     dots
   )
@@ -1014,6 +1021,48 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
   key_raw <- serialize(key, NULL)
   key_hash <- as.character(openssl::sha256(key_raw))
   file.path(cache_dir, paste0("rj-", tabela, "-", substr(key_hash, 1, 16), ".rds"))
+}
+
+.vigiar_filtro_servidor_rj <- function(tabela) {
+  schema <- .vigiar_env$esquema[[tabela]]
+  if (is.null(schema)) {
+    return(NULL)
+  }
+
+  cols <- names(schema)
+  col_uf <- intersect(c("UF", "sigla_uf", "UF_SIGLA", "uf", "cod_uf"), cols)[1]
+  if (!is.na(col_uf)) {
+    filtro <- list("RJ")
+    names(filtro) <- col_uf
+    return(filtro)
+  }
+
+  col_muni <- intersect(c("muni", "cod_municipio", "ID_MUNI", "codigo_ibge", "MUN_COD"), cols)[1]
+  if (!is.na(col_muni)) {
+    filtro <- list(as.integer(RJ_MUNICIPIOS$codigo_ibge_6))
+    names(filtro) <- col_muni
+    return(filtro)
+  }
+
+  NULL
+}
+
+.vigiar_combinar_filtros <- function(...) {
+  parts <- list(...)
+  out <- list()
+  for (part in parts) {
+    if (is.null(part) || length(part) == 0) {
+      next
+    }
+    if (is.null(names(part)) || any(!nzchar(names(part)))) {
+      stop("Server-side filters must be named.", call. = FALSE)
+    }
+    out <- c(out, part)
+  }
+  if (length(out) == 0) {
+    return(NULL)
+  }
+  out
 }
 
 .vigiar_processar_tabela_rj <- function(dados, tabela, tipo = NULL) {

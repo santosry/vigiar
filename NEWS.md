@@ -33,10 +33,12 @@
   `vigiar_diagnosticar_serie(..., escopo = "rj")`.
 * Strengthened PM2.5 diagnostics for negative values, suspicious zeros,
   implausible extremes, long missing blocks, and abrupt series changes.
-* Added offline RJ completeness tests, an optional online RJ download test, and
+* Added offline RJ completeness tests, an optional online RJ audit for
+  `df_anual`, `df_mensal`, and `df_dias`, and
   `data-raw/check-rj-download-completeness.R` for manual source validation with
-  release-bound output directories, checksums, table-grain coverage, and
-  missing-municipality reports.
+  release-bound output directories, checksums, table-grain coverage,
+  missing-municipality reports, missing-year reports, missing-month reports,
+  and a strict completeness mode for formal release validation.
 * Updated README, pkgdown reference, and vignettes with offline-safe RJ
   examples and scientific caveats about aggregate data, source availability,
   truncation, ecological inference, and the package boundary around causal

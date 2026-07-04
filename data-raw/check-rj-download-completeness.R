@@ -30,6 +30,45 @@ write_report <- function(x, name) {
   message("Wrote: ", normalizePath(path, winslash = "/", mustWork = FALSE))
 }
 
+temporal_summary <- function(dados) {
+  years <- integer(0)
+  missing_years <- integer(0)
+  month_gaps <- character(0)
+
+  if ("ano" %in% names(dados)) {
+    years <- sort(unique(as.integer(dados$ano)))
+    years <- years[!is.na(years)]
+    if (length(years) > 0) {
+      missing_years <- setdiff(seq.int(min(years), max(years)), years)
+    }
+  }
+
+  if (all(c("ano", "mes") %in% names(dados))) {
+    year_month <- unique(data.frame(
+      ano = as.integer(dados$ano),
+      mes = as.integer(dados$mes)
+    ))
+    year_month <- year_month[!is.na(year_month$ano) & !is.na(year_month$mes), , drop = FALSE]
+    if (nrow(year_month) > 0) {
+      by_year <- split(year_month$mes, year_month$ano)
+      month_gaps <- unlist(Map(function(year, months) {
+        missing <- setdiff(1:12, sort(unique(months)))
+        if (length(missing) == 0) {
+          return(character(0))
+        }
+        paste0(year, ":", paste(missing, collapse = "|"))
+      }, names(by_year), by_year), use.names = FALSE)
+    }
+  }
+
+  data.frame(
+    anos_presentes = paste(years, collapse = "; "),
+    anos_ausentes = paste(missing_years, collapse = "; "),
+    meses_ausentes_por_ano = paste(month_gaps, collapse = "; "),
+    stringsAsFactors = FALSE
+  )
+}
+
 print_absent <- function(dados, label, por = "geral") {
   missing <- vigiar_rj_municipios_ausentes(dados, por = por)
   message("\nAbsent municipalities for ", label, " (", por, "):")
@@ -41,7 +80,7 @@ print_absent <- function(dados, label, por = "geral") {
   invisible(missing)
 }
 
-manifest_row <- function(tab, dados, cobertura, completude = NULL) {
+manifest_row <- function(tab, dados, cobertura, completude = NULL, temporal = NULL) {
   table_grade <- if (!is.null(completude) && "grade" %in% names(completude)) {
     paste(unique(completude$grade), collapse = "; ")
   } else {
@@ -53,6 +92,7 @@ manifest_row <- function(tab, dados, cobertura, completude = NULL) {
   } else {
     NA_integer_
   }
+  temporal <- temporal %||% temporal_summary(dados)
 
   data.frame(
     run_id = run_id,
@@ -70,6 +110,9 @@ manifest_row <- function(tab, dados, cobertura, completude = NULL) {
     n_completeness_groups = n_groups,
     n_incomplete_groups = n_incomplete,
     complete_at_table_grain = identical(n_incomplete, 0L),
+    anos_presentes = temporal$anos_presentes[[1]],
+    anos_ausentes = temporal$anos_ausentes[[1]],
+    meses_ausentes_por_ano = temporal$meses_ausentes_por_ano[[1]],
     possivel_truncamento = isTRUE(attr(dados, "vigiar_possivel_truncamento")),
     stringsAsFactors = FALSE
   )
@@ -97,6 +140,8 @@ for (tab in tables) {
 
   cov_general <- vigiar_rj_cobertura(dados)
   write_report(cov_general, paste0(tab, "-coverage-general.csv"))
+  temporal <- temporal_summary(dados)
+  write_report(temporal, paste0(tab, "-temporal-gaps.csv"))
   cov_table <- tryCatch(
     vigiar_rj_completude_tabela(dados, tabela = tab),
     error = function(e) {
@@ -108,7 +153,7 @@ for (tab in tables) {
     write_report(cov_table, paste0(tab, "-coverage-table-grain.csv"))
   }
 
-  manifest[[tab]] <- manifest_row(tab, dados, cov_general, cov_table)
+  manifest[[tab]] <- manifest_row(tab, dados, cov_general, cov_table, temporal)
   missing_general <- print_absent(dados, tab)
   write_report(missing_general, paste0(tab, "-missing-general.csv"))
 

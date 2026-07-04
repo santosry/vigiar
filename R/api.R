@@ -10,11 +10,13 @@
 #' @param colunas Character vector of column names (NULL = all).
 #' @param ordenar_por Column to order by (optional).
 #' @param limite Maximum number of rows (optional).
+#' @param filtros Optional named list of server-side equality filters.
 #' @param modelo_id Model ID in Power BI.
 #' @return A nested list ready for JSON serialisation.
 #' @keywords internal
 .vigiar_construir_query <- function(tabela, colunas = NULL, ordenar_por = NULL,
-                                     limite = NULL, modelo_id, direcao = 1L) {
+                                     limite = NULL, modelo_id, direcao = 1L,
+                                     filtros = NULL) {
   if (is.null(colunas)) {
     colunas <- names(.vigiar_env$esquema[[tabela]])
   }
@@ -59,6 +61,11 @@
     ))
   }
 
+  if (!is.null(filtros) && length(filtros) > 0) {
+    query_cmd$SemanticQueryDataShapeCommand$Query$Where <-
+      .vigiar_construir_filtros(tabela, filtros)
+  }
+
   if (!is.null(limite)) {
     query_cmd$SemanticQueryDataShapeCommand$Query$Top <- as.integer(limite)
   } else {
@@ -80,6 +87,47 @@
     )),
     modelId = modelo_id
   )
+}
+
+.vigiar_construir_filtros <- function(tabela, filtros) {
+  if (is.null(names(filtros)) || any(!nzchar(names(filtros)))) {
+    stop("Server-side filters must be a named list.", call. = FALSE)
+  }
+
+  lapply(names(filtros), function(coluna) {
+    valores <- filtros[[coluna]]
+    valores <- valores[!is.na(valores)]
+    if (length(valores) == 0) {
+      stop("Server-side filter '", coluna, "' has no non-missing values.",
+           call. = FALSE)
+    }
+
+    list(Condition = list(In = list(
+      Expressions = list(list(Column = list(
+        Expression = list(SourceRef = list(Source = tabela)),
+        Property = coluna
+      ))),
+      Values = lapply(valores, function(valor) {
+        list(list(Literal = list(Value = .vigiar_literal_powerbi(valor))))
+      })
+    )))
+  })
+}
+
+.vigiar_literal_powerbi <- function(valor) {
+  if (is.numeric(valor) || is.integer(valor)) {
+    if (is.finite(valor) && identical(as.numeric(valor), as.numeric(as.integer(valor)))) {
+      return(paste0(as.integer(valor), "L"))
+    }
+    return(as.character(valor))
+  }
+
+  if (is.logical(valor)) {
+    return(tolower(as.character(valor)))
+  }
+
+  valor <- as.character(valor)
+  paste0("'", gsub("'", "''", valor, fixed = TRUE), "'")
 }
 
 #' Execute a query against the Power BI queryData endpoint

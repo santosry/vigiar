@@ -53,11 +53,13 @@ vigiar_esquema <- function(tabela = NULL) {
 #' @param timeout Timeout in seconds for the HTTP request.
 #' @param uf UF filter. Filters data client-side. Use `NULL` for no filter. Default `"RJ"`.
 #' @param direcao Sort direction: `"asc"` (ascending) or `"desc"` (descending).
+#' @param filtros Optional named list of server-side equality filters. This is
+#'   primarily used internally for audited RJ downloads.
 #' @return A [tibble::tibble()] with the downloaded data.
 #' @export
 vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
                            limite = NULL, timeout = 120, uf = "RJ",
-                           direcao = c("asc", "desc")) {
+                           direcao = c("asc", "desc"), filtros = NULL) {
   if (is.null(.vigiar_env$sessao)) {
     stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
   }
@@ -73,6 +75,7 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
     ordenar_por = ordenar_por,
     limite      = limite,
     direcao     = if (direcao[1] == "desc") 2L else 1L,
+    filtros     = filtros,
     modelo_id   = .vigiar_env$sessao$model_id
   )
 

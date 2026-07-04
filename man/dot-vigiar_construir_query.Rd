@@ -10,7 +10,8 @@
   ordenar_por = NULL,
   limite = NULL,
   modelo_id,
-  direcao = 1L
+  direcao = 1L,
+  filtros = NULL
 )
 }
 \arguments{
@@ -23,6 +24,8 @@
 \item{limite}{Maximum number of rows (optional).}
 
 \item{modelo_id}{Model ID in Power BI.}
+
+\item{filtros}{Optional named list of server-side equality filters.}
 }
 \value{
 A nested list ready for JSON serialisation.
