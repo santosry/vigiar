@@ -11,7 +11,7 @@ library(vigiar)
 
 cat("\n")
 cat("============================================================\n")
-cat("  TESTES DO PACOTE vigiar v0.3.0\n")
+cat(sprintf("  TESTES DO PACOTE vigiar v%s\n", packageVersion("vigiar")))
 cat("============================================================\n")
 
 pass <- 0L
@@ -87,7 +87,7 @@ cat("\n--- 2. Classes S3 ---\n\n")
   df <- data.frame(x = numeric(0))
   out <- new_vigiar_tbl(df, tabela = "test")
   attr(out, "vigiar_tabela") <- NULL
-  saida <- capture.output(validate(out), type = "message")
+  saida <- capture.output(validate.vigiar_tbl(out), type = "message")
   TRUE  # validate emite warning, nao erro
 })
 
