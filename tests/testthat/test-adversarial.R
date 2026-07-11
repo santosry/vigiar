@@ -195,3 +195,115 @@ test_that("invalid temporal values are explicit and cannot pass strict mode", {
     "Invalid or missing temporal values"
   )
 })
+
+test_that("IBGE code validation separates format, existence, and RJ membership", {
+  report <- vigiar_validar_codigo_municipio(c(
+    330100,
+    3301009,
+    3301008,
+    330033,
+    " 3550308 ",
+    "330100.0",
+    "abc",
+    NA,
+    0,
+    -330100
+  ), uf = "RJ")
+
+  expect_equal(report$codigo_ibge_6[1:2], c(330100L, 330100L))
+  expect_true(all(report$formato_valido[1:2]))
+  expect_true(all(report$existe[1:2]))
+  expect_true(all(report$pertence_uf[1:2]))
+
+  expect_true(report$formato_valido[3])
+  expect_false(report$digito_valido[3])
+  expect_false(report$existe[3])
+
+  expect_true(report$formato_valido[4])
+  expect_false(report$existe[4])
+  expect_false(report$pertence_uf[4])
+
+  expect_equal(report$codigo_ibge_6[5], 355030L)
+  expect_true(report$existe[5])
+  expect_false(report$pertence_uf[5])
+  expect_equal(report$codigo_ibge_6[6], 330100L)
+  expect_identical(report$status[8], "unknown")
+  expect_true(all(report$status[c(3, 4, 5, 7, 9, 10)] == "fail"))
+})
+
+test_that("data-frame IBGE validation stores a consumable report", {
+  dados <- data.frame(cod_municipio = c(330100L, 330033L, NA_integer_))
+  expect_warning(
+    out <- vigiar_validar_ibge(dados, uf = "RJ"),
+    "IBGE municipality code validation failed"
+  )
+  report <- attr(out, "vigiar_ibge_validation")
+  expect_s3_class(report, "tbl_df")
+  expect_equal(report$status, c("pass", "fail", "unknown"))
+  expect_error(vigiar_validar_ibge(dados, uf = "RJ", error = TRUE),
+               "IBGE municipality code validation failed")
+})
+
+test_that("generic downloads no longer default silently to RJ", {
+  expect_null(formals(vigiar_baixar)$uf)
+})
+
+test_that("UF filtering handles labels and numeric codes", {
+  labelled <- data.frame(UF = factor(c("RJ", "SP")), value = 1:2)
+  numeric <- data.frame(cod_uf = c(33L, 35L), value = 1:2)
+  numeric_character <- data.frame(cod_uf = c("33", "35"), value = 1:2)
+
+  expect_equal(.vigiar_filtrar_uf(labelled, "RJ")$value, 1L)
+  expect_equal(.vigiar_filtrar_uf(numeric, "RJ")$value, 1L)
+  expect_equal(.vigiar_filtrar_uf(numeric_character, "RJ")$value, 1L)
+})
+
+test_that("RJ server filter uses numeric semantics for cod_uf", {
+  old_schema <- .vigiar_env$esquema
+  on.exit({ .vigiar_env$esquema <- old_schema }, add = TRUE)
+
+  .vigiar_env$esquema <- list(
+    numeric_uf = list(cod_uf = list(tipo = "int64")),
+    label_uf = list(UF = list(tipo = "string"))
+  )
+
+  expect_identical(.vigiar_filtro_servidor_rj("numeric_uf"), list(cod_uf = 33L))
+  expect_identical(.vigiar_filtro_servidor_rj("label_uf"), list(UF = "RJ"))
+})
+
+test_that("conflicting server-side filters fail explicitly", {
+  expect_error(
+    .vigiar_combinar_filtros(list(UF = "SP"), list(UF = "RJ")),
+    "Conflicting server-side filters"
+  )
+  expect_identical(
+    .vigiar_combinar_filtros(list(cod_uf = "33"), list(cod_uf = 33L)),
+    list(cod_uf = 33L)
+  )
+})
+
+test_that("Power BI literals reject missing and non-finite values", {
+  expect_identical(.vigiar_literal_powerbi(33L), "33L")
+  expect_identical(.vigiar_literal_powerbi("O'Brien"), "'O''Brien'")
+  expect_identical(.vigiar_literal_powerbi(TRUE), "true")
+  expect_error(.vigiar_literal_powerbi(NA), "missing")
+  expect_error(.vigiar_literal_powerbi(Inf), "finite")
+})
+
+test_that("municipality server filter uses the normalized IBGE code", {
+  old_schema <- .vigiar_env$esquema
+  on.exit({ .vigiar_env$esquema <- old_schema }, add = TRUE)
+  .vigiar_env$esquema <- list(
+    df_anual = list(muni = list(tipo = "int64")),
+    seven = list(codigo_ibge_7 = list(tipo = "int64"))
+  )
+
+  expect_identical(
+    .vigiar_filtro_servidor_municipio("df_anual", 330100L),
+    list(muni = 330100L)
+  )
+  expect_identical(
+    .vigiar_filtro_servidor_municipio("seven", 330100L),
+    list(codigo_ibge_7 = 3301009L)
+  )
+})

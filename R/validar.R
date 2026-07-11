@@ -45,19 +45,31 @@ vigiar_padronizar_colunas <- function(dados, tabela) {
 #'
 #' @param dados A data frame.
 #' @param col_codigo Name of the column containing IBGE codes.
-#' @return The data frame (unchanged), with a warning on invalid codes.
+#' @param uf Optional UF code or abbreviation used to validate membership.
+#' @param error If \code{TRUE}, fail when a supplied code is invalid, unknown,
+#'   nonexistent, or outside `uf`.
+#' @return The data frame with a `vigiar_ibge_validation` report attribute.
 #' @export
-vigiar_validar_ibge <- function(dados, col_codigo = "cod_municipio") {
+vigiar_validar_ibge <- function(dados, col_codigo = "cod_municipio", uf = NULL,
+                                 error = FALSE) {
   if (!col_codigo %in% names(dados)) return(dados)
 
-  codigos <- .vigiar_normalizar_codigo_municipio(dados[[col_codigo]])
-
-  n_invalid <- sum(is.na(codigos))
-  if (n_invalid > 0) {
-    warning(sprintf(
-      "%d IBGE municipality code(s) could not be safely normalized to 6 digits",
-      n_invalid
-    ))
+  report <- vigiar_validar_codigo_municipio(dados[[col_codigo]], uf = uf)
+  attr(dados, "vigiar_ibge_validation") <- report
+  n_fail <- sum(report$status == "fail")
+  n_unknown <- sum(report$status == "unknown")
+  if (n_fail > 0L || n_unknown > 0L) {
+    msg <- sprintf(
+      paste0(
+        "IBGE municipality code validation failed or is unverified: ",
+        "%d failed, %d unknown."
+      ),
+      n_fail, n_unknown
+    )
+    if (isTRUE(error)) {
+      stop(msg, call. = FALSE)
+    }
+    warning(msg, call. = FALSE)
   }
 
   dados

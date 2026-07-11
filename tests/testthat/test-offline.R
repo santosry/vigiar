@@ -338,7 +338,7 @@ test_that("vigiar_validar_ibge warns on invalid codes", {
   )
   expect_warning(
     vigiar_validar_ibge(dados, "cod_municipio"),
-    "could not be safely normalized"
+    "IBGE municipality code validation failed"
   )
 })
 

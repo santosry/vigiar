@@ -7,8 +7,9 @@
 vigiar_rj_municipios()
 }
 \value{
-A tibble with municipality codes, municipality names, health
-  macro-regions, health regions, and source metadata attributes.
+A tibble with municipality codes, municipality names, the canonical
+  SES-RJ `regiao_saude`, the deprecated compatibility alias
+  `macrorregiao_saude`, and source metadata attributes.
 }
 \description{
 The package standard is the 6-digit IBGE municipality code

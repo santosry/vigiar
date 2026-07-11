@@ -168,22 +168,38 @@ test_that("RJ registry has the expected 92 municipalities", {
 })
 
 test_that("RJ registry matches the official IBGE municipality code reference", {
-  ref_path <- system.file("extdata", "rj_municipios_ibge_reference.csv", package = "vigiar")
+  ref_path <- system.file("extdata", "municipios_ibge_reference.csv", package = "vigiar")
+  metadata_path <- system.file(
+    "extdata", "municipios_ibge_reference_metadata.json", package = "vigiar"
+  )
   expect_true(nzchar(ref_path))
-  ibge <- utils::read.csv(ref_path, stringsAsFactors = FALSE)
+  expect_true(nzchar(metadata_path))
+  all_ibge <- utils::read.csv(ref_path, stringsAsFactors = FALSE)
+  ibge <- all_ibge[all_ibge$sigla_uf == "RJ", ]
   rj <- vigiar_rj_municipios()
 
+  expect_equal(nrow(all_ibge), 5571)
   expect_equal(nrow(ibge), 92)
   expect_setequal(rj$codigo_ibge_6, ibge$codigo_ibge_6)
   expect_setequal(rj$codigo_ibge_7, ibge$codigo_ibge_7)
+  expect_setequal(rj$municipio, iconv(ibge$municipio, to = "ASCII//TRANSLIT"))
+  expect_false(330033L %in% all_ibge$codigo_ibge_6)
 
   merged <- merge(rj, ibge, by = c("codigo_ibge_6", "codigo_ibge_7"))
   expect_equal(nrow(merged), 92)
-  expect_equal(merged$municipio[merged$codigo_ibge_6 == 330100], "Campos dos Goytacazes")
+  expect_equal(rj$municipio[rj$codigo_ibge_6 == 330100], "Campos dos Goytacazes")
   expect_equal(merged$codigo_ibge_7[merged$codigo_ibge_6 == 330100], 3301009)
   expect_equal(merged$codigo_ibge_7[merged$codigo_ibge_6 == 330475], 3304755)
   expect_equal(merged$codigo_ibge_7[merged$codigo_ibge_6 == 330500], 3305000)
   expect_equal(length(unique(rj$macrorregiao_saude)), 9)
+
+  metadata <- jsonlite::fromJSON(metadata_path)
+  checksum_connection <- file(ref_path, open = "rb")
+  checksum <- paste(format(openssl::sha256(checksum_connection)), collapse = "")
+  close(checksum_connection)
+  expect_equal(metadata$n_municipalities, nrow(all_ibge))
+  expect_equal(metadata$n_rj_municipalities, 92)
+  expect_identical(metadata$sha256, checksum)
 })
 
 test_that("RJ registry matches the official SES-RJ health-region reference", {
@@ -195,11 +211,12 @@ test_that("RJ registry matches the official SES-RJ health-region reference", {
   ses <- utils::read.csv(ref_path, stringsAsFactors = FALSE)
   sources <- utils::read.csv(source_path, stringsAsFactors = FALSE)
   rj <- vigiar_rj_municipios()
-  region_counts <- table(rj$macrorregiao_saude)
+  region_counts <- table(rj$regiao_saude)
 
   expect_equal(nrow(ses), 9)
   expect_setequal(vigiar_rj_macrorregioes(), ses$regiao_saude_package)
   expect_setequal(vigiar_rj_regioes_saude(), ses$regiao_saude_package)
+  expect_identical(rj$macrorregiao_saude, rj$regiao_saude)
   expect_equal(sum(ses$municipios_esperados), 92)
   expect_equal(
     as.integer(region_counts[ses$regiao_saude_package]),
@@ -468,10 +485,14 @@ test_that("municipality download filters only by IBGE code and keeps metadata", 
     ano = 2022L,
     Media_pm25 = c(12, 13, 14, 15, 99)
   )
+  captured <- new.env(parent = emptyenv())
 
   .with_mock_vigiar_session({
     testthat::local_mocked_bindings(
-      vigiar_baixar = function(...) mixed,
+      vigiar_baixar = function(...) {
+        captured$args <- list(...)
+        mixed
+      },
       .package = "vigiar"
     )
     out <- suppressWarnings(vigiar_baixar_municipio("df_anual", codigo_ibge = 330100))
@@ -482,6 +503,11 @@ test_that("municipality download filters only by IBGE code and keeps metadata", 
     expect_equal(attr(out, "vigiar_codigo_ibge_7"), 3301009L)
     expect_equal(attr(out, "vigiar_municipio"), "Campos dos Goytacazes")
     expect_equal(attr(out, "vigiar_macrorregiao_saude"), "Norte")
+    expect_identical(captured$args$filtros$muni, 330100L)
+    expect_identical(
+      attr(out, "vigiar_query_strategy"),
+      "server_side_municipality_filter_with_local_verification"
+    )
     expect_false(any(out$codigo_ibge_6 %in% c(330093L, 330090L, 330115L)))
   })
 

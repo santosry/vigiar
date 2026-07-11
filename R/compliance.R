@@ -420,16 +420,15 @@ print.vigiar_compliance <- function(x, ...) {
   }
 
   raw_codes <- dados[[col_muni]]
-  normalized <- .vigiar_normalizar_codigo_municipio(raw_codes)
-  codigos <- normalized[!is.na(normalized)]
+  validation <- vigiar_validar_codigo_municipio(raw_codes)
   raw_non_missing <- raw_codes[!is.na(raw_codes)]
 
   if (length(raw_non_missing) == 0) {
     return(list(ok = TRUE, details = "Nenhum codigo IBGE nos dados"))
   }
 
-  invalidos <- raw_codes[is.na(normalized) & !is.na(raw_codes)]
-  validos <- codigos
+  invalidos <- raw_codes[validation$status == "fail"]
+  validos <- validation$codigo_ibge_6[validation$status == "pass"]
 
   ok <- length(invalidos) == 0
   details <- sprintf(

@@ -1,0 +1,7 @@
+{
+  "source_url": "https://servicodados.ibge.gov.br/api/v1/localidades/municipios",
+  "retrieved_at": "2026-07-11 16:05:21 UTC",
+  "n_municipalities": 5571,
+  "n_rj_municipalities": 92,
+  "sha256": "a86e57e34937627513142a21cde03ed0556bfddf7014420d4e6994825dbe07a1"
+}

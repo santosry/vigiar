@@ -93,6 +93,20 @@
   if (is.null(names(filtros)) || any(!nzchar(names(filtros)))) {
     stop("Server-side filters must be a named list.", call. = FALSE)
   }
+  filtros <- .vigiar_combinar_filtros(filtros)
+  schema <- .vigiar_env$esquema[[tabela]]
+  if (is.null(schema)) {
+    stop("Table schema is unavailable for server-side filter validation.",
+         call. = FALSE)
+  }
+  unknown <- setdiff(names(filtros), names(schema))
+  if (length(unknown) > 0L) {
+    stop(
+      "Server-side filter column(s) are absent from the table schema: ",
+      paste(unknown, collapse = ", "),
+      call. = FALSE
+    )
+  }
 
   lapply(names(filtros), function(coluna) {
     valores <- filtros[[coluna]]
@@ -115,8 +129,17 @@
 }
 
 .vigiar_literal_powerbi <- function(valor) {
+  if (length(valor) != 1L) {
+    stop("Power BI literals must contain exactly one value.", call. = FALSE)
+  }
+  if (is.na(valor)) {
+    stop("Power BI literals cannot be missing.", call. = FALSE)
+  }
   if (is.numeric(valor) || is.integer(valor)) {
-    if (is.finite(valor) && identical(as.numeric(valor), as.numeric(as.integer(valor)))) {
+    if (!is.finite(valor)) {
+      stop("Numeric Power BI literals must be finite.", call. = FALSE)
+    }
+    if (identical(as.numeric(valor), as.numeric(as.integer(valor)))) {
       return(paste0(as.integer(valor), "L"))
     }
     return(as.character(valor))

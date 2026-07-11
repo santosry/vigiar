@@ -51,14 +51,16 @@ vigiar_esquema <- function(tabela = NULL) {
 #' @param ordenar_por Column to sort by (optional).
 #' @param limite Maximum number of rows (optional).
 #' @param timeout Timeout in seconds for the HTTP request.
-#' @param uf UF filter. Filters data client-side. Use `NULL` for no filter. Default `"RJ"`.
+#' @param uf Optional UF filter applied client-side. The generic downloader does
+#'   not restrict geography by default; use \code{vigiar_baixar_rj()} for an
+#'   explicitly audited Rio de Janeiro download.
 #' @param direcao Sort direction: `"asc"` (ascending) or `"desc"` (descending).
 #' @param filtros Optional named list of server-side equality filters. This is
 #'   primarily used internally for audited RJ downloads.
 #' @return A [tibble::tibble()] with the downloaded data.
 #' @export
 vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
-                           limite = NULL, timeout = 120, uf = "RJ",
+                           limite = NULL, timeout = 120, uf = NULL,
                            direcao = c("asc", "desc"), filtros = NULL) {
   if (is.null(.vigiar_env$sessao)) {
     stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
@@ -84,24 +86,21 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
   )
   dados <- .vigiar_parse_dados(resposta, tabela)
 
-  # Client-side UF filter (default: RJ)
+  uf_normalized <- if (is.null(uf)) NULL else .vigiar_normalizar_uf(uf)
+  if (!is.null(uf_normalized) &&
+      (length(uf_normalized) != 1L || is.na(uf_normalized))) {
+    stop("'uf' must be one valid Brazilian UF code or abbreviation.", call. = FALSE)
+  }
+  requested_scope <- if (is.null(uf)) "all_returned_geographies" else
+    paste0("uf:", uf_normalized)
+
+  # Client-side UF filter
   if (!is.null(uf)) {
-    # Try UF columns in order of preference
-    col_uf <- intersect(c("UF", "sigla_uf", "UF_SIGLA", "uf", "cod_uf"), names(dados))[1]
-    if (!is.na(col_uf)) {
-      n_antes <- nrow(dados)
-      dados <- dados[toupper(dados[[col_uf]]) == toupper(uf), ]
-      cli::cli_alert_info("Filtro UF='{uf}' ({col_uf}): {nrow(dados)} linhas (de {n_antes}).")
-    } else {
-      # Fall back to municipality code range
-      col_muni <- intersect(c("muni", "cod_municipio", "ID_MUNI", "codigo_ibge", "MUN_COD"), names(dados))[1]
-      if (!is.na(col_muni) && toupper(uf) == "RJ") {
-        n_antes <- nrow(dados)
-        codigos <- .vigiar_normalizar_codigo_municipio(dados[[col_muni]])
-        dados <- dados[!is.na(codigos) & codigos %in% RJ_MUNICIPIOS$codigo_ibge_6, ]
-        cli::cli_alert_info("Filtro RJ (municipality registry via '{col_muni}'): {nrow(dados)} linhas (de {n_antes}).")
-      }
-    }
+    n_antes <- nrow(dados)
+    dados <- .vigiar_filtrar_uf(dados, uf)
+    cli::cli_alert_info(
+      "UF filter '{uf_normalized}': {nrow(dados)} rows from {n_antes}."
+    )
   }
 
   # Warn if data might be truncated by API limit
@@ -129,6 +128,14 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
     "Tabela '{tabela}' baixada: {nrow(dados)} linhas x {ncol(dados)} colunas ({round(elapsed, 1)}s)"
   )
 
+  attr(dados, "vigiar_tabela") <- tabela
+  attr(dados, "vigiar_requested_scope") <- requested_scope
+  attr(dados, "vigiar_returned_rows") <- nrow(dados)
+  attr(dados, "vigiar_server_filter") <- filtros
+  attr(dados, "vigiar_requested_limit") <- limite
+  attr(dados, "vigiar_query_strategy") <- "single_semantic_query"
+  attr(dados, "vigiar_verification_status") <- "unverified"
+  attr(dados, "vigiar_download_timestamp") <- Sys.time()
   tibble::as_tibble(dados)
 }
 

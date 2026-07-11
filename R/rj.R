@@ -59,7 +59,7 @@ RJ_MUNICIPIOS <- data.frame(
     "Saquarema", "Seropedica", "Silva Jardim", "Sumidouro",
     "Tangua", "Teresopolis", "Trajano de Moraes", "Tres Rios",
     "Valenca", "Varre-Sai", "Vassouras", "Volta Redonda"),
-  macrorregiao_saude = c(
+  regiao_saude = c(
     "Baia da Ilha Grande", "Noroeste", "Baixada Litoranea", "Centro-Sul",
     "Baixada Litoranea", "Baixada Litoranea", "Medio Paraiba", "Noroeste",
     "Medio Paraiba", "Metropolitana I", "Serrana", "Noroeste",
@@ -87,10 +87,10 @@ RJ_MUNICIPIOS <- data.frame(
 )
 
 RJ_MUNICIPIOS$codigo_ibge_6 <- RJ_MUNICIPIOS$codigo_ibge
-RJ_MUNICIPIOS$regiao_saude <- RJ_MUNICIPIOS$macrorregiao_saude
+RJ_MUNICIPIOS$macrorregiao_saude <- RJ_MUNICIPIOS$regiao_saude
 RJ_MUNICIPIOS <- RJ_MUNICIPIOS[
   c("codigo_ibge", "codigo_ibge_6", "codigo_ibge_7", "municipio",
-    "macrorregiao_saude", "regiao_saude")
+    "regiao_saude", "macrorregiao_saude")
 ]
 
 RJ_CODIGOS_VALIDOS <- c(
@@ -107,8 +107,9 @@ RJ_MUNI_RANGE <- c(330010L, 330630L)
 #' (`codigo_ibge` / `codigo_ibge_6`). The 7-digit official IBGE code is also
 #' returned as `codigo_ibge_7` for joins with sources that use the check digit.
 #'
-#' @return A tibble with municipality codes, municipality names, health
-#'   macro-regions, health regions, and source metadata attributes.
+#' @return A tibble with municipality codes, municipality names, the canonical
+#'   SES-RJ `regiao_saude`, the deprecated compatibility alias
+#'   `macrorregiao_saude`, and source metadata attributes.
 #' @export
 vigiar_rj_municipios <- function() {
   out <- tibble::as_tibble(RJ_MUNICIPIOS)
@@ -218,16 +219,19 @@ vigiar_validar_rj <- function(dados, col_muni = NULL) {
   }
 
   raw_codes <- dados[[col_muni]]
-  normalized <- .vigiar_normalizar_codigo_municipio(raw_codes)
+  validation <- vigiar_validar_codigo_municipio(raw_codes, uf = "RJ")
   raw_chr <- trimws(as.character(raw_codes))
   supplied <- !is.na(raw_codes) & nzchar(raw_chr)
-  invalidos <- unique(raw_chr[supplied & is.na(normalized)])
-  codigos <- unique(normalized)
+  invalid_idx <- supplied & (!validation$formato_valido | !validation$existe)
+  invalidos <- unique(raw_chr[invalid_idx])
+  codigos <- unique(validation$codigo_ibge_6[validation$existe])
   codigos <- codigos[!is.na(codigos)]
 
   rj_codes <- RJ_MUNICIPIOS$codigo_ibge_6
   in_rj <- sort(intersect(codigos, rj_codes))
-  fora_rj <- sort(setdiff(codigos, rj_codes))
+  fora_rj <- sort(unique(validation$codigo_ibge_6[
+    validation$existe & !validation$pertence_uf
+  ]))
   faltantes <- sort(setdiff(rj_codes, in_rj))
   ok <- length(in_rj) > 0L && length(fora_rj) == 0L && length(invalidos) == 0L
   details <- character()
@@ -486,7 +490,13 @@ vigiar_baixar_municipio <- function(
          call. = FALSE)
   }
 
-  dados_rj <- vigiar_baixar_rj(
+  dots <- list(...)
+  municipality_filter <- .vigiar_filtro_servidor_municipio(tabela, codigo6)
+  dots$filtros <- .vigiar_combinar_filtros(
+    dots$filtros,
+    municipality_filter
+  )
+  args <- c(list(
     tabela = tabela,
     colunas = colunas,
     ordenar_por = ordenar_por,
@@ -498,9 +508,16 @@ vigiar_baixar_municipio <- function(
     processar = processar,
     tipo = tipo,
     usar_cache = usar_cache,
-    snapshot = FALSE,
-    ...
-  )
+    snapshot = FALSE
+  ), dots)
+  dados_rj <- do.call(vigiar_baixar_rj, args)
+  if (is.null(municipality_filter)) {
+    warning(
+      "The table schema has no validated municipality field for a server-side ",
+      "filter; the municipality was subset from the upstream RJ response.",
+      call. = FALSE
+    )
+  }
 
   if (isTRUE(require_complete) &&
       isTRUE(attr(dados_rj, "vigiar_possivel_truncamento"))) {
@@ -533,6 +550,12 @@ vigiar_baixar_municipio <- function(
   attr(out, "vigiar_regiao_saude") <- reg$regiao_saude[[1]]
   attr(out, "vigiar_municipio_presente") <- nrow(out) > 0
   attr(out, "vigiar_municipio_linhas") <- nrow(out)
+  attr(out, "vigiar_municipality_server_filter") <- municipality_filter
+  attr(out, "vigiar_query_strategy") <- if (is.null(municipality_filter)) {
+    "local_subset_from_rj_response"
+  } else {
+    "server_side_municipality_filter_with_local_verification"
+  }
   attr(out, "vigiar_possivel_truncamento") <- isTRUE(attr(dados_rj, "vigiar_possivel_truncamento"))
   attr(out, "vigiar_download_timestamp") <- Sys.time()
 
@@ -1015,6 +1038,7 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
 
   out6 <- rep(NA_integer_, length(x))
   out7 <- rep(NA_integer_, length(x))
+  reference <- .vigiar_ibge_reference()
   missing <- is.na(x)
   chr <- trimws(as.character(x))
   chr[missing] <- NA_character_
@@ -1027,10 +1051,10 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
     ok <- !is.na(val) & val >= 110001L & val <= 530010L
     idx <- which(is_6)
     out6[idx[ok]] <- val[ok]
-    match_rj <- match(val[ok], RJ_MUNICIPIOS$codigo_ibge_6)
-    has_rj <- !is.na(match_rj)
-    if (any(has_rj)) {
-      out7[idx[ok][has_rj]] <- RJ_MUNICIPIOS$codigo_ibge_7[match_rj[has_rj]]
+    match_ref <- match(val[ok], reference$codigo_ibge_6)
+    exists <- !is.na(match_ref)
+    if (any(exists)) {
+      out7[idx[ok][exists]] <- reference$codigo_ibge_7[match_ref[exists]]
     }
   }
 
@@ -1039,11 +1063,11 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
     val7 <- suppressWarnings(as.integer(chr[is_7]))
     val6 <- suppressWarnings(as.integer(substr(chr[is_7], 1, 6)))
     ok <- !is.na(val6) & val6 >= 110001L & val6 <= 530010L
-    rj_idx <- match(val6, RJ_MUNICIPIOS$codigo_ibge_6)
-    is_rj_code <- !is.na(rj_idx)
-    official_rj_7 <- rep(FALSE, length(val7))
-    official_rj_7[is_rj_code] <- val7[is_rj_code] == RJ_MUNICIPIOS$codigo_ibge_7[rj_idx[is_rj_code]]
-    ok <- ok & (!is_rj_code | official_rj_7)
+    ref_idx <- match(val6, reference$codigo_ibge_6)
+    exists <- !is.na(ref_idx)
+    official_7 <- rep(FALSE, length(val7))
+    official_7[exists] <- val7[exists] == reference$codigo_ibge_7[ref_idx[exists]]
+    ok <- ok & exists & official_7
     idx <- which(is_7)
     out6[idx[ok]] <- val6[ok]
     out7[idx[ok]] <- val7[ok]
@@ -1072,11 +1096,8 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
     cli::cli_alert_info("RJ filter by municipality registry: {nrow(dados)} rows from {before}.")
   } else if (!is.na(col_uf)) {
     before <- nrow(dados)
-    if (is.numeric(dados[[col_uf]])) {
-      dados <- dados[as.integer(dados[[col_uf]]) == 33L, , drop = FALSE]
-    } else {
-      dados <- dados[toupper(as.character(dados[[col_uf]])) %in% c("RJ", "RIO DE JANEIRO"), , drop = FALSE]
-    }
+    normalized_uf <- .vigiar_normalizar_uf(dados[[col_uf]])
+    dados <- dados[!is.na(normalized_uf) & normalized_uf == "RJ", , drop = FALSE]
     cli::cli_alert_warning(
       "RJ filter used UF column '{col_uf}' because no municipality code column was found."
     )
@@ -1162,7 +1183,13 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
   cols <- names(schema)
   col_uf <- intersect(c("UF", "sigla_uf", "UF_SIGLA", "uf", "cod_uf"), cols)[1]
   if (!is.na(col_uf)) {
-    filtro <- list("RJ")
+    if (identical(col_uf, "cod_uf")) {
+      type <- tolower(.vigiar_schema_column_type(schema[[col_uf]]) %||% "")
+      value <- if (grepl("int|numeric|double|decimal", type)) 33L else "33"
+    } else {
+      value <- "RJ"
+    }
+    filtro <- list(value)
     names(filtro) <- col_uf
     return(filtro)
   }
@@ -1177,6 +1204,53 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
   NULL
 }
 
+.vigiar_filtro_servidor_municipio <- function(tabela, codigo_ibge_6) {
+  schema <- .vigiar_env$esquema[[tabela]]
+  if (is.null(schema)) {
+    return(NULL)
+  }
+  cols <- names(schema)
+  col_muni <- intersect(
+    c("codigo_ibge_6", "cod_municipio", "muni", "id_muni", "ID_MUNI",
+      "codigo_ibge", "cod_ibge", "codigo_municipio", "MUN_COD",
+      "cod_municipio_6", "cod_municipio_7", "codigo_ibge_7"),
+    cols
+  )[1]
+  if (is.na(col_muni)) {
+    return(NULL)
+  }
+  registry <- RJ_MUNICIPIOS[
+    RJ_MUNICIPIOS$codigo_ibge_6 == as.integer(codigo_ibge_6),
+  ]
+  if (nrow(registry) != 1L) {
+    stop("Municipality code is not present in the RJ reference.", call. = FALSE)
+  }
+  value <- if (grepl("_7$", col_muni)) {
+    as.integer(registry$codigo_ibge_7[[1]])
+  } else {
+    as.integer(registry$codigo_ibge_6[[1]])
+  }
+  type <- tolower(.vigiar_schema_column_type(schema[[col_muni]]) %||% "")
+  if (grepl("string|text", type)) {
+    value <- as.character(value)
+  }
+  filter <- list(value)
+  names(filter) <- col_muni
+  filter
+}
+
+.vigiar_filter_values <- function(name, values) {
+  values <- values[!is.na(values)]
+  if (identical(name, "cod_uf")) {
+    normalized <- .vigiar_normalizar_uf(values)
+    return(unname(.VIGIAR_UF_CODES[normalized]))
+  }
+  if (name %in% c("UF", "sigla_uf", "UF_SIGLA", "uf")) {
+    return(.vigiar_normalizar_uf(values))
+  }
+  as.character(values)
+}
+
 .vigiar_combinar_filtros <- function(...) {
   parts <- list(...)
   out <- list()
@@ -1187,7 +1261,36 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
     if (is.null(names(part)) || any(!nzchar(names(part)))) {
       stop("Server-side filters must be named.", call. = FALSE)
     }
-    out <- c(out, part)
+    for (i in seq_along(part)) {
+      name <- names(part)[[i]]
+      values <- part[[i]]
+      if (length(values) == 0L || all(is.na(values))) {
+        stop("Server-side filter '", name, "' has no non-missing values.",
+             call. = FALSE)
+      }
+      if (is.null(out[[name]])) {
+        out[[name]] <- values[!is.na(values)]
+        next
+      }
+      existing_key <- .vigiar_filter_values(name, out[[name]])
+      incoming_key <- .vigiar_filter_values(name, values)
+      common <- intersect(existing_key[!is.na(existing_key)],
+                          incoming_key[!is.na(incoming_key)])
+      if (length(common) == 0L) {
+        stop(
+          sprintf("Conflicting server-side filters for column '%s'.", name),
+          call. = FALSE
+        )
+      }
+      if (identical(name, "cod_uf")) {
+        out[[name]] <- as.integer(common)
+      } else if (name %in% c("UF", "sigla_uf", "UF_SIGLA", "uf")) {
+        out[[name]] <- common
+      } else {
+        keep <- .vigiar_filter_values(name, out[[name]]) %in% common
+        out[[name]] <- unique(out[[name]][keep])
+      }
+    }
   }
   if (length(out) == 0) {
     return(NULL)
