@@ -217,33 +217,52 @@ vigiar_validar_rj <- function(dados, col_muni = NULL) {
     stop("Municipality code column not found.", call. = FALSE)
   }
 
-  codigos <- unique(.vigiar_normalizar_codigo_municipio(dados[[col_muni]]))
+  raw_codes <- dados[[col_muni]]
+  normalized <- .vigiar_normalizar_codigo_municipio(raw_codes)
+  raw_chr <- trimws(as.character(raw_codes))
+  supplied <- !is.na(raw_codes) & nzchar(raw_chr)
+  invalidos <- unique(raw_chr[supplied & is.na(normalized)])
+  codigos <- unique(normalized)
   codigos <- codigos[!is.na(codigos)]
-
-  if (length(codigos) == 0) {
-    message("No valid municipality code was found in the data.")
-    return(invisible(list(n_total = 0, n_rj = 0, n_fora_rj = 0, valido = TRUE)))
-  }
 
   rj_codes <- RJ_MUNICIPIOS$codigo_ibge_6
   in_rj <- sort(intersect(codigos, rj_codes))
   fora_rj <- sort(setdiff(codigos, rj_codes))
   faltantes <- sort(setdiff(rj_codes, in_rj))
+  ok <- length(in_rj) > 0L && length(fora_rj) == 0L && length(invalidos) == 0L
+  details <- character()
+  if (length(in_rj) == 0L) {
+    details <- c(details, "No valid Rio de Janeiro municipality code was found.")
+  }
+  if (length(fora_rj) > 0L) {
+    details <- c(details, sprintf(
+      "%d municipality code(s) do not belong to Rio de Janeiro: %s",
+      length(fora_rj), paste(utils::head(fora_rj, 10), collapse = ", ")
+    ))
+  }
+  if (length(invalidos) > 0L) {
+    details <- c(details, sprintf(
+      "%d municipality code value(s) could not be normalized: %s",
+      length(invalidos), paste(utils::head(invalidos, 10), collapse = ", ")
+    ))
+  }
 
-  result <- list(
+  result <- c(.vigiar_check_result(
+    if (ok) "pass" else "fail",
+    details = details
+  ), list(
     n_total = length(codigos),
     n_rj = length(in_rj),
     n_fora_rj = length(fora_rj),
+    n_invalidos = length(invalidos),
     codigos_fora_rj = fora_rj,
+    codigos_invalidos = invalidos,
     municipios_rj_faltantes = faltantes,
-    valido = length(fora_rj) == 0
-  )
+    valido = ok
+  ))
 
-  if (!result$valido) {
-    warning(sprintf(
-      "%d municipality code(s) do not belong to Rio de Janeiro: %s",
-      length(fora_rj), paste(utils::head(fora_rj, 10), collapse = ", ")
-    ), call. = FALSE)
+  if (!result$ok && length(details) > 0L) {
+    warning(paste(details, collapse = " "), call. = FALSE)
   }
 
   if (length(faltantes) > 0) {
@@ -606,6 +625,15 @@ vigiar_rj_cobertura <- function(
   exigir_coluna_municipio = TRUE
 ) {
   por <- match.arg(por)
+  .vigiar_rj_cobertura_impl(
+    dados = dados,
+    por = por,
+    exigir_coluna_municipio = exigir_coluna_municipio
+  )
+}
+
+.vigiar_rj_cobertura_impl <- function(dados, por, exigir_coluna_municipio,
+                                       periodos_esperados = NULL) {
   dados <- tibble::as_tibble(dados)
   col_muni <- .vigiar_coluna_municipio(dados)
   possivel_truncamento <- isTRUE(attr(dados, "vigiar_possivel_truncamento"))
@@ -620,7 +648,7 @@ vigiar_rj_cobertura <- function(
   }
 
   dados$codigo_ibge_6__vigiar <- .vigiar_normalizar_codigo_municipio(dados[[col_muni]])
-  groups <- .vigiar_grupos_cobertura(dados, por)
+  groups <- .vigiar_grupos_cobertura(dados, por, periodos_esperados)
   rows <- lapply(groups, function(g) {
     .vigiar_cobertura_linha(
       dados = dados[g$idx, , drop = FALSE],
@@ -647,6 +675,7 @@ vigiar_rj_cobertura <- function(
       cobertura_pct = row$cobertura_pct,
       n_ausentes = row$n_ausentes,
       completo = row$completo,
+      periodo_ausente = row$periodo_ausente,
       possivel_truncamento = row$possivel_truncamento,
       stringsAsFactors = FALSE
     )
@@ -668,18 +697,108 @@ vigiar_rj_cobertura <- function(
 #'
 #' @param dados A data frame with municipality codes.
 #' @param tabela Optional table name. Defaults to the `vigiar_tabela` attribute.
-#' @param require_complete If \code{TRUE}, incomplete coverage or possible
-#'   truncation is an error.
+#' @param require_complete If \code{TRUE}, incomplete coverage, invalid temporal
+#'   values, or possible truncation is an error.
+#' @param anos_esperados Optional integer vector defining the expected years.
+#' @param meses_esperados Optional integer vector defining expected months.
+#' @param periodo_inicio Optional first expected period as a Date or a
+#'   `YYYY-MM`/`YYYY-MM-DD` string.
+#' @param periodo_fim Optional last expected period in the same format as
+#'   `periodo_inicio`.
+#' @param inferir_periodos If \code{TRUE}, fill periods between the minimum and
+#'   maximum observed values when no expected domain is supplied.
 #' @return A tibble with RJ coverage metrics at the expected table grain.
 #' @export
-vigiar_rj_completude_tabela <- function(dados, tabela = NULL, require_complete = FALSE) {
+vigiar_rj_completude_tabela <- function(
+  dados,
+  tabela = NULL,
+  require_complete = FALSE,
+  anos_esperados = NULL,
+  meses_esperados = NULL,
+  periodo_inicio = NULL,
+  periodo_fim = NULL,
+  inferir_periodos = TRUE
+) {
   tabela <- tabela %||% attr(dados, "vigiar_tabela") %||% "dados"
   dados <- tibble::as_tibble(dados)
   por <- .vigiar_cobertura_por_tabela(tabela, dados)
+  temporal_validation <- .vigiar_validar_temporal_rj(dados, por)
+  if (!temporal_validation$ok) {
+    warning(paste(temporal_validation$details, collapse = " "), call. = FALSE)
+    if (isTRUE(require_complete)) {
+      stop(
+        "Invalid or missing temporal values prevent a complete RJ panel claim.",
+        call. = FALSE
+      )
+    }
+  }
 
-  cobertura <- vigiar_rj_cobertura(dados, por = por)
+  domain <- .vigiar_domino_temporal_rj(
+    dados = dados,
+    por = por,
+    anos_esperados = anos_esperados,
+    meses_esperados = meses_esperados,
+    periodo_inicio = periodo_inicio,
+    periodo_fim = periodo_fim,
+    inferir_periodos = inferir_periodos
+  )
+
+  cobertura <- .vigiar_rj_cobertura_impl(
+    dados = dados,
+    por = por,
+    exigir_coluna_municipio = TRUE,
+    periodos_esperados = domain$periodos
+  )
   cobertura$tabela <- tabela
   cobertura$grade <- .vigiar_grade_cobertura_label(tabela, por)
+  cobertura$dominio_temporal <- domain$source
+  cobertura$spatial_coverage_status <- ifelse(
+    cobertura$completo, "complete", "incomplete"
+  )
+  panel_status <- if (all(cobertura$completo)) "complete" else "incomplete"
+  temporal_status <- if (!temporal_validation$ok) {
+    "invalid"
+  } else if (any(cobertura$periodo_ausente)) {
+    "incomplete"
+  } else if (domain$source == "observed") {
+    "unknown"
+  } else {
+    "complete_within_domain"
+  }
+  truncation_status <- if (any(cobertura$possivel_truncamento)) {
+    "possible"
+  } else {
+    "no_evidence"
+  }
+  verification_status <- if (truncation_status == "possible") {
+    "possible_truncation"
+  } else if (!temporal_validation$ok) {
+    "invalid_temporal_values"
+  } else if (panel_status == "incomplete") {
+    "partial"
+  } else {
+    paste0("complete_within_", domain$source, "_domain")
+  }
+  overall_status <- if (
+    truncation_status == "possible" || !temporal_validation$ok ||
+      panel_status == "incomplete"
+  ) {
+    "fail"
+  } else if (domain$source %in% c("observed", "inferred")) {
+    "unknown"
+  } else {
+    "pass"
+  }
+  cobertura$panel_status <- panel_status
+  cobertura$temporal_domain_status <- temporal_status
+  cobertura$schema_status <- if (nzchar(attr(dados, "vigiar_schema_hash") %||% "")) {
+    "recorded"
+  } else {
+    "unknown"
+  }
+  cobertura$truncation_status <- truncation_status
+  cobertura$verification_status <- verification_status
+  cobertura$overall_status <- overall_status
   cobertura <- cobertura[
     c("tabela", "grade", setdiff(names(cobertura), c("tabela", "grade")))
   ]
@@ -700,6 +819,17 @@ vigiar_rj_completude_tabela <- function(dados, tabela = NULL, require_complete =
     )
   }
 
+  attr(cobertura, "vigiar_temporal_validation") <- temporal_validation
+  attr(cobertura, "vigiar_expected_periods") <- domain$periodos
+  attr(cobertura, "vigiar_completeness_summary") <- list(
+    spatial_coverage = if (all(cobertura$completo)) "complete" else "incomplete",
+    temporal_domain = temporal_status,
+    panel_completeness = panel_status,
+    schema = unique(cobertura$schema_status),
+    truncation = truncation_status,
+    verification = verification_status,
+    overall = overall_status
+  )
   cobertura
 }
 
@@ -1130,6 +1260,7 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
     cobertura_pct = 0,
     n_ausentes = 92L,
     completo = FALSE,
+    periodo_ausente = por %in% c("ano", "mes", "ano_mes"),
     possivel_truncamento = possivel_truncamento,
     stringsAsFactors = FALSE
   )
@@ -1139,7 +1270,210 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
   tibble::as_tibble(row)
 }
 
-.vigiar_grupos_cobertura <- function(dados, por) {
+.vigiar_validar_temporal_rj <- function(dados, por) {
+  needs_year <- por %in% c("ano", "ano_mes")
+  needs_month <- por %in% c("mes", "ano_mes")
+  current_year <- as.integer(format(Sys.Date(), "%Y"))
+
+  ano_missing <- ano_invalid <- mes_missing <- mes_invalid <- 0L
+  if (needs_year) {
+    raw <- dados$ano
+    converted <- suppressWarnings(as.integer(as.character(raw)))
+    ano_missing <- sum(is.na(raw) | !nzchar(trimws(as.character(raw))))
+    supplied <- !is.na(raw) & nzchar(trimws(as.character(raw)))
+    ano_invalid <- sum(supplied & (
+      is.na(converted) | converted < 2000L | converted > current_year
+    ))
+  }
+  if (needs_month) {
+    raw <- dados$mes
+    converted <- suppressWarnings(as.integer(as.character(raw)))
+    mes_missing <- sum(is.na(raw) | !nzchar(trimws(as.character(raw))))
+    supplied <- !is.na(raw) & nzchar(trimws(as.character(raw)))
+    mes_invalid <- sum(supplied & (
+      is.na(converted) | converted < 1L | converted > 12L
+    ))
+  }
+
+  details <- character()
+  if (ano_missing > 0L) {
+    details <- c(details, sprintf("%d row(s) have a missing year.", ano_missing))
+  }
+  if (ano_invalid > 0L) {
+    details <- c(details, sprintf("%d row(s) have a year outside 2000-%d.",
+                                  ano_invalid, current_year))
+  }
+  if (mes_missing > 0L) {
+    details <- c(details, sprintf("%d row(s) have a missing month.", mes_missing))
+  }
+  if (mes_invalid > 0L) {
+    details <- c(details, sprintf("%d row(s) have a month outside 1-12.", mes_invalid))
+  }
+
+  c(.vigiar_check_result(
+    if (length(details) == 0L) "pass" else "fail",
+    details = details
+  ), list(
+    n_ano_ausente = as.integer(ano_missing),
+    n_ano_invalido = as.integer(ano_invalid),
+    n_mes_ausente = as.integer(mes_missing),
+    n_mes_invalido = as.integer(mes_invalid)
+  ))
+}
+
+.vigiar_parse_periodo <- function(x, name) {
+  if (is.null(x)) {
+    return(NULL)
+  }
+  if (length(x) != 1L || is.na(x)) {
+    stop("'", name, "' must identify exactly one non-missing period.",
+         call. = FALSE)
+  }
+  if (inherits(x, "Date")) {
+    return(as.Date(format(x, "%Y-%m-01")))
+  }
+  value <- as.character(x)
+  if (grepl("^[0-9]{4}-[0-9]{2}$", value)) {
+    value <- paste0(value, "-01")
+  }
+  parsed <- suppressWarnings(as.Date(value))
+  if (is.na(parsed)) {
+    stop("'", name, "' must be a Date or YYYY-MM/YYY-MM-DD string.",
+         call. = FALSE)
+  }
+  as.Date(format(parsed, "%Y-%m-01"))
+}
+
+.vigiar_domino_temporal_rj <- function(dados, por, anos_esperados = NULL,
+                                        meses_esperados = NULL,
+                                        periodo_inicio = NULL,
+                                        periodo_fim = NULL,
+                                        inferir_periodos = TRUE) {
+  temporal <- por %in% c("ano", "mes", "ano_mes")
+  if (!temporal) {
+    return(list(periodos = NULL, source = "not_applicable"))
+  }
+
+  start <- .vigiar_parse_periodo(periodo_inicio, "periodo_inicio")
+  end <- .vigiar_parse_periodo(periodo_fim, "periodo_fim")
+  if (xor(is.null(start), is.null(end))) {
+    stop("'periodo_inicio' and 'periodo_fim' must be supplied together.",
+         call. = FALSE)
+  }
+  if (!is.null(start) && start > end) {
+    stop("'periodo_inicio' must not be after 'periodo_fim'.", call. = FALSE)
+  }
+
+  observed_years <- if ("ano" %in% names(dados)) {
+    y <- suppressWarnings(as.integer(as.character(dados$ano)))
+    sort(unique(y[!is.na(y) & y >= 2000L & y <= as.integer(format(Sys.Date(), "%Y"))]))
+  } else {
+    integer()
+  }
+  observed_months <- if ("mes" %in% names(dados)) {
+    m <- suppressWarnings(as.integer(as.character(dados$mes)))
+    sort(unique(m[!is.na(m) & m >= 1L & m <= 12L]))
+  } else {
+    integer()
+  }
+
+  user_specified <- !is.null(anos_esperados) || !is.null(meses_esperados) ||
+    !is.null(start)
+  if (!is.null(anos_esperados)) {
+    anos_esperados <- suppressWarnings(as.integer(anos_esperados))
+    if (anyNA(anos_esperados) || any(anos_esperados < 2000L)) {
+      stop("'anos_esperados' must contain valid years from 2000 onward.",
+           call. = FALSE)
+    }
+    anos_esperados <- sort(unique(anos_esperados))
+  }
+  if (!is.null(meses_esperados)) {
+    meses_esperados <- suppressWarnings(as.integer(meses_esperados))
+    if (anyNA(meses_esperados) || any(!meses_esperados %in% 1:12)) {
+      stop("'meses_esperados' must contain integers from 1 to 12.",
+           call. = FALSE)
+    }
+    meses_esperados <- sort(unique(meses_esperados))
+  }
+
+  if (!is.null(start)) {
+    dates <- seq(start, end, by = "month")
+    periods <- data.frame(
+      ano = as.integer(format(dates, "%Y")),
+      mes = as.integer(format(dates, "%m"))
+    )
+    if (por == "ano") {
+      periods <- unique(periods["ano"])
+    } else if (por == "mes") {
+      periods <- unique(periods["mes"])
+    }
+    return(list(periodos = periods, source = "user_specified"))
+  }
+
+  if (user_specified) {
+    years <- anos_esperados %||% observed_years
+    months <- meses_esperados %||% observed_months
+    periods <- switch(por,
+      ano = data.frame(ano = years),
+      mes = data.frame(mes = months),
+      ano_mes = expand.grid(ano = years, mes = months)
+    )
+    periods <- periods[do.call(order, periods), , drop = FALSE]
+    return(list(periodos = periods, source = "user_specified"))
+  }
+
+  if (por == "ano") {
+    years <- if (isTRUE(inferir_periodos) && length(observed_years) > 0L) {
+      seq.int(min(observed_years), max(observed_years))
+    } else {
+      observed_years
+    }
+    return(list(
+      periodos = data.frame(ano = years),
+      source = if (isTRUE(inferir_periodos)) "inferred" else "observed"
+    ))
+  }
+
+  if (por == "mes") {
+    months <- if (isTRUE(inferir_periodos) && length(observed_months) > 0L) {
+      seq.int(min(observed_months), max(observed_months))
+    } else {
+      observed_months
+    }
+    return(list(
+      periodos = data.frame(mes = months),
+      source = if (isTRUE(inferir_periodos)) "inferred" else "observed"
+    ))
+  }
+
+  valid <- !is.na(dados$ano) & !is.na(dados$mes)
+  years <- suppressWarnings(as.integer(as.character(dados$ano[valid])))
+  months <- suppressWarnings(as.integer(as.character(dados$mes[valid])))
+  valid <- !is.na(years) & !is.na(months) & years >= 2000L & months %in% 1:12
+  years <- years[valid]
+  months <- months[valid]
+  if (length(years) == 0L) {
+    return(list(
+      periodos = data.frame(ano = integer(), mes = integer()),
+      source = if (isTRUE(inferir_periodos)) "inferred" else "observed"
+    ))
+  }
+  dates <- as.Date(sprintf("%04d-%02d-01", years, months))
+  if (isTRUE(inferir_periodos)) {
+    dates <- seq(min(dates), max(dates), by = "month")
+  } else {
+    dates <- sort(unique(dates))
+  }
+  list(
+    periodos = data.frame(
+      ano = as.integer(format(dates, "%Y")),
+      mes = as.integer(format(dates, "%m"))
+    ),
+    source = if (isTRUE(inferir_periodos)) "inferred" else "observed"
+  )
+}
+
+.vigiar_grupos_cobertura <- function(dados, por, periodos_esperados = NULL) {
   all_codes <- RJ_MUNICIPIOS$codigo_ibge_6
   make_group <- function(idx, ano = NA_integer_, mes = NA_integer_,
                          macrorregiao_saude = NA_character_,
@@ -1152,11 +1486,12 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
       mes = as.integer(mes),
       macrorregiao_saude = macrorregiao_saude,
       regiao_saude = regiao_saude,
-      expected_codes = expected_codes
+      expected_codes = expected_codes,
+      periodo_ausente = length(idx) == 0L && por %in% c("ano", "mes", "ano_mes")
     )
   }
 
-  if (nrow(dados) == 0) {
+  if (nrow(dados) == 0 && is.null(periodos_esperados)) {
     return(list(make_group(integer(0))))
   }
 
@@ -1172,14 +1507,22 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
   }
 
   if (por == "ano") {
-    keys <- sort(unique(as.integer(dados$ano)))
+    keys <- if (!is.null(periodos_esperados)) {
+      as.integer(periodos_esperados$ano)
+    } else {
+      sort(unique(as.integer(dados$ano)))
+    }
     return(lapply(keys, function(y) {
       make_group(which(as.integer(dados$ano) == y), ano = y)
     }))
   }
 
   if (por == "mes") {
-    keys <- sort(unique(as.integer(dados$mes)))
+    keys <- if (!is.null(periodos_esperados)) {
+      as.integer(periodos_esperados$mes)
+    } else {
+      sort(unique(as.integer(dados$mes)))
+    }
     return(lapply(keys, function(m) {
       make_group(which(as.integer(dados$mes) == m), mes = m)
     }))
@@ -1209,10 +1552,17 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
     }))
   }
 
-  combos <- unique(data.frame(
-    ano = as.integer(dados$ano),
-    mes = as.integer(dados$mes)
-  ))
+  combos <- if (!is.null(periodos_esperados)) {
+    unique(data.frame(
+      ano = as.integer(periodos_esperados$ano),
+      mes = as.integer(periodos_esperados$mes)
+    ))
+  } else {
+    unique(data.frame(
+      ano = as.integer(dados$ano),
+      mes = as.integer(dados$mes)
+    ))
+  }
   combos <- combos[order(combos$ano, combos$mes), , drop = FALSE]
   lapply(seq_len(nrow(combos)), function(i) {
     y <- combos$ano[[i]]
@@ -1250,6 +1600,7 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
     codigos_ausentes = ausentes_cod,
     macrorregioes_incompletas = incomplete,
     completo = n_present == n_expected,
+    periodo_ausente = nrow(dados) == 0L && por %in% c("ano", "mes", "ano_mes"),
     possivel_truncamento = possivel_truncamento,
     stringsAsFactors = FALSE
   )

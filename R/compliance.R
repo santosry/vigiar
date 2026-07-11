@@ -5,6 +5,74 @@
 # philosophy: every download is validated, every deviation is reported,
 # and audit trails are preserved for reproducibility.
 
+.vigiar_check_result <- function(status = c("pass", "fail", "unknown", "not_applicable"),
+                                 severity = NULL, details = character(), ...) {
+  status <- match.arg(status)
+  if (is.null(severity)) {
+    severity <- switch(status,
+      pass = "ok",
+      fail = "error",
+      unknown = "warning",
+      not_applicable = "info"
+    )
+  }
+  list(
+    ok = identical(status, "pass"),
+    status = status,
+    severity = severity,
+    details = as.character(details),
+    ...
+  )
+}
+
+.vigiar_normalize_check <- function(x, label = "check") {
+  if (!is.list(x)) {
+    return(.vigiar_check_result(
+      "unknown",
+      details = sprintf("%s did not return a structured result.", label)
+    ))
+  }
+
+  status <- x$status %||% NULL
+  if (is.null(status)) {
+    legacy_ok <- x$ok %||% x$passed %||% x$valido %||% NULL
+    if (is.null(legacy_ok) || length(legacy_ok) != 1L || is.na(legacy_ok)) {
+      status <- "unknown"
+    } else {
+      status <- if (isTRUE(legacy_ok)) "pass" else "fail"
+    }
+  }
+
+  if (!status %in% c("pass", "fail", "unknown", "not_applicable")) {
+    status <- "unknown"
+  }
+  normalized <- .vigiar_check_result(
+    status,
+    severity = x$severity %||% NULL,
+    details = x$details %||% character()
+  )
+  utils::modifyList(x, normalized)
+}
+
+.vigiar_aggregate_checks <- function(checks) {
+  normalized <- Map(.vigiar_normalize_check, checks, names(checks))
+  statuses <- vapply(normalized, `[[`, character(1), "status")
+  status <- if (any(statuses == "fail")) {
+    "fail"
+  } else if (any(statuses == "unknown")) {
+    "unknown"
+  } else if (length(statuses) > 0L && all(statuses == "not_applicable")) {
+    "not_applicable"
+  } else {
+    "pass"
+  }
+  result <- .vigiar_check_result(
+    status,
+    details = unlist(lapply(normalized, `[[`, "details"), use.names = FALSE)
+  )
+  c(normalized, result)
+}
+
 #' Full data compliance audit
 #'
 #' Performs a comprehensive audit of a VIGIAR data table against
@@ -202,31 +270,51 @@ vigiar_compliance_check <- function(dados, tabela = NULL,
     results[[p]] <- switch(p,
       basico = {
         # Basic: schema + IBGE + temporal
-        list(
+        checks <- list(
           schema   = .vigiar_auditar_schema(dados, tabela, verbose),
           ibge     = .vigiar_auditar_ibge(dados, verbose),
-          temporal = .vigiar_auditar_temporal(dados, verbose),
-          ok       = TRUE  # evaluated below
+          temporal = .vigiar_auditar_temporal(dados, verbose)
         )
+        .vigiar_aggregate_checks(checks)
       },
       rigoroso = {
         # Strict: everything + outlier detection
         base <- vigiar_auditar(dados, tabela, verbose = FALSE)
         base$outliers <- .vigiar_detectar_outliers(dados, verbose = verbose)
+        base$ok <- isTRUE(base$passed)
+        base$status <- if (base$ok) "pass" else "fail"
+        base$severity <- if (base$ok) "ok" else "error"
         base
       },
       rj = {
         # RJ-specific compliance
-        validar_rj <- function() vigiar_validar_rj(dados)
-        list(
-          rj_municipios = if (verbose) {
-            validar_rj()
+        validar_rj <- function() {
+          tryCatch(
+            vigiar_validar_rj(dados),
+            error = function(e) .vigiar_check_result(
+              "fail",
+              details = conditionMessage(e),
+              error = conditionMessage(e)
+            )
+          )
+        }
+        checks <- list(
+          rj_municipios = if (verbose) validar_rj() else
+            suppressWarnings(suppressMessages(validar_rj())),
+          rj_cobertura = .vigiar_auditar_cobertura_rj(dados, verbose = verbose),
+          truncation = if (isTRUE(attr(dados, "vigiar_possivel_truncamento"))) {
+            .vigiar_check_result(
+              "fail",
+              details = paste(
+                "Possible API truncation prevents a complete RJ compliance",
+                "claim; use a validated partitioned download."
+              )
+            )
           } else {
-            suppressWarnings(suppressMessages(validar_rj()))
-          },
-          rj_cobertura  = .vigiar_auditar_cobertura_rj(dados, verbose = verbose),
-          ok            = TRUE
+            .vigiar_check_result("pass", details = "No truncation evidence recorded.")
+          }
         )
+        .vigiar_aggregate_checks(checks)
       },
       corrupcao = {
         # Data integrity / corruption checks
@@ -234,15 +322,7 @@ vigiar_compliance_check <- function(dados, tabela = NULL,
       }
     )
 
-    # Evaluate ok status
-    if ("ok" %in% names(results[[p]])) {
-      sub_oks <- vapply(
-        results[[p]],
-        function(x) if (is.list(x) && "ok" %in% names(x)) x$ok else TRUE,
-        logical(1)
-      )
-      results[[p]]$ok <- all(sub_oks)
-    }
+    results[[p]] <- .vigiar_normalize_check(results[[p]], p)
   }
 
   all_ok <- all(vapply(results, function(x) isTRUE(x$ok), logical(1)))
@@ -491,7 +571,10 @@ print.vigiar_compliance <- function(x, ...) {
 
   if (is.na(col_muni)) {
     if (verbose) cli::cli_alert_warning("Cobertura RJ: sem coluna de municipio")
-    return(list(ok = FALSE, details = "Sem coluna de municipio para checagem RJ"))
+    return(.vigiar_check_result(
+      "fail",
+      details = "Municipality code column is required for RJ coverage."
+    ))
   }
 
   codigos <- unique(.vigiar_normalizar_codigo_municipio(dados[[col_muni]]))
@@ -514,13 +597,19 @@ print.vigiar_compliance <- function(x, ...) {
     }
   }
 
-  list(
-    ok                 = length(faltantes) == 0,
+  c(.vigiar_check_result(
+    if (length(faltantes) == 0L) "pass" else "fail",
+    details = if (length(faltantes) == 0L) {
+      "All 92 Rio de Janeiro municipalities are present."
+    } else {
+      sprintf("%d Rio de Janeiro municipalities are absent.", length(faltantes))
+    }
+  ), list(
     n_presentes        = length(presentes),
     n_faltantes        = length(faltantes),
     pct_cobertura      = pct,
     municipios_faltantes = faltantes
-  )
+  ))
 }
 
 .vigiar_auditar_integridade <- function(dados, tabela, verbose) {
