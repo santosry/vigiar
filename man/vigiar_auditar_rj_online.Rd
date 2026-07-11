@@ -10,7 +10,8 @@ vigiar_auditar_rj_online(
   dir = "data-raw/rj-download-completeness-output",
   require_complete = FALSE,
   timeout = 120,
-  timestamp = Sys.time()
+  timestamp = Sys.time(),
+  dominios_esperados = NULL
 )
 }
 \arguments{
@@ -26,6 +27,10 @@ truncated, lacks municipality codes, has no schema hash, or fails.}
 \item{timeout}{Timeout in seconds for each download.}
 
 \item{timestamp}{Timestamp used in the audit records and output directory.}
+
+\item{dominios_esperados}{Optional named list with one entry per table. Each
+entry may provide `anos_esperados`, `meses_esperados`, `periodo_inicio`,
+`periodo_fim`, or `inferir_periodos` to define the expected temporal domain.}
 }
 \value{
 A tibble with scalar audit fields and list-columns containing

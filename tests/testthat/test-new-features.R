@@ -428,11 +428,13 @@ test_that("vigiar_snapshot handles many columns", {
 
 # -- Profile-specific compliance -----------------------------------------------
 
-test_that("vigiar_compliance_check profile 'basico' works", {
+test_that("basic compliance remains unverified without an expected schema", {
   dados <- data.frame(cod_municipio = 355030L, ano = 2022L)
   result <- vigiar_compliance_check(dados, tabela = "test", profiles = "basico",
                                      verbose = FALSE)
-  expect_true(isTRUE(result$basico$ok))
+  expect_false(isTRUE(result$basico$ok))
+  expect_identical(result$basico$status, "unknown")
+  expect_identical(result$basico$schema$status, "unknown")
 })
 
 test_that("vigiar_compliance_check 'all' runs everything", {

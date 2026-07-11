@@ -35,7 +35,9 @@ test_that("online RJ audit validates table-grain completeness evidence", {
   expect_s3_class(audit, "tbl_df")
   expect_setequal(audit$tabela, tables)
   expect_true(all(audit$conclusion %in% c(
-    "complete", "partial", "truncated", "schema_changed", "failed"
+    "complete", "complete_within_inferred_domain",
+    "complete_within_observed_domain", "partial", "truncated",
+    "schema_changed", "schema_unverified", "failed"
   )))
   expect_false(any(audit$conclusion == "failed"))
   expect_true(all(!is.na(audit$checksum)))

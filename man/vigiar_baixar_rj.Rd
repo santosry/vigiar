@@ -16,6 +16,7 @@ vigiar_baixar_rj(
   processar = FALSE,
   tipo = NULL,
   usar_cache = FALSE,
+  cache_max_age = 86400,
   snapshot = FALSE,
   ...
 )
@@ -44,6 +45,8 @@ are present.}
 \item{tipo}{Optional processor type, used mainly for PM2.5 tables.}
 
 \item{usar_cache}{If \code{TRUE}, reuse a local RJ-specific cache entry.}
+
+\item{cache_max_age}{Maximum cache age in seconds. Defaults to one day.}
 
 \item{snapshot}{If \code{TRUE}, attach a \code{vigiar_snapshot} attribute.}
 

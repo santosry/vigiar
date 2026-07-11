@@ -5,6 +5,54 @@
 # enabling full audit trails and reproducibility.
 # Inspired by microdatasus download logging patterns.
 
+.vigiar_sanitize_url <- function(x) {
+  x <- as.character(x)
+  x <- sub("^(https?://)[^/@[:space:]]+@", "\\1[REDACTED]@", x,
+           perl = TRUE, ignore.case = TRUE)
+  sub("\\?.*$", "?[REDACTED]", x, perl = TRUE)
+}
+
+.vigiar_sanitize_text <- function(x) {
+  x <- as.character(x)
+  url_matches <- gregexpr("https?://[^[:space:]]+", x, perl = TRUE,
+                          ignore.case = TRUE)
+  urls <- regmatches(x, url_matches)
+  urls <- lapply(urls, .vigiar_sanitize_url)
+  regmatches(x, url_matches) <- urls
+  x <- gsub(
+    "(?i)(token|cookie|authorization|resourcekey|password|secret)=([^&[:space:]]+)",
+    "\\1=[REDACTED]", x, perl = TRUE
+  )
+  gsub("(?i)Bearer[[:space:]]+[^,;[:space:]]+", "Bearer [REDACTED]", x,
+       perl = TRUE)
+}
+
+.vigiar_sanitize_log_value <- function(x, key = NULL) {
+  sensitive <- !is.null(key) && grepl(
+    "token|cookie|authorization|password|secret|resource.?key",
+    key,
+    ignore.case = TRUE
+  )
+  if (sensitive) {
+    return("[REDACTED]")
+  }
+  if (is.list(x)) {
+    keys <- names(x) %||% rep(NA_character_, length(x))
+    out <- lapply(seq_along(x), function(i) {
+      .vigiar_sanitize_log_value(x[[i]], keys[[i]])
+    })
+    names(out) <- names(x)
+    return(out)
+  }
+  if (is.character(x)) {
+    if (!is.null(key) && grepl("url|uri|endpoint", key, ignore.case = TRUE)) {
+      return(.vigiar_sanitize_url(x))
+    }
+    return(.vigiar_sanitize_text(x))
+  }
+  x
+}
+
 #' Structured log entry
 #'
 #' @param level Log level: \code{"INFO"}, \code{"WARN"}, \code{"ERROR"}, \code{"DEBUG"}.
@@ -14,12 +62,14 @@
 #' @return Invisibly, the log entry (as a list).
 #' @keywords internal
 .vigiar_log <- function(level, message, table = NULL, metadata = NULL) {
+  message <- .vigiar_sanitize_text(message)
+  metadata <- .vigiar_sanitize_log_value(metadata %||% list())
   entry <- list(
     timestamp = format(Sys.time(), "%Y-%m-%dT%H:%M:%OS3"),
     level     = level,
     message   = message,
     table     = table %||% NA_character_,
-    metadata  = metadata %||% list()
+    metadata  = metadata
   )
 
   # Store in package env
@@ -174,7 +224,7 @@ vigiar_resumo_log <- function() {
     n_rows    = n_rows,
     n_cols    = n_cols,
     elapsed   = elapsed,
-    url       = url,
+    url       = .vigiar_sanitize_url(url),
     checksum  = NULL  # filled later if data is available
   )
 

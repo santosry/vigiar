@@ -300,6 +300,7 @@ vigiar_validar_rj <- function(dados, col_muni = NULL) {
 #' @param processar If \code{TRUE}, process the table after filtering.
 #' @param tipo Optional processor type, used mainly for PM2.5 tables.
 #' @param usar_cache If \code{TRUE}, reuse a local RJ-specific cache entry.
+#' @param cache_max_age Maximum cache age in seconds. Defaults to one day.
 #' @param snapshot If \code{TRUE}, attach a \code{vigiar_snapshot} attribute.
 #' @param ... Additional arguments passed to \code{vigiar_baixar()}.
 #' @return A tibble containing RJ-only data and RJ coverage attributes.
@@ -316,6 +317,7 @@ vigiar_baixar_rj <- function(
   processar = FALSE,
   tipo = NULL,
   usar_cache = FALSE,
+  cache_max_age = 86400,
   snapshot = FALSE,
   ...
 ) {
@@ -353,9 +355,28 @@ vigiar_baixar_rj <- function(
       dots = c(dots, list(filtros = filtros))
     )
     if (file.exists(cache_file)) {
-      cached <- readRDS(cache_file)
-      cli::cli_alert_success("RJ cache hit: {tabela}")
-      return(cached)
+      age <- as.numeric(difftime(
+        Sys.time(), file.info(cache_file)$mtime, units = "secs"
+      ))
+      cached <- tryCatch(readRDS(cache_file), error = function(e) NULL)
+      valid <- inherits(cached, "vigiar_rj_cached_data") &&
+        age <= as.numeric(cache_max_age) &&
+        identical(cached$schema_hash, schema_hash) &&
+        tryCatch(
+          identical(cached$checksum, vigiar_checksum(cached$dados)),
+          error = function(e) FALSE
+        )
+      if (isTRUE(valid)) {
+        cli::cli_alert_success("RJ cache hit: {tabela}")
+        .vigiar_log("INFO", "RJ cache hit", table = tabela,
+                    metadata = list(age_seconds = age))
+        out <- cached$dados
+        attr(out, "vigiar_cache_status") <- "hit"
+        attr(out, "vigiar_cache_age_seconds") <- age
+        return(out)
+      }
+      .vigiar_log("WARN", "RJ cache entry expired or failed validation",
+                  table = tabela, metadata = list(age_seconds = age))
     }
   }
 
@@ -430,6 +451,12 @@ vigiar_baixar_rj <- function(
     possivel_truncamento = possivel_truncamento,
     schema_hash = schema_hash
   )
+  attr(dados_rj, "vigiar_truncation_status") <-
+    attr(dados, "vigiar_truncation_status") %||% "unknown"
+  attr(dados_rj, "vigiar_truncation_evidence") <-
+    attr(dados, "vigiar_truncation_evidence") %||% character()
+  attr(dados_rj, "vigiar_truncation_assessment") <-
+    attr(dados, "vigiar_truncation_assessment") %||% list()
 
   if (isTRUE(snapshot)) {
     attr(dados_rj, "vigiar_snapshot") <- vigiar_snapshot(dados = dados_rj, tabela = tabela)
@@ -437,7 +464,18 @@ vigiar_baixar_rj <- function(
 
   if (isTRUE(usar_cache) && !is.null(cache_file)) {
     dir.create(dirname(cache_file), recursive = TRUE, showWarnings = FALSE)
-    saveRDS(dados_rj, cache_file)
+    cached <- list(
+      dados = dados_rj,
+      timestamp = Sys.time(),
+      checksum = vigiar_checksum(dados_rj),
+      schema_hash = schema_hash,
+      package_version = as.character(utils::packageVersion("vigiar")),
+      cache_key_version = .VIGIAR_CACHE_KEY_VERSION
+    )
+    class(cached) <- "vigiar_rj_cached_data"
+    saveRDS(cached, cache_file)
+    attr(dados_rj, "vigiar_cache_status") <- "miss"
+    attr(dados_rj, "vigiar_cache_age_seconds") <- 0
     cli::cli_alert_success("RJ cache saved: {tabela}")
   }
 
@@ -1120,28 +1158,76 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
   n <- nrow(dados)
   table_label <- tabela %||% "<unknown>"
   power_bi_threshold <- 28500L
-  explicit_limit_threshold <- if (is.null(limite)) Inf else max(1L, floor(0.95 * as.integer(limite)))
-  possible <- isTRUE(attr(dados, "vigiar_possivel_truncamento")) ||
-    (n > 0 && n >= power_bi_threshold) ||
-    (n > 0 && n >= explicit_limit_threshold)
+  metadata <- attr(dados, "vigiar_response_metadata") %||% list()
+  prior_status <- attr(dados, "vigiar_truncation_status") %||% NULL
+  evidence <- as.character(attr(dados, "vigiar_truncation_evidence") %||% character())
+  status <- if (length(prior_status) == 1L && !is.na(prior_status) && prior_status %in% c(
+    "no_evidence", "possible", "probable", "confirmed", "unknown"
+  )) prior_status else "no_evidence"
+
+  rank <- c(no_evidence = 0L, unknown = 1L, possible = 2L,
+            probable = 3L, confirmed = 4L)
+  promote <- function(candidate, reason) {
+    if (rank[[candidate]] > rank[[status]]) {
+      status <<- candidate
+    }
+    evidence <<- unique(c(evidence, reason))
+  }
+
+  continuation <- isTRUE(metadata$has_more) || isTRUE(metadata$hasMore) ||
+    isTRUE(metadata$continuation) || isTRUE(metadata$truncated)
+  if (continuation) {
+    promote("confirmed", "Power BI response metadata reports continuation or truncation.")
+  }
+  if (!is.null(limite) && length(limite) == 1L && is.finite(limite) && limite > 0L) {
+    requested <- as.integer(limite)
+    if (n >= requested) {
+      promote("probable", sprintf(
+        "Returned rows (%d) reached the requested limit (%d).", n, requested
+      ))
+    } else if (n >= max(1L, floor(0.95 * requested))) {
+      promote("possible", sprintf(
+        "Returned rows (%d) are within 5%% of the requested limit (%d).",
+        n, requested
+      ))
+    }
+  }
+  if (n >= power_bi_threshold) {
+    promote("possible", sprintf(
+      paste0(
+        "heuristic: returned rows (%d) reached the conservative Power BI ",
+        "response threshold (%d)."
+      ),
+      n, power_bi_threshold
+    ))
+  }
+  if (isTRUE(attr(dados, "vigiar_possivel_truncamento")) &&
+      status == "no_evidence") {
+    promote("possible", "A legacy upstream truncation flag was present.")
+  }
+
+  possible <- status %in% c("possible", "probable", "confirmed", "unknown")
+  assessment <- list(
+    status = status,
+    evidence = evidence,
+    returned_rows = n,
+    requested_limit = limite %||% NA_integer_,
+    heuristic_threshold = power_bi_threshold
+  )
+  attr(dados, "vigiar_truncation_status") <- status
+  attr(dados, "vigiar_truncation_evidence") <- evidence
+  attr(dados, "vigiar_truncation_assessment") <- assessment
   attr(dados, "vigiar_possivel_truncamento") <- possible
 
-  if (isTRUE(possible)) {
-    msg <- if (is.null(limite)) {
-      sprintf(
-        "Possible truncation: table '%s' returned %d rows, close to the Power BI API limit.",
-        table_label, n
-      )
-    } else {
-      sprintf(
-        "Possible truncation: table '%s' returned %d rows, close to or above the requested limit of %d.",
-        table_label, n, as.integer(limite)
-      )
-    }
-    .vigiar_log("WARN", msg, table = table_label)
+  if (status %in% c("possible", "probable", "confirmed")) {
+    msg <- sprintf(
+      "Truncation status '%s' for table '%s': %s",
+      status, table_label, paste(evidence, collapse = " ")
+    )
+    .vigiar_log("WARN", msg, table = table_label, metadata = assessment)
     warning(
       msg,
-      " Download by validated partitions before claiming completeness.",
+      " Use validated partitions before claiming response completeness.",
       call. = FALSE
     )
   }
@@ -1154,13 +1240,16 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
     return(NA_character_)
   }
   raw <- serialize(.vigiar_env$esquema[[tabela]], NULL)
-  as.character(openssl::sha256(raw))
+  paste(format(openssl::sha256(raw)), collapse = "")
 }
 
 .vigiar_rj_cache_file <- function(tabela, colunas, ordenar_por, limite, schema_hash, dots) {
   cache_dir <- .vigiar_env$cache_dir %||% file.path(tools::R_user_dir("vigiar", "cache"))
   .vigiar_env$cache_dir <- cache_dir
   key <- list(
+    cache_key_version = .VIGIAR_CACHE_KEY_VERSION,
+    canonicalization_version = .VIGIAR_CANONICALIZATION_VERSION,
+    package_version = as.character(utils::packageVersion("vigiar")),
     tabela = tabela,
     uf = "RJ",
     colunas = colunas,

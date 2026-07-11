@@ -103,16 +103,7 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
     )
   }
 
-  # Warn if data might be truncated by API limit
-  if (is.null(limite) && nrow(dados) >= 29000) {
-    .vigiar_log("WARN", sprintf("Possivel truncamento: %d linhas (limite API ~30K)", nrow(dados)),
-                table = tabela)
-    warning(
-      "A API do Power BI limitou a resposta a ", nrow(dados), " linhas. ",
-      "Para tabelas grandes (df_anual, df_mensal), os dados podem estar ",
-      "incompletos."
-    )
-  }
+  dados <- .vigiar_detectar_truncamento(dados, tabela = tabela, limite = limite)
 
   elapsed <- as.numeric(difftime(Sys.time(), t_start, units = "secs"))
 
@@ -134,7 +125,12 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
   attr(dados, "vigiar_server_filter") <- filtros
   attr(dados, "vigiar_requested_limit") <- limite
   attr(dados, "vigiar_query_strategy") <- "single_semantic_query"
-  attr(dados, "vigiar_verification_status") <- "unverified"
+  truncation_status <- attr(dados, "vigiar_truncation_status") %||% "unknown"
+  attr(dados, "vigiar_verification_status") <- if (truncation_status == "no_evidence") {
+    "unverified"
+  } else {
+    paste0("truncation_", truncation_status)
+  }
   attr(dados, "vigiar_download_timestamp") <- Sys.time()
   tibble::as_tibble(dados)
 }

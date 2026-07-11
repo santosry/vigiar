@@ -18,6 +18,9 @@
 #'   truncated, lacks municipality codes, has no schema hash, or fails.
 #' @param timeout Timeout in seconds for each download.
 #' @param timestamp Timestamp used in the audit records and output directory.
+#' @param dominios_esperados Optional named list with one entry per table. Each
+#'   entry may provide `anos_esperados`, `meses_esperados`, `periodo_inicio`,
+#'   `periodo_fim`, or `inferir_periodos` to define the expected temporal domain.
 #' @return A tibble with scalar audit fields and list-columns containing
 #'   coverage details, table-grain completeness, and missing municipalities.
 #' @export
@@ -27,7 +30,8 @@ vigiar_auditar_rj_online <- function(
   dir = "data-raw/rj-download-completeness-output",
   require_complete = FALSE,
   timeout = 120,
-  timestamp = Sys.time()
+  timestamp = Sys.time(),
+  dominios_esperados = NULL
 ) {
   if (length(tabelas) == 0) {
     stop("'tabelas' must contain at least one table name.", call. = FALSE)
@@ -37,6 +41,10 @@ vigiar_auditar_rj_online <- function(
   checked_at <- .vigiar_rj_audit_timestamp(timestamp)
   package_version <- as.character(utils::packageVersion("vigiar"))
   git_sha <- .vigiar_git_sha()
+  if (!is.null(dominios_esperados) &&
+      (!is.list(dominios_esperados) || is.null(names(dominios_esperados)))) {
+    stop("'dominios_esperados' must be a named list by table.", call. = FALSE)
+  }
 
   rows <- lapply(unique(as.character(tabelas)), function(tab) {
     .vigiar_auditar_rj_tabela_online(
@@ -44,7 +52,8 @@ vigiar_auditar_rj_online <- function(
       checked_at = checked_at,
       package_version = package_version,
       git_sha = git_sha,
-      timeout = timeout
+      timeout = timeout,
+      dominio_esperado = dominios_esperados[[tab]] %||% list()
     )
   })
   audit <- dplyr::bind_rows(rows)
@@ -64,7 +73,7 @@ vigiar_auditar_rj_online <- function(
 
 .vigiar_auditar_rj_tabela_online <- function(tabela, checked_at,
                                              package_version, git_sha,
-                                             timeout) {
+                                             timeout, dominio_esperado = list()) {
   tryCatch(
     {
       processar <- tabela %in% c(
@@ -82,7 +91,8 @@ vigiar_auditar_rj_online <- function(
         checked_at = checked_at,
         package_version = package_version,
         git_sha = git_sha,
-        dados = dados
+        dados = dados,
+        dominio_esperado = dominio_esperado
       )
     },
     error = function(e) {
@@ -98,12 +108,16 @@ vigiar_auditar_rj_online <- function(
 }
 
 .vigiar_rj_audit_success_row <- function(tabela, checked_at, package_version,
-                                         git_sha, dados) {
+                                         git_sha, dados,
+                                         dominio_esperado = list()) {
+  truncation_status <- attr(dados, "vigiar_truncation_status") %||% "unknown"
+  truncation_evidence <- attr(dados, "vigiar_truncation_evidence") %||% character()
   dados <- tibble::as_tibble(dados)
   col_muni <- .vigiar_coluna_municipio(dados)
   has_municipality <- !is.na(col_muni)
   schema_hash <- attr(dados, "vigiar_schema_hash") %||% .vigiar_schema_hash(tabela)
   schema_hash <- as.character(schema_hash)
+  schema_assessment <- .vigiar_rj_schema_assessment(tabela)
   possivel_truncamento <- isTRUE(attr(dados, "vigiar_possivel_truncamento"))
   checksum <- as.character(vigiar_checksum(dados))
   temporal <- .vigiar_rj_temporal_summary(dados)
@@ -121,8 +135,23 @@ vigiar_auditar_rj_online <- function(
   )
   ausentes <- suppressWarnings(vigiar_rj_municipios_ausentes(dados))
 
+  allowed_domain_args <- c(
+    "anos_esperados", "meses_esperados", "periodo_inicio", "periodo_fim",
+    "inferir_periodos"
+  )
+  unknown_domain_args <- setdiff(names(dominio_esperado), allowed_domain_args)
+  if (length(unknown_domain_args) > 0L) {
+    stop(
+      "Unknown expected-domain argument(s) for table '", tabela, "': ",
+      paste(unknown_domain_args, collapse = ", "),
+      call. = FALSE
+    )
+  }
   completude <- tryCatch(
-    vigiar_rj_completude_tabela(dados, tabela = tabela),
+    do.call(vigiar_rj_completude_tabela, c(
+      list(dados = dados, tabela = tabela),
+      dominio_esperado
+    )),
     error = function(e) e
   )
   erro <- NA_character_
@@ -145,8 +174,31 @@ vigiar_auditar_rj_online <- function(
     schema_hash = schema_hash,
     completude = completude,
     possivel_truncamento = possivel_truncamento,
-    erro = erro
+    erro = erro,
+    truncation_status = truncation_status,
+    schema_status = schema_assessment$status
   )
+  spatial_status <- if (
+    nrow(cobertura_geral) > 0L && all(cobertura_geral$completo)
+  ) "complete" else "incomplete"
+  panel_status <- unique(completude$panel_status %||% "unknown")[[1]]
+  temporal_status <- unique(
+    completude$temporal_domain_status %||% "unknown"
+  )[[1]]
+  verification_status <- unique(
+    completude$verification_status %||% "unverified"
+  )[[1]]
+  overall_status <- unique(completude$overall_status %||% "unknown")[[1]]
+  schema_status <- if (is.na(schema_hash) || !nzchar(schema_hash)) {
+    "unknown"
+  } else {
+    schema_assessment$status
+  }
+  response_status <- if (truncation_status == "no_evidence") {
+    "unverified"
+  } else {
+    truncation_status
+  }
 
   tibble::tibble(
     checked_at = checked_at,
@@ -175,6 +227,16 @@ vigiar_auditar_rj_online <- function(
     meses_ausentes_por_ano = temporal$meses_ausentes_por_ano,
     campos_dos_goytacazes_presente = campos_presente,
     possivel_truncamento = possivel_truncamento,
+    truncation_status = truncation_status,
+    truncation_evidence = paste(truncation_evidence, collapse = "; "),
+    spatial_coverage_status = spatial_status,
+    temporal_domain_status = temporal_status,
+    panel_completeness_status = panel_status,
+    schema_status = schema_status,
+    schema_details = paste(schema_assessment$details, collapse = "; "),
+    response_completeness_status = response_status,
+    verification_status = verification_status,
+    overall_status = overall_status,
     conclusion = conclusion,
     erro = erro,
     cobertura_geral = list(cobertura_geral),
@@ -210,6 +272,16 @@ vigiar_auditar_rj_online <- function(
     meses_ausentes_por_ano = NA_character_,
     campos_dos_goytacazes_presente = FALSE,
     possivel_truncamento = NA,
+    truncation_status = "unknown",
+    truncation_evidence = NA_character_,
+    spatial_coverage_status = "unknown",
+    temporal_domain_status = "unknown",
+    panel_completeness_status = "unknown",
+    schema_status = "unknown",
+    schema_details = NA_character_,
+    response_completeness_status = "unknown",
+    verification_status = "failed",
+    overall_status = "fail",
     conclusion = "failed",
     erro = erro,
     cobertura_geral = list(tibble::tibble()),
@@ -223,7 +295,8 @@ vigiar_auditar_rj_online <- function(
 
 .vigiar_rj_audit_conclusion <- function(has_municipality, schema_hash,
                                         completude, possivel_truncamento,
-                                        erro) {
+                                        erro, truncation_status = "unknown",
+                                        schema_status = "unknown") {
   if (!is.na(erro)) {
     if (!has_municipality) {
       return("failed")
@@ -231,9 +304,16 @@ vigiar_auditar_rj_online <- function(
     return("schema_changed")
   }
   if (is.na(schema_hash) || !nzchar(schema_hash)) {
+    return("schema_unverified")
+  }
+  if (identical(schema_status, "fail")) {
     return("schema_changed")
   }
-  truncated <- isTRUE(possivel_truncamento) ||
+  if (!identical(schema_status, "pass")) {
+    return("schema_unverified")
+  }
+  truncated <- truncation_status %in% c("possible", "probable", "confirmed") ||
+    isTRUE(possivel_truncamento) ||
     any(completude$possivel_truncamento %||% FALSE)
   if (truncated) {
     return("truncated")
@@ -241,7 +321,71 @@ vigiar_auditar_rj_online <- function(
   if (nrow(completude) == 0 || any(!completude$completo)) {
     return("partial")
   }
-  "complete"
+  overall <- unique(completude$overall_status %||% "unknown")[[1]]
+  if (identical(overall, "pass")) {
+    return("complete")
+  }
+  verification <- unique(
+    completude$verification_status %||% "complete_within_observed_domain"
+  )[[1]]
+  verification
+}
+
+.vigiar_rj_schema_assessment <- function(tabela) {
+  path <- system.file(
+    "extdata", "vigiar_schema_critical_lock.json", package = "vigiar"
+  )
+  if (!nzchar(path) || !file.exists(path) || is.null(.vigiar_env$esquema)) {
+    return(.vigiar_check_result(
+      "unknown",
+      details = "Critical schema lock or live schema is unavailable."
+    ))
+  }
+  lock <- tryCatch(
+    vigiar_esquema_carregar_lock(path),
+    error = function(e) NULL
+  )
+  if (is.null(lock) || !tabela %in% lock$tabelas) {
+    return(.vigiar_check_result(
+      "unknown",
+      details = "Table is not covered by the critical schema lock."
+    ))
+  }
+  live <- .vigiar_env$esquema[[tabela]]
+  if (is.null(live)) {
+    return(.vigiar_check_result(
+      "fail",
+      details = "Table is absent from the live Power BI schema."
+    ))
+  }
+  locked <- lock$esquema[[tabela]] %||% list()
+  missing <- setdiff(names(locked), names(live))
+  changed <- vapply(intersect(names(locked), names(live)), function(column) {
+    !identical(
+      .vigiar_schema_column_type(locked[[column]]),
+      .vigiar_schema_column_type(live[[column]])
+    )
+  }, logical(1))
+  changed <- names(changed)[changed]
+  details <- character()
+  if (length(missing) > 0L) {
+    details <- c(details, paste0(
+      "Missing critical columns: ", paste(missing, collapse = ", "), "."
+    ))
+  }
+  if (length(changed) > 0L) {
+    details <- c(details, paste0(
+      "Changed critical column types: ", paste(changed, collapse = ", "), "."
+    ))
+  }
+  .vigiar_check_result(
+    if (length(details) == 0L) "pass" else "fail",
+    details = if (length(details) == 0L) {
+      "Critical schema columns match the versioned lock."
+    } else {
+      details
+    }
+  )
 }
 
 .vigiar_rj_require_complete_audit <- function(audit) {
@@ -260,7 +404,8 @@ vigiar_auditar_rj_online <- function(
     "RJ online audit is not complete. require_complete=TRUE requires ",
     "all audited tables to have complete 92-municipality coverage at the ",
     "expected table grain, no API truncation, municipality codes, and a ",
-    "stable schema hash. Failing tables: ",
+    "stable schema hash, and an explicit expected temporal domain. ",
+    "Provide 'dominios_esperados' for temporal tables. Failing tables: ",
     paste(details, collapse = "; "),
     call. = FALSE
   )

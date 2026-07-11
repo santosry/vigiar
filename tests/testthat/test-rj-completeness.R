@@ -468,7 +468,7 @@ test_that("RJ download handles non-municipal tables and possible truncation", {
     )
     expect_warning(
       out <- vigiar_baixar_rj("df_anual", validar_cobertura = FALSE),
-      "Possible truncation"
+      "Truncation status"
     )
     expect_true(isTRUE(attr(out, "vigiar_possivel_truncamento")))
     expect_error(
@@ -590,6 +590,9 @@ test_that("RJ online audit saves complete artifacts with preserved metadata", {
       salvar = TRUE,
       dir = out_root,
       require_complete = TRUE,
+      dominios_esperados = list(
+        df_anual = list(anos_esperados = 2021:2022)
+      ),
       timestamp = as.POSIXct("2026-01-02 03:04:05", tz = "UTC")
     )
 
@@ -691,7 +694,7 @@ test_that("RJ online audit detects missing municipal columns and truncation", {
 
     expect_warning(
       audit <- vigiar_auditar_rj_online("df_anual", salvar = FALSE),
-      "Possible truncation"
+      "Truncation status"
     )
     expect_equal(audit$conclusion, "truncated")
     expect_true(audit$possivel_truncamento)
@@ -717,7 +720,7 @@ test_that("RJ online audit detects schema hash absence", {
     )
 
     audit <- vigiar_auditar_rj_online("df_anual", salvar = FALSE)
-    expect_equal(audit$conclusion, "schema_changed")
+    expect_equal(audit$conclusion, "schema_unverified")
     expect_true(is.na(audit$schema_hash))
   })
 })
