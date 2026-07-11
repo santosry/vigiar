@@ -24,14 +24,31 @@
 #' @keywords internal
 .vigiar_parse_dados <- function(resposta, tabela,
                                  raw = FALSE, schema_check = TRUE) {
+  malformed <- function(part) {
+    stop(
+      sprintf("[%s] Malformed Power BI DSR response: %s.", tabela, part),
+      call. = FALSE
+    )
+  }
+  if (!is.list(resposta) || is.null(resposta$results) ||
+      length(resposta$results) < 1L ||
+      is.null(resposta$results[[1L]]$result$data)) {
+    malformed("missing results/result/data envelope")
+  }
   data_section <- resposta$results[[1L]]$result$data
 
   if (is.null(data_section$dsr)) {
     warning(sprintf("[%s] DSR ausente na resposta.", tabela))
     return(data.frame())
   }
+  if (!is.list(data_section$dsr$DS) || length(data_section$dsr$DS) < 1L) {
+    malformed("DSR dataset is absent")
+  }
 
   ds  <- data_section$dsr$DS[[1L]]
+  if (!is.list(ds$PH) || length(ds$PH) < 1L) {
+    malformed("DSR phase payload is absent")
+  }
   ph  <- ds$PH[[1L]]
   dm0 <- ph$DM0
 
@@ -42,17 +59,32 @@
 
   # ---- Schema extraction ----
   descriptor <- data_section$descriptor
+  if (!is.list(descriptor$Select) || length(descriptor$Select) < 1L) {
+    malformed("descriptor Select columns are absent")
+  }
+  valid_select <- vapply(descriptor$Select, function(x) {
+    is.list(x) && length(x$Name %||% character()) == 1L && nzchar(x$Name)
+  }, logical(1))
+  if (!all(valid_select)) {
+    malformed("descriptor contains unnamed or invalid columns")
+  }
   col_names  <- vapply(descriptor$Select, `[[`, "", "Name", USE.NAMES = FALSE)
   n_cols     <- length(col_names)
+  issues <- character()
 
   value_dicts <- ds$ValueDicts %||% list()
+  if (!is.list(value_dicts)) {
+    malformed("ValueDicts is not a list")
+  }
 
   # Extract dictionary names from the schema (first DM0 entry)
   first_entry <- dm0[[1L]]
   dict_names <- character(n_cols)
-  if (!is.null(first_entry$S)) {
+  if (is.list(first_entry) && !is.null(first_entry$S)) {
     for (j in seq_len(n_cols)) {
-      dict_names[j] <- first_entry$S[[j]]$DN %||% ""
+      if (length(first_entry$S) >= j && is.list(first_entry$S[[j]])) {
+        dict_names[j] <- first_entry$S[[j]]$DN %||% ""
+      }
     }
   }
 
@@ -60,15 +92,24 @@
   prev_row <- rep(NA, n_cols)
   rows     <- vector("list", length(dm0))
   out_idx  <- 0L
+  have_previous_data <- FALSE
 
   for (i in seq_along(dm0)) {
     entry <- dm0[[i]]
-    if (!is.list(entry)) next
+    if (!is.list(entry)) {
+      issues <- c(issues, sprintf("row %d is not a list and was skipped", i))
+      next
+    }
 
     # Skip schema-only entries (no data values)
     if (is.null(entry$C) && !is.null(entry$S)) next
 
-    repeat_mask <- as.integer(entry$R %||% 0L)
+    raw_repeat <- entry$R %||% 0L
+    repeat_mask <- suppressWarnings(as.integer(raw_repeat))
+    if (length(repeat_mask) != 1L || is.na(repeat_mask) || repeat_mask < 0L) {
+      stop(sprintf("[%s] Invalid repeat mask at DSR row %d.", tabela, i),
+           call. = FALSE)
+    }
     # Power BI DSR uses unicode null-symbol as null-mask key.
     # detect it via known aliases: "S0" first, then "O" (ASCII alias)
     null_key <- "S0"
@@ -76,8 +117,19 @@
       null_key <- "O"
       if (!null_key %in% names(entry)) null_key <- character(0)
     }
-    null_mask <- if (length(null_key) > 0) as.integer(entry[[null_key]] %||% 0L) else 0L
-    changed     <- entry$C %||% list()
+    null_mask <- if (length(null_key) > 0) {
+      suppressWarnings(as.integer(entry[[null_key]] %||% 0L))
+    } else {
+      0L
+    }
+    if (length(null_mask) != 1L || is.na(null_mask) || null_mask < 0L) {
+      stop(sprintf("[%s] Invalid null mask at DSR row %d.", tabela, i),
+           call. = FALSE)
+    }
+    changed <- entry$C %||% list()
+    if (!is.list(changed)) {
+      changed <- as.list(changed)
+    }
 
     row_vals <- vector("list", n_cols)
     cursor   <- 1L
@@ -88,9 +140,10 @@
       nulo   <- bitwAnd(null_mask, bit) != 0L
 
       if (repete) {
-        if (i == 1L) {
-          warning(sprintf("[%s] Linha 1 com mascara R=%d inesperada.",
-                          tabela, repeat_mask))
+        if (!have_previous_data) {
+          issues <- c(issues, sprintf(
+            "row %d repeats column %d with no previous data row", i, col
+          ))
           row_vals[[col]] <- NA
         } else {
           row_vals[[col]] <- prev_row[[col]]
@@ -108,22 +161,48 @@
             idx <- as.integer(val) + 1L  # 0-based dict
             if (idx >= 1L && idx <= length(dict)) {
               val <- dict[[idx]]
+            } else {
+              issues <- c(issues, sprintf(
+                "row %d column %d has dictionary index %s outside '%s'",
+                i, col, as.character(val), dn
+              ))
+              val <- NA
             }
+          } else {
+            issues <- c(issues, sprintf(
+              "row %d column %d has a non-numeric dictionary index", i, col
+            ))
+            val <- NA
           }
         }
         row_vals[[col]] <- val
       } else {
+        issues <- c(issues, sprintf(
+          "row %d has fewer changed values than required; column %d was padded",
+          i, col
+        ))
         row_vals[[col]] <- NA
       }
     }
 
+    if (cursor <= length(changed)) {
+      issues <- c(issues, sprintf(
+        "row %d has %d more changed values than the descriptor permits",
+        i, length(changed) - cursor + 1L
+      ))
+    }
+
     prev_row     <- row_vals
+    have_previous_data <- TRUE
     out_idx      <- out_idx + 1L
     rows[[out_idx]] <- row_vals
   }
   rows <- rows[seq_len(out_idx)]
 
-  if (raw) return(rows)
+  if (raw) {
+    attr(rows, "vigiar_parser_issues") <- unique(issues)
+    return(rows)
+  }
 
   # ---- Build data.frame ----
   if (length(rows) == 0L) return(data.frame())
@@ -143,6 +222,22 @@
   for (j in seq_len(n_cols)) {
     col_type <- descriptor$Select[[j]]$Type %||% 1L
     df[[j]] <- .vigiar_converter_coluna(df[[j]], col_type)
+  }
+
+  issues <- unique(issues)
+  attr(df, "vigiar_parser_issues") <- issues
+  response_metadata <- list(
+    has_more = isTRUE(data_section$has_more) || isTRUE(data_section$hasMore) ||
+      isTRUE(data_section$continuation),
+    truncated = isTRUE(data_section$truncated)
+  )
+  attr(df, "vigiar_response_metadata") <- response_metadata
+  if (isTRUE(schema_check) && length(issues) > 0L) {
+    warning(
+      sprintf("[%s] DSR structural issue(s): %s", tabela,
+              paste(issues, collapse = "; ")),
+      call. = FALSE
+    )
   }
 
   df

@@ -220,7 +220,7 @@ test_that(".vigiar_parse_dados warns on DM0 with R but no previous row", {
   resp <- .make_dsr_response(schema, dm0)
   expect_warning(
     df <- .vigiar_parse_dados(resp, "teste"),
-    "Linha 1 com mascara"
+    "no previous data row"
   )
   expect_equal(nrow(df), 1)
 })
@@ -240,7 +240,10 @@ test_that(".vigiar_parse_dados pads short rows", {
   )
 
   resp <- .make_dsr_response(schema, dm0)
-  df <- .vigiar_parse_dados(resp, "teste")
+  expect_warning(
+    df <- .vigiar_parse_dados(resp, "teste"),
+    "fewer changed values"
+  )
   expect_equal(nrow(df), 2)
   expect_equal(ncol(df), 3)
   expect_equal(df$a, c(1L, 1L))
