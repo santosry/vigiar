@@ -1,5 +1,5 @@
 {
-  "locked_at": "2026-07-02",
+  "locked_at": "2026-07-12",
   "source": "Critical VIGIAR columns required by RJ PM2.5, municipality, and population workflows.",
   "tabelas": [
     "df_anual",
@@ -34,7 +34,7 @@
     "pop": {
       "muni": {"tipo": "integer"},
       "ano": {"tipo": "integer"},
-      "pop": {"tipo": "numeric"},
+      "pop": {"tipo": "integer"},
       "categoria": {"tipo": "character"},
       "UF": {"tipo": "character"}
     },

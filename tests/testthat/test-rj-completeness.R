@@ -70,7 +70,7 @@ library(vigiar)
     pop = list(
       muni = list(nome = "muni", tipo = "integer"),
       ano = list(nome = "ano", tipo = "integer"),
-      pop = list(nome = "pop", tipo = "numeric"),
+      pop = list(nome = "pop", tipo = "integer"),
       UF = list(nome = "UF", tipo = "character")
     ),
     tb_uf = list(

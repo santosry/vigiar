@@ -39,7 +39,7 @@ library(vigiar)
     pop = list(
       muni = list(tipo = "integer"),
       ano = list(tipo = "integer"),
-      pop = list(tipo = "numeric"),
+      pop = list(tipo = "integer"),
       categoria = list(tipo = "character"),
       UF = list(tipo = "character")
     ),
@@ -56,7 +56,7 @@ library(vigiar)
 .critical_lock <- function(schema = .critical_schema()) {
   structure(
     list(
-      locked_at = "2026-07-02",
+      locked_at = "2026-07-12",
       tabelas = names(schema),
       esquema = schema
     ),
