@@ -86,12 +86,12 @@
 #'   \code{temporal}, \code{units}, \code{coverage}, \code{checksums}.
 #' @export
 vigiar_auditar <- function(dados, tabela = NULL, verbose = TRUE) {
-  tabela <- tabela %||% attr(dados, "vigiar_tabela") %||% "desconhecida"
+  tabela <- tabela %||% attr(dados, "vigiar_tabela") %||% "unknown"
 
   if (verbose) {
-    cli::cli_h1("Auditoria VIGIAR")
-    cli::cli_text("Tabela: {.strong {tabela}}")
-    cli::cli_text("Auditado em: {format(Sys.time())}")
+    cli::cli_h1("VIGIAR audit")
+    cli::cli_text("Table: {.strong {tabela}}")
+    cli::cli_text("Audited at: {format(Sys.time())}")
     cli::cli_rule()
   }
 
@@ -156,20 +156,20 @@ vigiar_auditar <- function(dados, tabela = NULL, verbose = TRUE) {
 #' @param ... Additional arguments (ignored).
 #' @export
 print.vigiar_audit <- function(x, ...) {
-  cli::cli_h1("Relatorio de Auditoria VIGIAR")
-  cli::cli_text("Tabela: {x$tabela}")
-  cli::cli_text("Data: {format(x$timestamp)}")
+  cli::cli_h1("VIGIAR audit report")
+  cli::cli_text("Table: {x$tabela}")
+  cli::cli_text("Date: {format(x$timestamp)}")
   cli::cli_text("R: {x$r_version}")
   cli::cli_text("vigiar: {x$vigiar_version}")
   cli::cli_rule()
 
   sections <- c("schema", "ibge", "temporal", "units", "coverage")
   labels <- c(
-    schema   = "Conformidade de Esquema",
-    ibge     = "Validacao de Codigos IBGE",
-    temporal = "Consistencia Temporal",
-    units    = "Validacao de Unidades",
-    coverage = "Cobertura Espacial"
+    schema   = "Schema conformity",
+    ibge     = "IBGE code validation",
+    temporal = "Temporal consistency",
+    units    = "Unit validation",
+    coverage = "Spatial coverage"
   )
 
   for (s in sections) {
@@ -191,11 +191,11 @@ print.vigiar_audit <- function(x, ...) {
 
   cli::cli_rule()
   if (identical(x$status %||% if (x$passed) "pass" else "fail", "pass")) {
-    cli::cli_alert_success("Resultado final: APROVADO")
+    cli::cli_alert_success("Final result: PASSED")
   } else if (identical(x$status, "unknown")) {
     cli::cli_alert_warning("Final result: UNVERIFIED")
   } else {
-    cli::cli_alert_danger("Resultado final: REPROVADO")
+    cli::cli_alert_danger("Final result: FAILED")
   }
   invisible(x)
 }
@@ -211,7 +211,7 @@ print.vigiar_audit <- function(x, ...) {
 #' @export
 vigiar_auditar_tudo <- function(dados_list, verbose = TRUE) {
   if (!is.list(dados_list) || is.null(names(dados_list))) {
-    stop("'dados_list' deve ser uma lista nomeada de data frames.")
+    stop("'dados_list' must be a named list of data frames.")
   }
 
   results <- vector("list", length(dados_list))
@@ -219,7 +219,7 @@ vigiar_auditar_tudo <- function(dados_list, verbose = TRUE) {
 
   for (i in seq_along(dados_list)) {
     tab <- names(dados_list)[i]
-    if (verbose) cli::cli_text("Auditando: {tab} ({i}/{length(dados_list)})")
+    if (verbose) cli::cli_text("Auditing: {tab} ({i}/{length(dados_list)})")
     results[[tab]] <- tryCatch(
       vigiar_auditar(dados_list[[tab]], tabela = tab, verbose = FALSE),
       error = function(e) {
@@ -232,7 +232,7 @@ vigiar_auditar_tudo <- function(dados_list, verbose = TRUE) {
   if (verbose) {
     cli::cli_rule()
     cli::cli_alert_info(
-      "Auditoria concluida: {n_passed}/{length(results)} tabelas aprovadas"
+      "Audit completed: {n_passed}/{length(results)} tables passed"
     )
   }
 
@@ -247,8 +247,8 @@ vigiar_auditar_tudo <- function(dados_list, verbose = TRUE) {
 print.vigiar_audit_list <- function(x, ...) {
   n <- length(x)
   n_ok <- sum(vapply(x, function(a) isTRUE(a$passed), logical(1)))
-  cli::cli_h1("Auditoria Multi-Tabela")
-  cli::cli_text("{n_ok}/{n} tabelas aprovadas")
+  cli::cli_h1("Multi-table audit")
+  cli::cli_text("{n_ok}/{n} tables passed")
   cli::cli_rule()
   for (tab in names(x)) {
     a <- x[[tab]]
@@ -271,7 +271,7 @@ print.vigiar_audit_list <- function(x, ...) {
 vigiar_compliance_check <- function(dados, tabela = NULL,
                                      profiles = c("basico", "rigoroso", "rj"),
                                      verbose = TRUE) {
-  tabela <- tabela %||% attr(dados, "vigiar_tabela") %||% "desconhecida"
+  tabela <- tabela %||% attr(dados, "vigiar_tabela") %||% "unknown"
 
   all_profiles <- c("basico", "rigoroso", "rj", "corrupcao")
   if ("all" %in% profiles) profiles <- all_profiles
@@ -281,7 +281,7 @@ vigiar_compliance_check <- function(dados, tabela = NULL,
   names(results) <- profiles
 
   for (p in profiles) {
-    if (verbose) cli::cli_h2("Perfil: {p}")
+    if (verbose) cli::cli_h2("Profile: {p}")
     results[[p]] <- switch(p,
       basico = {
         # Basic: schema + IBGE + temporal
@@ -381,10 +381,10 @@ vigiar_compliance_check <- function(dados, tabela = NULL,
 #' @param ... Additional arguments (ignored).
 #' @export
 print.vigiar_compliance <- function(x, ...) {
-  cli::cli_h1("Relatorio de Compliance VIGIAR")
+  cli::cli_h1("VIGIAR compliance report")
   for (p in names(x)) {
     status <- if (isTRUE(x[[p]]$ok)) cli::col_green("PASS") else cli::col_red("FAIL")
-    cli::cli_text("{status} Perfil: {p}")
+    cli::cli_text("{status} Profile: {p}")
   }
   invisible(x)
 }
@@ -496,7 +496,7 @@ print.vigiar_compliance <- function(x, ...) {
 
   ok <- length(invalidos) == 0
   details <- sprintf(
-    "%d codigos IBGE, %d validos, %d fora do intervalo esperado",
+    "%d IBGE codes, %d valid, %d outside the expected reference",
     length(raw_non_missing), length(validos), length(invalidos)
   )
 
@@ -532,7 +532,7 @@ print.vigiar_compliance <- function(x, ...) {
     anos <- anos[!is.na(anos)]
     bad_anos <- sum(anos < 2000 | anos > current_year)
     if (bad_anos > 0) {
-      issues <- c(issues, sprintf("%d anos fora de 2000-%d", bad_anos, current_year))
+      issues <- c(issues, sprintf("%d years outside 2000-%d", bad_anos, current_year))
     }
     range_anos <- if (length(anos) > 0) paste(range(anos), collapse = "-") else "N/A"
   } else {
@@ -547,7 +547,7 @@ print.vigiar_compliance <- function(x, ...) {
     meses <- meses[!is.na(meses)]
     bad_mes <- sum(meses < 1 | meses > 12)
     if (bad_mes > 0) {
-      issues <- c(issues, sprintf("%d meses fora de 1-12", bad_mes))
+      issues <- c(issues, sprintf("%d months outside 1-12", bad_mes))
     }
   } else if (requires_month) {
     issues <- c(issues, "Required month column is absent.")
@@ -563,7 +563,7 @@ print.vigiar_compliance <- function(x, ...) {
 
   if (verbose) {
     if (status == "pass") {
-      cli::cli_alert_success("Temporal: faixa {range_anos} -- OK")
+      cli::cli_alert_success("Temporal range: {range_anos} -- OK")
     } else {
       for (i in issues) cli::cli_alert_warning(i)
     }
@@ -588,7 +588,7 @@ print.vigiar_compliance <- function(x, ...) {
     vals <- as.numeric(dados[[col]])
     bad <- sum(!is.na(vals) & (vals < 0 | vals > 1000))
     if (bad > 0) {
-      issues <- c(issues, sprintf("PM2.5 (%s): %d valores implausiveis", col, bad))
+      issues <- c(issues, sprintf("PM2.5 (%s): %d implausible values", col, bad))
     }
   }
 
@@ -598,7 +598,7 @@ print.vigiar_compliance <- function(x, ...) {
     vals <- as.numeric(dados[[col]])
     bad <- sum(!is.na(vals) & vals < 0, na.rm = TRUE)
     if (bad > 0) {
-      issues <- c(issues, sprintf("Populacao (%s): %d valores negativos", col, bad))
+      issues <- c(issues, sprintf("Population (%s): %d negative values", col, bad))
     }
   }
 
@@ -613,7 +613,7 @@ print.vigiar_compliance <- function(x, ...) {
 
   if (verbose) {
     if (status == "pass") {
-      cli::cli_alert_success("Unidades: OK")
+      cli::cli_alert_success("Units: OK")
     } else {
       for (i in issues) cli::cli_alert_warning(i)
     }
@@ -634,7 +634,7 @@ print.vigiar_compliance <- function(x, ...) {
 
   if (verbose) {
     msg <- sprintf(
-      "Cobertura: %s UFs, %s municipios",
+      "Coverage: %s UFs, %s municipalities",
       if (is.na(n_uf)) "?" else as.character(n_uf),
       if (is.na(n_muni)) "?" else as.character(n_muni)
     )
@@ -666,7 +666,7 @@ print.vigiar_compliance <- function(x, ...) {
   )[1]
 
   if (is.na(col_muni)) {
-    if (verbose) cli::cli_alert_warning("Cobertura RJ: sem coluna de municipio")
+    if (verbose) cli::cli_alert_warning("RJ coverage: municipality column is absent")
     return(.vigiar_check_result(
       "fail",
       details = "Municipality code column is required for RJ coverage."
@@ -684,11 +684,11 @@ print.vigiar_compliance <- function(x, ...) {
 
   if (verbose) {
     cli::cli_alert_info(
-      "Cobertura RJ: {length(presentes)}/92 municipios ({pct}%)"
+      "RJ coverage: {length(presentes)}/92 municipalities ({pct}%)"
     )
     if (length(faltantes) > 0) {
       cli::cli_alert_warning(
-        "{length(faltantes)} municipios RJ faltando"
+        "{length(faltantes)} RJ municipalities are absent"
       )
     }
   }
@@ -716,7 +716,7 @@ print.vigiar_compliance <- function(x, ...) {
   all_na <- vapply(dados, function(x) all(is.na(x)), logical(1))
   if (any(all_na)) {
     na_cols <- names(dados)[all_na]
-    issues <- c(issues, sprintf("Colunas 100%% NA: %s", paste(na_cols, collapse = ", ")))
+    issues <- c(issues, sprintf("Columns are 100%% NA: %s", paste(na_cols, collapse = ", ")))
   }
 
   # Check for constant-value columns
@@ -739,7 +739,7 @@ print.vigiar_compliance <- function(x, ...) {
     if (is.list(dados[[col]]) && !inherits(dados[[col]], "POSIXct")) {
       types <- unique(vapply(dados[[col]], typeof, ""))
       if (length(types) > 1) {
-        issues <- c(issues, sprintf("Coluna '%s' tem tipos mistos: %s",
+        issues <- c(issues, sprintf("Column '%s' has mixed types: %s",
                                     col, paste(types, collapse = ", ")))
       }
     }
@@ -750,7 +750,7 @@ print.vigiar_compliance <- function(x, ...) {
     expected_ncols <- length(.vigiar_env$esquema[[tabela]])
     if (ncol(dados) != expected_ncols) {
       issues <- c(issues,
-        sprintf("Numero de colunas: %d (esperado: %d)", ncol(dados), expected_ncols))
+        sprintf("Column count: %d (expected: %d)", ncol(dados), expected_ncols))
     }
   }
 
@@ -758,7 +758,7 @@ print.vigiar_compliance <- function(x, ...) {
 
   if (verbose) {
     if (ok) {
-      cli::cli_alert_success("Integridade: OK")
+      cli::cli_alert_success("Integrity: OK")
     } else {
       for (i in issues) cli::cli_alert_danger(i)
     }
@@ -799,14 +799,14 @@ print.vigiar_compliance <- function(x, ...) {
       )
       if (verbose) {
         cli::cli_alert_warning(
-          "Outliers em '{col}': {n_low + n_high} valores ({round(outliers[[col]]$pct, 1)}%)"
+        "Outliers in '{col}': {n_low + n_high} values ({round(outliers[[col]]$pct, 1)}%)"
         )
       }
     }
   }
 
   if (verbose && length(outliers) == 0) {
-    cli::cli_alert_success("Outliers: nenhum detectado (metodo IQR)")
+    cli::cli_alert_success("Outliers: none detected (IQR method)")
   }
 
   outliers
@@ -989,6 +989,6 @@ vigiar_exportar_auditoria <- function(audit, caminho) {
   json <- jsonlite::toJSON(audit, auto_unbox = TRUE, pretty = TRUE,
                             null = "null", force = TRUE)
   writeLines(json, caminho)
-  cli::cli_alert_success("Auditoria exportada: {caminho}")
+  cli::cli_alert_success("Audit exported: {caminho}")
   invisible(caminho)
 }

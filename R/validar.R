@@ -91,7 +91,7 @@ vigiar_validar_datas <- function(dados) {
     n_bad <- sum(is.na(anos) | anos < 2000 | anos > current_year)
     if (n_bad > 0) {
       warning(sprintf(
-        "%d valor(es) de ano fora do intervalo 2000-%d", n_bad, current_year
+        "%d year value(s) are outside 2000-%d", n_bad, current_year
       ))
     }
   }
@@ -101,7 +101,7 @@ vigiar_validar_datas <- function(dados) {
     n_bad <- sum(is.na(meses) | meses < 1 | meses > 12)
     if (n_bad > 0) {
       warning(sprintf(
-        "%d valor(es) de mes fora do intervalo 1-12", n_bad
+        "%d month value(s) are outside 1-12", n_bad
       ))
     }
   }
@@ -125,7 +125,7 @@ vigiar_validar_unidades <- function(dados, col_pm25 = "pm25_media") {
   n_implausible <- sum(!is.na(valores) & (valores < 0 | valores > 1000))
   if (n_implausible > 0) {
     warning(sprintf(
-      "%d valor(es) de PM2.5 fora do intervalo plausivel (0-1000 ug/m3)",
+      "%d PM2.5 value(s) are outside the plausible range (0-1000 ug/m3)",
       n_implausible
     ))
   }

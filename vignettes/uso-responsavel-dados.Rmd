@@ -48,6 +48,19 @@ The package accesses public VIGIAR data made available through Power BI
 - Treat "data available" and "data complete for the research question" as
   different claims.
 - Check possible Power BI API truncation before reporting completeness.
+- Define the expected years and months before claiming temporal completeness.
+- Treat `complete_within_inferred_domain` as weaker evidence than `complete`.
+
+## Evidence Terms
+
+`downloaded`, `filtered`, `covered`, `complete`, `verified`, `audited`, and
+`reproducible` describe different properties. A reproducible snapshot can
+preserve incomplete data, and complete spatial coverage can coexist with an
+incomplete municipality-month panel.
+
+The package prepares, audits, and diagnoses data. It does not validate causal
+inference, GAM, DLNM, relative risk, machine learning, predictive models, or
+epidemiologic conclusions.
 
 ## Privacy
 

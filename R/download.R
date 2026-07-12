@@ -7,7 +7,7 @@
 #' @export
 vigiar_tabelas <- function() {
   if (is.null(.vigiar_env$esquema)) {
-    stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
+    stop("No active session. Run vigiar_conectar() first.")
   }
   names(.vigiar_env$esquema)
 }
@@ -21,12 +21,12 @@ vigiar_tabelas <- function() {
 #' @export
 vigiar_esquema <- function(tabela = NULL) {
   if (is.null(.vigiar_env$esquema)) {
-    stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
+    stop("No active session. Run vigiar_conectar() first.")
   }
 
   if (!is.null(tabela)) {
     .vigiar_check_tabela(tabela)
-    cat(sprintf("\n=== Tabela: %s ===\n", tabela))
+    cat(sprintf("\n=== Table: %s ===\n", tabela))
     col_info <- .vigiar_env$esquema[[tabela]]
     df <- data.frame(
       coluna = names(col_info),
@@ -39,7 +39,7 @@ vigiar_esquema <- function(tabela = NULL) {
 
   for (tab in names(.vigiar_env$esquema)) {
     n <- length(.vigiar_env$esquema[[tab]])
-    cat(sprintf("%-42s %3d colunas\n", tab, n))
+    cat(sprintf("%-42s %3d columns\n", tab, n))
   }
   invisible(.vigiar_env$esquema)
 }
@@ -63,7 +63,7 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
                            limite = NULL, timeout = 120, uf = NULL,
                            direcao = c("asc", "desc"), filtros = NULL) {
   if (is.null(.vigiar_env$sessao)) {
-    stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
+    stop("No active session. Run vigiar_conectar() first.")
   }
   .vigiar_check_tabela(tabela)
 
@@ -182,7 +182,7 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
 #' @export
 vigiar_baixar_tudo <- function(tabelas = NULL, progress = TRUE, delay = 0.5) {
   if (is.null(.vigiar_env$sessao)) {
-    stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
+    stop("No active session. Run vigiar_conectar() first.")
   }
 
   if (is.null(tabelas)) {
@@ -191,7 +191,7 @@ vigiar_baixar_tudo <- function(tabelas = NULL, progress = TRUE, delay = 0.5) {
     invalidas <- setdiff(tabelas, names(.vigiar_env$esquema))
     if (length(invalidas) > 0) {
       warning(
-        "Tabelas nao encontradas: ",
+        "Tables not found: ",
         paste(invalidas, collapse = ", ")
       )
       tabelas <- intersect(tabelas, names(.vigiar_env$esquema))
@@ -204,12 +204,12 @@ vigiar_baixar_tudo <- function(tabelas = NULL, progress = TRUE, delay = 0.5) {
   for (i in seq_along(tabelas)) {
     tab <- tabelas[[i]]
     if (progress) {
-      message(sprintf("[%d/%d] Baixando '%s'...", i, length(tabelas), tab))
+      message(sprintf("[%d/%d] Downloading '%s'...", i, length(tabelas), tab))
     }
     resultado[[tab]] <- tryCatch(
       vigiar_baixar(tab),
       error = function(e) {
-        warning(sprintf("Erro ao baixar '%s': %s", tab, e$message))
+        warning(sprintf("Failed to download '%s': %s", tab, e$message))
         NULL
       }
     )
@@ -218,7 +218,7 @@ vigiar_baixar_tudo <- function(tabelas = NULL, progress = TRUE, delay = 0.5) {
 
   n_ok <- sum(!vapply(resultado, is.null, logical(1)))
   message(sprintf(
-    "Download concluido: %d/%d tabelas baixadas com sucesso.",
+      "Download completed: %d/%d tables downloaded successfully.",
     n_ok, length(tabelas)
   ))
 
@@ -252,7 +252,7 @@ vigiar_baixar_principais <- function() {
 #' @export
 vigiar_info <- function() {
   if (is.null(.vigiar_env$esquema)) {
-    stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
+    stop("No active session. Run vigiar_conectar() first.")
   }
 
   catalogo <- .vigiar_catalogo()
@@ -269,8 +269,8 @@ vigiar_info <- function() {
   result$descricao <- catalogo$descricao[idx]
   result$categoria <- catalogo$categoria[idx]
 
-  result$descricao[is.na(result$descricao)] <- "Tabela auxiliar do dashboard"
-  result$categoria[is.na(result$categoria)] <- "Auxiliar"
+  result$descricao[is.na(result$descricao)] <- "Auxiliary dashboard table"
+  result$categoria[is.na(result$categoria)] <- "Auxiliary"
 
   tibble::as_tibble(result)[
     order(result$categoria, result$tabela),
@@ -304,15 +304,15 @@ vigiar_checar_dados <- function(dados, tabela = NULL) {
   checks$is_empty <- nrow(dados) == 0
 
   if (!is.null(tabela)) {
-    cat(sprintf("\nDiagnostico: %s\n", tabela))
+    cat(sprintf("\nDiagnostic: %s\n", tabela))
     cat(strrep("-", 40), "\n")
   }
-  cat(sprintf("Linhas:  %d\n", checks$n_rows))
-  cat(sprintf("Colunas: %d\n", checks$n_cols))
-  cat(sprintf("Linhas duplicadas: %d\n", checks$duplicated_rows))
+  cat(sprintf("Rows:    %d\n", checks$n_rows))
+  cat(sprintf("Columns: %d\n", checks$n_cols))
+  cat(sprintf("Duplicate rows: %d\n", checks$duplicated_rows))
 
   if (any(na_count > 0)) {
-    cat("\nValores ausentes por coluna:\n")
+    cat("\nMissing values by column:\n")
     na_info <- na_count[na_count > 0]
     for (nm in names(na_info)) {
       cat(sprintf("  %-30s %d (%.1f%%)\n",
@@ -320,7 +320,7 @@ vigiar_checar_dados <- function(dados, tabela = NULL) {
                   100 * na_info[[nm]] / checks$n_rows))
     }
   } else {
-    cat("Valores ausentes: 0\n")
+    cat("Missing values: 0\n")
   }
 
   invisible(checks)
@@ -336,7 +336,7 @@ vigiar_checar_dados <- function(dados, tabela = NULL) {
 #' @export
 vigiar_diagnostico <- function(amostra = 100) {
   if (is.null(.vigiar_env$sessao)) {
-    stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
+    stop("No active session. Run vigiar_conectar() first.")
   }
 
   tabelas <- names(.vigiar_env$esquema)
@@ -344,12 +344,12 @@ vigiar_diagnostico <- function(amostra = 100) {
   names(resultados) <- tabelas
 
   for (tab in tabelas) {
-    message(sprintf("Amostrando '%s' (%d linhas)...", tab, amostra))
+    message(sprintf("Sampling '%s' (%d rows)...", tab, amostra))
     resultados[[tab]] <- tryCatch({
       dados <- vigiar_baixar(tab, limite = amostra)
       vigiar_checar_dados(dados, tabela = tab)
     }, error = function(e) {
-      warning(sprintf("Falha em '%s': %s", tab, e$message))
+      warning(sprintf("Failure in '%s': %s", tab, e$message))
       list(error = e$message)
     })
   }
@@ -362,8 +362,8 @@ vigiar_diagnostico <- function(amostra = 100) {
 .vigiar_check_tabela <- function(tabela) {
   if (!tabela %in% names(.vigiar_env$esquema)) {
     stop(
-      sprintf("Tabela '%s' nao encontrada.", tabela),
-      " Use vigiar_tabelas() para ver as disponiveis."
+      sprintf("Table '%s' was not found.", tabela),
+      " Use vigiar_tabelas() to list available tables."
     )
   }
 }
@@ -382,46 +382,46 @@ vigiar_diagnostico <- function(amostra = 100) {
       "aux_uf", "dados_ate", "last_update", "att_em"
     ),
     descricao = c(
-      "Medias anuais PM2.5 por municipio",
-      "Medias mensais PM2.5 por municipio (com LAT/LON)",
-      "Dias acima do limite OMS (PM2.5 > 15 ug/m3)",
-      "Dias acima do limite CONAMA (PM2.5 > 50 ug/m3)",
-      "Populacao residente por municipio, ano e categoria de exposicao",
-      "Cadastro de municipios: regiao, UF, coordenadas, nomes",
-      "Tabela auxiliar: meses (numero -> nome)",
-      "Anos disponiveis na base",
-      "Indicadores de saude agregados -- BRASIL",
-      "Indicadores de saude agregados -- UF",
-      "Indicadores de saude por MUNICIPIO (com codigo IBGE, lat, long)",
-      "Fracao atribuivel por indicador e desfecho",
-      "Quartis dos indicadores (q1, q2, q3)",
-      "Exposicao a combustiveis solidos em domicilios (indoor)",
-      "Desfechos de saude associados a poluicao indoor",
-      "Medidas calculadas: rankings, medias, alertas, proporcoes (61 colunas)",
-      "Legenda de cores PM2.5 (OMS)",
-      "Legenda de cores PM2.5 (CONAMA)",
-      "Legenda de cores para quartis",
-      "Legenda de cores para exposicao indoor",
-      "Seletor de ano (filtro do dashboard)",
-      "Seletor de categoria (filtro do dashboard)",
-      "Valores de referencia OMS",
-      "Valores de referencia CONAMA",
-      "Seletor de indicador de saude",
-      "Codigo UF -> nome",
-      "Data dos ultimos dados disponiveis",
-      "Ultima atualizacao do banco",
-      "Timestamp de atualizacao"
+      "Annual municipality PM2.5 means",
+      "Monthly municipality PM2.5 means with latitude and longitude",
+      "Days above the WHO threshold (PM2.5 > 15 ug/m3)",
+      "Days above the CONAMA threshold (PM2.5 > 50 ug/m3)",
+      "Resident population by municipality, year, and exposure category",
+      "Municipality registry: region, UF, coordinates, names",
+      "Auxiliary table: month number to name",
+      "Years available in the source",
+      "Aggregated health indicators -- Brazil",
+      "Aggregated health indicators -- UF",
+      "Municipality health indicators (IBGE code, latitude, longitude)",
+      "Attributable fraction by indicator and outcome",
+      "Indicator quartiles (q1, q2, q3)",
+      "Household exposure to solid fuels",
+      "Health outcomes associated with indoor pollution",
+      "Calculated measures: rankings, means, alerts, proportions (61 columns)",
+      "PM2.5 color legend (WHO)",
+      "PM2.5 color legend (CONAMA)",
+      "Quartile color legend",
+      "Indoor-exposure color legend",
+      "Year selector (dashboard filter)",
+      "Category selector (dashboard filter)",
+      "WHO reference values",
+      "CONAMA reference values",
+      "Health indicator selector",
+      "UF code to name mapping",
+      "Date of the latest available data",
+      "Latest database update",
+      "Update timestamp"
     ),
     categoria = c(
-      "Qualidade do Ar", "Qualidade do Ar", "Qualidade do Ar", "Qualidade do Ar",
-      "Populacao", "Cadastro", "Auxiliar", "Auxiliar",
-      "Indicadores de Saude", "Indicadores de Saude", "Indicadores de Saude",
-      "Indicadores de Saude", "Indicadores de Saude",
-      "Exposicao Indoor", "Exposicao Indoor",
-      "Medidas",
-      "Auxiliar", "Auxiliar", "Auxiliar", "Auxiliar",
-      "Filtros", "Filtros", "Filtros", "Filtros", "Filtros",
-      "Auxiliar", "Metadados", "Metadados", "Metadados"
+      "Air quality", "Air quality", "Air quality", "Air quality",
+      "Population", "Registry", "Auxiliary", "Auxiliary",
+      "Health indicators", "Health indicators", "Health indicators",
+      "Health indicators", "Health indicators",
+      "Indoor exposure", "Indoor exposure",
+      "Measures",
+      "Auxiliary", "Auxiliary", "Auxiliary", "Auxiliary",
+      "Filters", "Filters", "Filters", "Filters", "Filters",
+      "Auxiliary", "Metadata", "Metadata", "Metadata"
     ),
     stringsAsFactors = FALSE
   )

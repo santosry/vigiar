@@ -21,7 +21,7 @@ navbar:
         href: articles/vigiar.html
       - text: "Download and Processing Flow"
         href: articles/fluxo-download-processamento.html
-      - text: "Complete RJ Download"
+      - text: "Verifiable RJ Downloads"
         href: articles/rj-download-completo.html
       - text: "-------"
       - text: "Data Dictionary"
@@ -111,6 +111,7 @@ reference:
   - vigiar_rj_resumo
   - vigiar_rj_series
   - vigiar_validar_rj
+  - vigiar_validar_codigo_municipio
   - vigiar_rj_cobertura
   - vigiar_rj_completude_tabela
   - vigiar_rj_municipios_ausentes

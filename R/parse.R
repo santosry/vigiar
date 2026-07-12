@@ -38,7 +38,7 @@
   data_section <- resposta$results[[1L]]$result$data
 
   if (is.null(data_section$dsr)) {
-    warning(sprintf("[%s] DSR ausente na resposta.", tabela))
+    warning(sprintf("[%s] DSR is absent from the response.", tabela))
     return(data.frame())
   }
   if (!is.list(data_section$dsr$DS) || length(data_section$dsr$DS) < 1L) {
@@ -53,7 +53,7 @@
   dm0 <- ph$DM0
 
   if (is.null(dm0) || length(dm0) == 0L) {
-    warning(sprintf("[%s] DM0 vazio.", tabela))
+    warning(sprintf("[%s] DM0 is empty.", tabela))
     return(data.frame())
   }
 

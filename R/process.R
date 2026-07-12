@@ -20,7 +20,7 @@
 #' @export
 process_vigiar <- function(dados, tabela = NULL, ...) {
   tabela <- tabela %||% attr(dados, "vigiar_tabela") %||%
-    stop("Informe o nome da tabela ou use dados com atributo 'vigiar_tabela'.")
+    stop("Provide a table name or data with a 'vigiar_tabela' attribute.")
 
   switch(tabela,
     df_anual             = process_pm25(dados, tipo = "anual", ...),
@@ -119,7 +119,7 @@ process_pm25 <- function(dados, tipo = c("anual", "mensal", "dias", "dias_conama
   # -- Build return object -------------------------------------------------
   metadados <- list(
     tipo         = tipo,
-    fonte        = "VIGIAR -- Ministerio da Saude",
+    fonte        = "VIGIAR -- Brazilian Ministry of Health",
     tabela_raw   = switch(tipo,
       anual       = "df_anual",
       mensal      = "df_mensal",
@@ -180,7 +180,7 @@ process_populacao_exposta <- function(dados, ...) {
     subclass  = c("vigiar_population"),
     tabela    = "pop",
     metadados = list(
-      fonte       = "VIGIAR -- Ministerio da Saude",
+      fonte       = "VIGIAR -- Brazilian Ministry of Health",
       tabela_raw  = "pop",
       processador = "process_populacao_exposta"
     )
@@ -254,7 +254,7 @@ process_indicadores_saude <- function(dados,
     subclass  = c("vigiar_health"),
     tabela    = tabela_raw,
     metadados = list(
-      fonte       = "VIGIAR -- Ministerio da Saude",
+      fonte       = "VIGIAR -- Brazilian Ministry of Health",
       tabela_raw  = tabela_raw,
       agregacao   = agregacao,
       processador = "process_indicadores_saude"
@@ -300,7 +300,7 @@ process_fracao_atribuivel <- function(dados, ...) {
     subclass  = c("vigiar_attributable_fraction", "vigiar_health"),
     tabela    = "tb_fracao",
     metadados = list(
-      fonte       = "VIGIAR -- Ministerio da Saude",
+      fonte       = "VIGIAR -- Brazilian Ministry of Health",
       tabela_raw  = "tb_fracao",
       processador = "process_fracao_atribuivel"
     )
@@ -366,7 +366,7 @@ process_exposicao_indoor <- function(dados, tipo = c("exposicao", "desfecho"), .
     subclass  = c("vigiar_indoor", "vigiar_health"),
     tabela    = tabela_raw,
     metadados = list(
-      fonte       = "VIGIAR -- Ministerio da Saude",
+      fonte       = "VIGIAR -- Brazilian Ministry of Health",
       tabela_raw  = tabela_raw,
       tipo        = tipo,
       processador = "process_exposicao_indoor"
@@ -425,7 +425,7 @@ process_municipios <- function(dados, ...) {
     subclass  = c("vigiar_municipios"),
     tabela    = "df_muni",
     metadados = list(
-      fonte       = "VIGIAR -- Ministerio da Saude",
+      fonte       = "VIGIAR -- Brazilian Ministry of Health",
       tabela_raw  = "df_muni",
       processador = "process_municipios"
     )
@@ -454,7 +454,7 @@ process_ufs <- function(dados, contexto = "uf") {
     subclass  = c("vigiar_uf"),
     tabela    = contexto,
     metadados = list(
-      fonte       = "VIGIAR -- Ministerio da Saude",
+      fonte       = "VIGIAR -- Brazilian Ministry of Health",
       processador = "process_ufs"
     )
   )

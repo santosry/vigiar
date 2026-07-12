@@ -1,9 +1,9 @@
 ---
-title: "Complete Rio de Janeiro Downloads"
+title: "Verifiable Rio de Janeiro Downloads"
 author: "Ryan Santos"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Complete Rio de Janeiro Downloads}
+  %\VignetteIndexEntry{Verifiable Rio de Janeiro Downloads}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -23,6 +23,11 @@ internal registry and, when time columns exist, by year or by year-month.
 
 The executable examples below use simulated data so this vignette builds
 offline.
+
+A response can be downloaded and filtered without being complete. Overall
+92/92 coverage also does not prove that every municipality is present in every
+expected year or month. `vigiar` reports spatial coverage, temporal-domain
+status, panel completeness, schema status, and response truncation separately.
 
 ```{r}
 library(vigiar)
@@ -116,7 +121,11 @@ month when `ano` and `mes` are available.
 
 ```{r}
 if (exists("vigiar_rj_completude_tabela", mode = "function")) {
-  vigiar_rj_completude_tabela(pm25_years, tabela = "df_anual")
+  vigiar_rj_completude_tabela(
+    pm25_years,
+    tabela = "df_anual",
+    anos_esperados = 2020:2022
+  )
 }
 ```
 
@@ -128,7 +137,12 @@ pm25_months <- merge(
 )
 
 if (exists("vigiar_rj_completude_tabela", mode = "function")) {
-  vigiar_rj_completude_tabela(pm25_months, tabela = "df_mensal")
+  vigiar_rj_completude_tabela(
+    pm25_months,
+    tabela = "df_mensal",
+    anos_esperados = 2022L,
+    meses_esperados = 1:3
+  )
 }
 ```
 
@@ -139,6 +153,7 @@ error, not just a warning.
 vigiar_rj_completude_tabela(
   pm25_years,
   tabela = "df_anual",
+  anos_esperados = 2020:2022,
   require_complete = TRUE
 )
 ```
@@ -175,14 +190,14 @@ pm25_rj_complete <- vigiar_baixar_rj(
 vigiar_desconectar()
 ```
 
-## Release-Grade Online Audit
+## Reproducible Online Audit
 
 For a reproducible scientific audit, use `vigiar_auditar_rj_online()`. The
 function writes `manifest.csv`, `manifest.json`, `audit.rds`, and per-table
 coverage CSV files. These outputs include the table name, execution time,
 package version, commit SHA when available, checksum, schema hash, row and
 column counts, general coverage, table-grain completeness, missing
-municipalities, incomplete macro-regions, possible truncation, and an objective
+municipalities, incomplete health regions, truncation evidence, and an objective
 conclusion.
 
 ```{r, eval = FALSE}
@@ -190,6 +205,12 @@ vigiar_conectar()
 
 audit <- vigiar_auditar_rj_online(
   tabelas = c("df_anual", "df_mensal", "df_dias", "pop"),
+  dominios_esperados = list(
+    df_anual = list(anos_esperados = 2018:2023),
+    df_mensal = list(anos_esperados = 2018:2023, meses_esperados = 1:12),
+    df_dias = list(anos_esperados = 2018:2023, meses_esperados = 1:12),
+    pop = list(anos_esperados = 2018:2023)
+  ),
   salvar = TRUE,
   dir = "data-raw/rj-download-completeness-output",
   require_complete = TRUE
@@ -200,14 +221,16 @@ vigiar_desconectar()
 
 The `require_complete = TRUE` mode turns partial coverage, possible truncation,
 missing municipality codes, missing schema hashes, and failed downloads into a
-clear error. Use it for release validation, not for exploratory checks.
+clear error. It requires an explicit expected temporal domain. Use it for
+release validation, not for exploratory checks.
 
 ## Possible Truncation
 
-Large Power BI responses can be truncated. `vigiar_baixar_rj()` attaches the
-`vigiar_possivel_truncamento` attribute when the response size reaches a known
-or requested limit. Do not claim 92/92 completeness from a truncated response
-without a validated partitioned download.
+Large Power BI responses can be truncated. The package records
+`vigiar_truncation_status` as `no_evidence`, `possible`, `probable`,
+`confirmed`, or `unknown`, together with evidence. The raw response is assessed
+before local filtering. Do not claim 92/92 completeness from a response with
+truncation evidence without a validated partitioned download.
 
 ```{r}
 attr(pm25_partial, "vigiar_possivel_truncamento") <- TRUE

@@ -201,8 +201,8 @@
   # Check for API-level errors
   if (!is.null(result$error)) {
     stop(
-      "Erro na API Power BI: ",
-      result$error$message %||% "erro desconhecido"
+      "Power BI API error: ",
+      result$error$message %||% "unknown error"
     )
   }
 

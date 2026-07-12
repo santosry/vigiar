@@ -25,15 +25,15 @@ vigiar_snapshot <- function(dados = NULL, tabela = NULL, ...,
                              congelar_esquema = FALSE) {
   if (is.null(dados) && !is.null(tabela)) {
     if (is.null(.vigiar_env$sessao)) {
-      stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
+      stop("No active session. Run vigiar_conectar() first.")
     }
     dados <- vigiar_baixar(tabela, ...)
   }
   if (is.null(dados)) {
-    stop("Forneca 'dados' ou 'tabela' para criar um snapshot.")
+    stop("Provide either 'dados' or 'tabela' to create a snapshot.")
   }
 
-  tabela <- tabela %||% attr(dados, "vigiar_tabela") %||% "desconhecida"
+  tabela <- tabela %||% attr(dados, "vigiar_tabela") %||% "unknown"
 
   parameters <- list(...)
   data_checksum <- vigiar_checksum(dados)
@@ -96,14 +96,14 @@ vigiar_snapshot <- function(dados = NULL, tabela = NULL, ...,
 #' @export
 print.vigiar_snapshot <- function(x, ...) {
   cli::cli_h1("VIGIAR Snapshot")
-  cli::cli_text("Tabela: {x$tabela}")
-  cli::cli_text("Dimensoes: {x$n_rows} linha(s) x {x$n_cols} coluna(s)")
-  cli::cli_text("Criado em: {format(x$criado_em)}")
+  cli::cli_text("Table: {x$tabela}")
+  cli::cli_text("Dimensions: {x$n_rows} row(s) x {x$n_cols} column(s)")
+  cli::cli_text("Created at: {format(x$criado_em)}")
   cli::cli_text("SHA256: {substr(x$checksum_sha256, 1, 32)}...")
   cli::cli_text("Canonicalization: v{x$canonicalization_version %||% 'legacy'}")
   cli::cli_text("R: {x$r_version}")
   cli::cli_text("vigiar: {x$vigiar_version}")
-  cli::cli_text("Plataforma: {x$platform}")
+  cli::cli_text("Platform: {x$platform}")
   invisible(x)
 }
 
@@ -138,7 +138,7 @@ vigiar_verificar_snapshot <- function(snapshot) {
   ok <- data_ok && schema_ok && metadata_ok && version_ok
 
   if (ok) {
-    cli::cli_alert_success("Snapshot integro: checksum confere")
+    cli::cli_alert_success("Snapshot integrity verified: checksums match")
   } else {
     cli::cli_alert_danger(paste0(
       "Snapshot integrity verification failed.",
@@ -166,12 +166,12 @@ vigiar_salvar_snapshot <- function(snapshot, caminho, overwrite = FALSE) {
     caminho <- paste0(caminho, ".rds")
   }
   if (file.exists(caminho) && !overwrite) {
-    stop("Arquivo ja existe: ", caminho, ". Use overwrite = TRUE.")
+    stop("File already exists: ", caminho, ". Use overwrite = TRUE.")
   }
 
   dir.create(dirname(caminho), showWarnings = FALSE, recursive = TRUE)
   saveRDS(snapshot, caminho)
-  cli::cli_alert_success("Snapshot salvo: {caminho}")
+  cli::cli_alert_success("Snapshot saved: {caminho}")
   invisible(caminho)
 }
 
@@ -182,13 +182,13 @@ vigiar_salvar_snapshot <- function(snapshot, caminho, overwrite = FALSE) {
 #' @export
 vigiar_carregar_snapshot <- function(caminho) {
   if (!file.exists(caminho)) {
-    stop("Arquivo nao encontrado: ", caminho)
+    stop("File not found: ", caminho)
   }
   snapshot <- readRDS(caminho)
   if (!inherits(snapshot, "vigiar_snapshot")) {
-    stop("O arquivo nao contem um vigiar_snapshot valido.")
+    stop("The file does not contain a valid vigiar_snapshot object.")
   }
-  cli::cli_alert_info("Snapshot carregado: {snapshot$tabela}")
+  cli::cli_alert_info("Snapshot loaded: {snapshot$tabela}")
   snapshot
 }
 
@@ -207,7 +207,7 @@ vigiar_comparar_snapshots <- function(snapshot1, snapshot2) {
 
   diffs <- list()
 
-  cli::cli_h1("Comparacao de Snapshots")
+  cli::cli_h1("Snapshot comparison")
   cli::cli_text("Snapshot 1: {snapshot1$tabela} ({snapshot1$criado_em})")
   cli::cli_text("Snapshot 2: {snapshot2$tabela} ({snapshot2$criado_em})")
   cli::cli_rule()
@@ -215,14 +215,14 @@ vigiar_comparar_snapshots <- function(snapshot1, snapshot2) {
   # Dimensions
   if (snapshot1$n_rows != snapshot2$n_rows) {
     delta <- snapshot2$n_rows - snapshot1$n_rows
-    cli::cli_alert_info("Linhas: {snapshot1$n_rows} -> {snapshot2$n_rows} ({if(delta > 0) '+' else ''}{delta})")
+    cli::cli_alert_info("Rows: {snapshot1$n_rows} -> {snapshot2$n_rows} ({if(delta > 0) '+' else ''}{delta})")
     diffs$n_rows <- delta
   } else {
-    cli::cli_alert_success("Linhas: identicas ({snapshot1$n_rows})")
+    cli::cli_alert_success("Rows: identical ({snapshot1$n_rows})")
   }
 
   if (snapshot1$n_cols != snapshot2$n_cols) {
-    cli::cli_alert_info("Colunas: {snapshot1$n_cols} -> {snapshot2$n_cols}")
+    cli::cli_alert_info("Columns: {snapshot1$n_cols} -> {snapshot2$n_cols}")
     diffs$n_cols <- TRUE
   }
 
@@ -231,23 +231,23 @@ vigiar_comparar_snapshots <- function(snapshot1, snapshot2) {
   cols_added <- setdiff(snapshot2$colunas, snapshot1$colunas)
 
   if (length(cols_removed) > 0) {
-    cli::cli_alert_warning("Colunas removidas: {paste(cols_removed, collapse=', ')}")
+    cli::cli_alert_warning("Removed columns: {paste(cols_removed, collapse=', ')}")
     diffs$cols_removed <- cols_removed
   }
   if (length(cols_added) > 0) {
-    cli::cli_alert_info("Colunas novas: {paste(cols_added, collapse=', ')}")
+    cli::cli_alert_info("New columns: {paste(cols_added, collapse=', ')}")
     diffs$cols_added <- cols_added
   }
   if (length(cols_removed) == 0 && length(cols_added) == 0) {
-    cli::cli_alert_success("Colunas: identicas")
+    cli::cli_alert_success("Columns: identical")
   }
 
   # Checksums
   if (snapshot1$checksum_sha256 != snapshot2$checksum_sha256) {
-    cli::cli_alert_warning("Checksum diferente (dados mudaram)")
+    cli::cli_alert_warning("Checksum differs (data changed)")
     diffs$checksum_changed <- TRUE
   } else {
-    cli::cli_alert_success("Checksum identico (dados inalterados)")
+    cli::cli_alert_success("Checksum is identical (data unchanged)")
     diffs$checksum_changed <- FALSE
   }
 
@@ -333,7 +333,7 @@ vigiar_cache_dir <- function(dir = NULL) {
 vigiar_baixar_com_cache <- function(tabela, max_age = 86400,
                                      refresh = FALSE, ...) {
   if (is.null(.vigiar_env$sessao)) {
-    stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
+    stop("No active session. Run vigiar_conectar() first.")
   }
 
   cache_dir <- .vigiar_env$cache_dir
@@ -371,7 +371,7 @@ vigiar_baixar_com_cache <- function(tabela, max_age = 86400,
       if (valid_cache) {
         cli::cli_alert_success(paste0(
           "Cache hit: {tabela} (",
-          round(as.numeric(cache_age, units="mins"), 1), "min atras)"
+          round(as.numeric(cache_age, units="mins"), 1), " min old)"
         ))
         .vigiar_log(
           "INFO", "Cache hit", table = tabela,
@@ -394,7 +394,7 @@ vigiar_baixar_com_cache <- function(tabela, max_age = 86400,
   }
 
   # Download fresh
-  cli::cli_alert_info("Cache miss: baixando '{tabela}'...")
+  cli::cli_alert_info("Cache miss: downloading '{tabela}'...")
   .vigiar_log(
     "INFO", "Cache miss", table = tabela,
     metadata = list(cache_key = key$hash), event = "cache_miss"
@@ -421,7 +421,7 @@ vigiar_baixar_com_cache <- function(tabela, max_age = 86400,
   )
   class(cached) <- "vigiar_cached_data"
   saveRDS(cached, cache_file)
-  cli::cli_alert_success("Cache salvo: {tabela}")
+  cli::cli_alert_success("Cache saved: {tabela}")
 
   dados
 }
@@ -433,7 +433,7 @@ vigiar_baixar_com_cache <- function(tabela, max_age = 86400,
 vigiar_cache_info <- function() {
   cache_dir <- .vigiar_env$cache_dir
   if (is.null(cache_dir) || !dir.exists(cache_dir)) {
-    cli::cli_alert_info("Cache vazio ou nao configurado.")
+    cli::cli_alert_info("Cache is empty or not configured.")
     return(tibble::tibble(
       tabela = character(0), linhas = integer(0), colunas = integer(0),
       idade = character(0), checksum = character(0)
@@ -442,7 +442,7 @@ vigiar_cache_info <- function() {
 
   files <- list.files(cache_dir, pattern = "\\.rds$", full.names = TRUE)
   if (length(files) == 0) {
-    cli::cli_alert_info("Cache vazio.")
+    cli::cli_alert_info("Cache is empty.")
     return(tibble::tibble(
       tabela = character(0), linhas = integer(0), colunas = integer(0),
       idade = character(0), checksum = character(0)
@@ -463,7 +463,7 @@ vigiar_cache_info <- function() {
       )
     }, error = function(e) {
       list(tabela = basename(f), linhas = NA, colunas = NA,
-           idade = "? min", checksum = "ERRO")
+      idade = "? min", checksum = "ERROR")
     })
   })
 
@@ -480,7 +480,7 @@ vigiar_cache_info <- function() {
 vigiar_limpar_cache <- function(tabelas = NULL, max_age = NULL) {
   cache_dir <- .vigiar_env$cache_dir
   if (is.null(cache_dir) || !dir.exists(cache_dir)) {
-    cli::cli_alert_info("Cache nao configurado.")
+    cli::cli_alert_info("Cache is not configured.")
     return(invisible())
   }
 
@@ -489,7 +489,7 @@ vigiar_limpar_cache <- function(tabelas = NULL, max_age = NULL) {
   if (is.null(tabelas) && is.null(max_age)) {
     # Clear all
     file.remove(files)
-    cli::cli_alert_success("Cache completamente limpo ({length(files)} arquivos).")
+    cli::cli_alert_success("Cache cleared ({length(files)} files removed).")
     return(invisible())
   }
 
@@ -512,7 +512,7 @@ vigiar_limpar_cache <- function(tabelas = NULL, max_age = NULL) {
     }
   }
 
-  cli::cli_alert_success("Cache limpo: {removed} arquivos removidos.")
+  cli::cli_alert_success("Cache cleanup removed {removed} files.")
   invisible(removed)
 }
 
@@ -531,7 +531,7 @@ vigiar_limpar_cache <- function(tabelas = NULL, max_age = NULL) {
 #' @export
 vigiar_esquema_lock <- function(caminho = "vigiar_schema_lock.json") {
   if (is.null(.vigiar_env$esquema)) {
-    stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
+    stop("No active session. Run vigiar_conectar() first.")
   }
 
   lock <- list(
@@ -548,8 +548,8 @@ vigiar_esquema_lock <- function(caminho = "vigiar_schema_lock.json") {
 
   dir.create(dirname(caminho), showWarnings = FALSE, recursive = TRUE)
   writeLines(json, caminho)
-  cli::cli_alert_success("Schema lock salvo: {caminho}")
-  cli::cli_alert_info("{lock$n_tables} tabelas congeladas")
+  cli::cli_alert_success("Schema lock saved: {caminho}")
+  cli::cli_alert_info("{lock$n_tables} tables locked")
 
   invisible(lock)
 }
@@ -561,7 +561,7 @@ vigiar_esquema_lock <- function(caminho = "vigiar_schema_lock.json") {
 #' @export
 vigiar_esquema_carregar_lock <- function(caminho = "vigiar_schema_lock.json") {
   if (!file.exists(caminho)) {
-    stop("Arquivo lock nao encontrado: ", caminho)
+    stop("Schema lock file not found: ", caminho)
   }
   lock <- jsonlite::fromJSON(caminho, simplifyVector = FALSE)
   if (is.list(lock$tabelas)) {
@@ -581,7 +581,7 @@ vigiar_esquema_carregar_lock <- function(caminho = "vigiar_schema_lock.json") {
 #' @export
 vigiar_esquema_verificar <- function(lock_path = "vigiar_schema_lock.json", error = FALSE) {
   if (is.null(.vigiar_env$esquema)) {
-    stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
+    stop("No active session. Run vigiar_conectar() first.")
   }
 
   if (is.character(lock_path)) {
@@ -593,9 +593,9 @@ vigiar_esquema_verificar <- function(lock_path = "vigiar_schema_lock.json", erro
   live_tables <- names(.vigiar_env$esquema)
   locked_tables <- lock$tabelas
 
-  cli::cli_h1("Verificacao de Schema Lock")
-  cli::cli_text("Lock criado em: {lock$locked_at}")
-  cli::cli_text("Tabelas: {length(locked_tables)} (lock) vs {length(live_tables)} (live)")
+  cli::cli_h1("Schema lock verification")
+  cli::cli_text("Lock created at: {lock$locked_at}")
+  cli::cli_text("Tables: {length(locked_tables)} (lock) vs {length(live_tables)} (live)")
   cli::cli_rule()
 
   diffs <- list()
@@ -603,14 +603,14 @@ vigiar_esquema_verificar <- function(lock_path = "vigiar_schema_lock.json", erro
   # New tables
   new_tables <- setdiff(live_tables, locked_tables)
   if (length(new_tables) > 0) {
-    cli::cli_alert_info("Tabelas NOVAS: {paste(new_tables, collapse=', ')}")
+    cli::cli_alert_info("New tables: {paste(new_tables, collapse=', ')}")
     diffs$new_tables <- new_tables
   }
 
   # Removed tables
   removed_tables <- setdiff(locked_tables, live_tables)
   if (length(removed_tables) > 0) {
-    cli::cli_alert_warning("Tabelas REMOVIDAS: {paste(removed_tables, collapse=', ')}")
+    cli::cli_alert_warning("Removed tables: {paste(removed_tables, collapse=', ')}")
     diffs$removed_tables <- removed_tables
   }
 
@@ -651,7 +651,7 @@ vigiar_esquema_verificar <- function(lock_path = "vigiar_schema_lock.json", erro
   }
 
   if (length(col_changes) > 0) {
-    cli::cli_alert_warning("Mudancas de colunas em {length(col_changes)} tabela(s):")
+    cli::cli_alert_warning("Column changes in {length(col_changes)} table(s):")
     for (tab in names(col_changes)) {
       c <- col_changes[[tab]]
       if (length(c$added) > 0) {
@@ -665,7 +665,7 @@ vigiar_esquema_verificar <- function(lock_path = "vigiar_schema_lock.json", erro
   }
 
   if (length(type_changes) > 0) {
-    cli::cli_alert_warning("Mudancas de tipo em {length(type_changes)} tabela(s):")
+    cli::cli_alert_warning("Type changes in {length(type_changes)} table(s):")
     for (tab in names(type_changes)) {
       for (change in type_changes[[tab]]) {
         cli::cli_text(
@@ -690,9 +690,9 @@ vigiar_esquema_verificar <- function(lock_path = "vigiar_schema_lock.json", erro
   attr(diffs, "compatibility_status") <- compatibility_status
 
   if (length(diffs) == 0) {
-    cli::cli_alert_success("Schema identico ao lock. Reproducibilidade garantida!")
+    cli::cli_alert_success("Schema is identical to the lock.")
   } else {
-    cli::cli_alert_danger("Schema MUDOU. Reproducibilidade comprometida.")
+    cli::cli_alert_danger("Schema changed; reproducibility is not verified.")
     if (isTRUE(error)) {
       stop("Schema changed relative to lock.", call. = FALSE)
     }
@@ -713,7 +713,7 @@ vigiar_esquema_verificar <- function(lock_path = "vigiar_schema_lock.json", erro
 #' @export
 vigiar_esquema_verificar_critico <- function(lock_path = NULL, error = TRUE) {
   if (is.null(.vigiar_env$esquema)) {
-    stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
+    stop("No active session. Run vigiar_conectar() first.")
   }
 
   if (is.null(lock_path)) {

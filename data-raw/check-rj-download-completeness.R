@@ -15,7 +15,7 @@ if (file.exists("DESCRIPTION") && requireNamespace("pkgload", quietly = TRUE)) {
 tables <- strsplit(
   Sys.getenv(
     "VIGIAR_RJ_AUDIT_TABLES",
-    unset = "df_anual,df_mensal,df_dias,df_dias_conama,pop"
+    unset = "df_muni,df_anual,df_mensal,df_dias,df_dias_conama,pop"
   ),
   ",",
   fixed = TRUE

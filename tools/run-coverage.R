@@ -8,6 +8,10 @@ if (length(threshold) != 1L || is.na(threshold) ||
   stop("VIGIAR_COVERAGE_MIN must be one percentage between 0 and 100.")
 }
 
+Sys.setenv(
+  VIGIAR_SOURCE_ROOT = normalizePath(".", winslash = "/", mustWork = TRUE)
+)
+
 dir.create("coverage", recursive = TRUE, showWarnings = FALSE)
 coverage <- covr::package_coverage(type = "tests", quiet = TRUE)
 percent <- as.numeric(covr::percent_coverage(coverage))

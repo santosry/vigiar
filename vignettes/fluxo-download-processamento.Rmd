@@ -44,6 +44,9 @@ raw <- vigiar_baixar("df_anual", uf = NULL)
 names(raw)
 ```
 
+The generic downloader has no implicit RJ filter. Use `vigiar_baixar_rj()` when
+RJ registry filtering and coverage metadata are required.
+
 Raw Power BI columns can include names such as `muni`, `UF`, `ano`,
 `Media_pm25`, and `Categoria_pm25`.
 
@@ -92,4 +95,6 @@ vigiar_verificar_snapshot(snap)
 vigiar_salvar_snapshot(snap, "pm25-rj-snapshot.rds")
 ```
 
-Snapshots preserve data attributes, including RJ coverage metadata.
+Snapshots preserve data attributes, including RJ coverage metadata, and store
+versioned data, schema, and metadata checksums. Snapshot integrity does not by
+itself prove that the external source response was complete.

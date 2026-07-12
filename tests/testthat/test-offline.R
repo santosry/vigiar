@@ -203,7 +203,7 @@ test_that(".vigiar_parse_dados handles empty response gracefully", {
   resp <- list(results = list(list(result = list(data = list()))))
   expect_warning(
     df <- .vigiar_parse_dados(resp, "vazia"),
-    "DSR ausente"
+    "DSR is absent"
   )
   expect_equal(nrow(df), 0)
 })
@@ -352,14 +352,14 @@ test_that("vigiar_validar_ibge passes on valid codes", {
 
 test_that("vigiar_validar_datas warns on invalid years", {
   dados <- data.frame(ano = c(2022L, 1800L, 3000L))
-  expect_warning(vigiar_validar_datas(dados), "fora do intervalo")
+  expect_warning(vigiar_validar_datas(dados), "outside")
 })
 
 test_that("vigiar_validar_unidades warns on implausible PM2.5", {
   dados <- data.frame(pm25_media = c(22.5, -5, 2000))
   expect_warning(
     vigiar_validar_unidades(dados, "pm25_media"),
-    "fora do intervalo"
+    "plausible range"
   )
 })
 
@@ -381,7 +381,7 @@ test_that("vigiar_variaveis filters by domain", {
 test_that("vigiar_descrever_variavel errors on missing variable", {
   expect_error(
     vigiar_descrever_variavel("pm25", "variavel_inexistente"),
-    "nao encontrada"
+    "was not found"
   )
 })
 
@@ -404,7 +404,7 @@ test_that("print.vigiar_tbl works", {
 test_that("summary.vigiar_tbl works", {
   df <- data.frame(x = c(1, NA, 3))
   out <- new_vigiar_tbl(df, tabela = "test")
-  expect_output(summary(out), "Resumo")
+  expect_output(summary(out), "Summary")
 })
 
 test_that("validate.vigiar_tbl detects issues", {
@@ -503,7 +503,7 @@ test_that("vigiar_agregar_tempo aggregates by year", {
 
 test_that("vigiar_agregar_tempo errors without ano", {
   dados <- data.frame(x = 1:3)
-  expect_error(vigiar_agregar_tempo(dados), "coluna 'ano'")
+  expect_error(vigiar_agregar_tempo(dados), "Column 'ano'")
 })
 
 test_that("vigiar_tendencia_descritiva returns trend columns", {
@@ -542,7 +542,7 @@ test_that("vigiar_exportar_csv refuses to overwrite", {
   tmp <- tempfile(fileext = ".csv")
   on.exit(unlink(tmp))
   write.csv(dados, tmp)
-  expect_error(vigiar_exportar_csv(dados, tmp), "ja existe")
+  expect_error(vigiar_exportar_csv(dados, tmp), "already exists")
 })
 
 test_that("vigiar_exportar_rds writes and preserves data", {
@@ -595,7 +595,7 @@ test_that("process_vigiar dispatches to correct processor", {
 
 test_that("process_vigiar errors without tabela", {
   dados <- data.frame(x = 1)
-  expect_error(process_vigiar(dados), "Informe o nome da tabela")
+  expect_error(process_vigiar(dados), "Provide a table name")
 })
 
 test_that("process_ufs standardises UF column", {
@@ -612,23 +612,23 @@ test_that("vigiar_convencoes exists and has docs", {
 })
 
 test_that("vigiar_diagnostico errors without session", {
-  expect_error(vigiar_diagnostico(), "Nenhuma sessao ativa")
+  expect_error(vigiar_diagnostico(), "No active session")
 })
 
 test_that("vigiar_variaveis_orfas errors without session", {
-  expect_error(vigiar_variaveis_orfas(), "Nenhuma sessao ativa")
+  expect_error(vigiar_variaveis_orfas(), "No active session")
 })
 
 test_that("vigiar_variaveis_nao_documentadas errors without session", {
-  expect_error(vigiar_variaveis_nao_documentadas(), "Nenhuma sessao ativa")
+  expect_error(vigiar_variaveis_nao_documentadas(), "No active session")
 })
 
 test_that("vigiar_validar_dicionario errors without session", {
-  expect_error(vigiar_validar_dicionario(), "Nenhuma sessao ativa")
+  expect_error(vigiar_validar_dicionario(), "No active session")
 })
 
 test_that("vigiar_comparar_schema errors without session", {
-  expect_error(vigiar_comparar_schema(), "Nenhuma sessao ativa")
+  expect_error(vigiar_comparar_schema(), "No active session")
 })
 
 # -- Export edge cases ---------------------------------------------------------
@@ -678,23 +678,23 @@ test_that("vigiar_baixar_tudo uses delay between downloads", {
 # -- Red team: robustness -----------------------------------------------------
 
 test_that("vigiar_baixar errors clearly without session", {
-  expect_error(vigiar_baixar("df_anual"), "Nenhuma sessao")
+  expect_error(vigiar_baixar("df_anual"), "No active session")
 })
 
 test_that("vigiar_baixar_tudo errors clearly without session", {
-  expect_error(vigiar_baixar_tudo(), "Nenhuma sessao")
+  expect_error(vigiar_baixar_tudo(), "No active session")
 })
 
 test_that("vigiar_tabelas errors without session", {
-  expect_error(vigiar_tabelas(), "Nenhuma sessao")
+  expect_error(vigiar_tabelas(), "No active session")
 })
 
 test_that("vigiar_esquema errors without session", {
-  expect_error(vigiar_esquema(), "Nenhuma sessao")
+  expect_error(vigiar_esquema(), "No active session")
 })
 
 test_that("vigiar_info errors without session", {
-  expect_error(vigiar_info(), "Nenhuma sessao")
+  expect_error(vigiar_info(), "No active session")
 })
 
 test_that("process_vigiar handles unknown table gracefully", {
@@ -705,7 +705,7 @@ test_that("process_vigiar handles unknown table gracefully", {
 
 test_that("vigiar_checar_dados handles empty tibble", {
   dados <- tibble::tibble(a = integer(), b = character())
-  expect_output(vigiar_checar_dados(dados, "vazia"), "Linhas:")
+  expect_output(vigiar_checar_dados(dados, "vazia"), "Rows:")
 })
 
 test_that("vigiar_agregar_tempo handles single row", {

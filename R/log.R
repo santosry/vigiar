@@ -106,7 +106,7 @@
 #' @export
 vigiar_log <- function() {
   if (is.null(.vigiar_env$log) || length(.vigiar_env$log) == 0) {
-    cli::cli_alert_info("Log vazio. Execute uma operacao primeiro.")
+    cli::cli_alert_info("Log is empty. Run an operation first.")
     return(tibble::tibble(
       timestamp = character(0),
       level     = character(0),
@@ -145,7 +145,7 @@ vigiar_log <- function() {
 vigiar_limpar_log <- function() {
   n <- length(.vigiar_env$log %||% list())
   .vigiar_env$log <- list()
-  cli::cli_alert_info("Log limpo ({n} entradas removidas).")
+  cli::cli_alert_info("Log cleared ({n} entries removed).")
   invisible(NULL)
 }
 
@@ -157,7 +157,7 @@ vigiar_limpar_log <- function() {
 #' @export
 vigiar_exportar_log <- function(caminho, overwrite = FALSE) {
   if (file.exists(caminho) && !overwrite) {
-    stop("Arquivo ja existe: ", caminho, ". Use overwrite = TRUE.")
+    stop("File already exists: ", caminho, ". Use overwrite = TRUE.")
   }
 
   log_df <- vigiar_log()
@@ -169,7 +169,7 @@ vigiar_exportar_log <- function(caminho, overwrite = FALSE) {
     utils::write.csv(log_df, caminho, row.names = FALSE, fileEncoding = "UTF-8")
   }
 
-  cli::cli_alert_success("Log exportado: {caminho} ({nrow(log_df)} entradas)")
+  cli::cli_alert_success("Log exported: {caminho} ({nrow(log_df)} entries)")
   invisible(caminho)
 }
 
@@ -183,16 +183,16 @@ vigiar_resumo_log <- function() {
   log_df <- vigiar_log()
 
   if (nrow(log_df) == 0) {
-    cli::cli_alert_info("Log vazio.")
+    cli::cli_alert_info("Log is empty.")
     return(invisible(list()))
   }
 
-  cli::cli_h1("Resumo do Log")
-  cli::cli_text("Periodo: {min(log_df$timestamp)} a {max(log_df$timestamp)}")
-  cli::cli_text("Total de entradas: {nrow(log_df)}")
+  cli::cli_h1("Log summary")
+  cli::cli_text("Period: {min(log_df$timestamp)} to {max(log_df$timestamp)}")
+  cli::cli_text("Total entries: {nrow(log_df)}")
 
   # By level
-  cli::cli_h2("Por nivel")
+  cli::cli_h2("By level")
   level_counts <- table(log_df$level)
   for (lev in names(level_counts)) {
     color <- switch(lev,
@@ -206,7 +206,7 @@ vigiar_resumo_log <- function() {
   }
 
   # By table
-  cli::cli_h2("Por tabela")
+  cli::cli_h2("By table")
   table_counts <- sort(table(log_df$table[!is.na(log_df$table)]), decreasing = TRUE)
   if (length(table_counts) > 0) {
     for (i in seq_len(min(length(table_counts), 10))) {
@@ -265,7 +265,7 @@ vigiar_resumo_log <- function() {
 vigiar_historico_downloads <- function() {
   if (is.null(.vigiar_env$download_history) ||
       length(.vigiar_env$download_history) == 0) {
-    cli::cli_alert_info("Nenhum download registrado nesta sessao.")
+    cli::cli_alert_info("No download was recorded in this session.")
     return(tibble::tibble(
       timestamp = character(0),
       tabela    = character(0),
@@ -294,12 +294,12 @@ vigiar_resumo_downloads <- function() {
   hist <- vigiar_historico_downloads()
   if (nrow(hist) == 0) return(invisible())
 
-  cli::cli_h1("Resumo de Downloads")
-  cli::cli_text("Total de downloads: {nrow(hist)}")
-  cli::cli_text("Tempo total: {round(sum(hist$elapsed, na.rm=TRUE), 1)}s")
-  cli::cli_text("Total de linhas: {sum(hist$n_rows, na.rm=TRUE)}")
+  cli::cli_h1("Download summary")
+  cli::cli_text("Total downloads: {nrow(hist)}")
+  cli::cli_text("Total time: {round(sum(hist$elapsed, na.rm=TRUE), 1)}s")
+  cli::cli_text("Total rows: {sum(hist$n_rows, na.rm=TRUE)}")
 
-  cli::cli_h2("Por tabela")
+  cli::cli_h2("By table")
   by_table <- dplyr::count(hist, tabela, sort = TRUE)
   for (i in seq_len(min(nrow(by_table), 10))) {
     cli::cli_text("  {by_table$tabela[i]}: {by_table$n[i]} downloads")

@@ -18,6 +18,8 @@ knitr::opts_chunk$set(
 [![R-CMD-check](https://github.com/santosry/vigiar/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/santosry/vigiar/actions/workflows/R-CMD-check.yaml)
 [![lint](https://github.com/santosry/vigiar/actions/workflows/lint.yaml/badge.svg)](https://github.com/santosry/vigiar/actions/workflows/lint.yaml)
 [![pkgdown](https://github.com/santosry/vigiar/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/santosry/vigiar/actions/workflows/pkgdown.yaml)
+[![test-coverage](https://github.com/santosry/vigiar/actions/workflows/test-coverage.yaml/badge.svg)](https://github.com/santosry/vigiar/actions/workflows/test-coverage.yaml)
+[![online-canary](https://github.com/santosry/vigiar/actions/workflows/online-canary.yaml/badge.svg)](https://github.com/santosry/vigiar/actions/workflows/online-canary.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![R >= 4.1.0](https://img.shields.io/badge/R-%3E%3D%204.1.0-blue.svg)](https://www.r-project.org/)
 <!-- badges: end -->
@@ -31,6 +33,9 @@ The package is deliberately conservative: it does not merely filter rows for
 RJ. It measures whether the RJ download is complete, identifies missing
 municipalities, warns about possible API truncation, and keeps reproducibility
 metadata on the returned data.
+
+The generic `vigiar_baixar()` function does not restrict geography by default.
+RJ scope is explicit through `vigiar_baixar_rj()`.
 
 ## Installation
 
@@ -63,6 +68,22 @@ vigiar_salvar_snapshot(snap, "pm25_rj_snapshot.rds")
 
 vigiar_desconectar()
 ```
+
+## Evidence Vocabulary
+
+The package uses these terms deliberately:
+
+- **downloaded**: the endpoint returned a response that the parser accepted;
+- **filtered**: rows were restricted to a requested scope;
+- **covered**: expected spatial units appear at least once;
+- **complete**: every unit in an explicit expected spatial-temporal grid appears;
+- **verified**: schema, expected domain, and response evidence were checked;
+- **audited**: those checks and their outcomes were recorded in a structured report;
+- **reproducible**: data, schema, metadata, software version, and checksums were archived.
+
+These terms are not synonyms. A successful download can be partial, a 92/92
+spatial coverage result can have missing municipality-month cells, and a
+reproducible snapshot can preserve incomplete source data.
 
 ## Downloading Rio de Janeiro Municipality Data
 
@@ -140,8 +161,11 @@ normalized return `NA`.
 The internal RJ registry is locked against offline reference fixtures generated
 from official sources:
 
-- `inst/extdata/rj_municipios_ibge_reference.csv` locks the 92 RJ municipality
-  names and 7-digit codes from the IBGE Localidades API.
+- `inst/extdata/municipios_ibge_reference.csv` is a versioned national IBGE
+  municipality reference derived from the IBGE Localidades API; exactly 92 rows
+  belong to RJ.
+- `inst/extdata/municipios_ibge_reference_metadata.json` records its checksum,
+  retrieval date, source URL, and row counts.
 - `inst/extdata/rj_regioes_saude_sesrj_reference.csv` locks the 9 SES-RJ health
   regions used by the package.
 - `inst/extdata/rj_official_sources.csv` records the official source URLs and
@@ -157,7 +181,7 @@ campos <- vigiar_baixar_municipio("df_anual", codigo_ibge = 330100)
 attr(campos, "vigiar_codigo_ibge_6")
 attr(campos, "vigiar_codigo_ibge_7")
 attr(campos, "vigiar_municipio")
-attr(campos, "vigiar_macrorregiao_saude")
+attr(campos, "vigiar_regiao_saude")
 ```
 
 ## Coverage Diagnostics
@@ -168,7 +192,7 @@ attr(campos, "vigiar_macrorregiao_saude")
 - observed municipality count;
 - coverage percentage;
 - absent municipality names;
-- incomplete health macro-regions;
+- incomplete SES-RJ health regions;
 - a completeness flag;
 - a possible truncation flag.
 
@@ -179,9 +203,12 @@ vigiar_rj_cobertura(pm25_rj)
 vigiar_rj_cobertura(pm25_rj, por = "ano")
 vigiar_rj_cobertura(pm25_rj, por = "mes")
 vigiar_rj_cobertura(pm25_rj, por = "ano_mes")
-vigiar_rj_cobertura(pm25_rj, por = "macrorregiao")
 vigiar_rj_cobertura(pm25_rj, por = "regiao_saude")
 ```
+
+`por = "macrorregiao"` and `macrorregiao_saude` remain compatibility aliases.
+The canonical scientific term for the package's nine SES-RJ groups is **health
+region**, represented by `regiao_saude`.
 
 For table-aware completeness, use `vigiar_rj_completude_tabela()`. It applies the
 expected grid for common VIGIAR tables: municipality x year for annual tables,
@@ -195,16 +222,22 @@ vigiar_rj_completude_tabela(pm25_rj, tabela = "df_anual")
 vigiar_rj_completude_tabela(
   pm25_rj,
   tabela = "df_anual",
+  anos_esperados = 2018:2023,
   require_complete = TRUE
 )
 ```
+
+Without `anos_esperados`, `meses_esperados`, `periodo_inicio`/`periodo_fim`, or
+an official domain, the function may infer the interval between observed
+endpoints. That result is `complete_within_inferred_domain`, not proof that the
+researcher's expected study period is complete.
 
 `vigiar_diagnosticar_serie(..., escopo = "rj")` uses these coverage checks and
 adds clear messages such as complete RJ coverage, partial RJ coverage, low
 coverage in a specific year, no valid RJ municipality code, or possible API
 truncation.
 
-## Release-Grade Online RJ Audit
+## Reproducible Online RJ Audit
 
 Use `vigiar_auditar_rj_online()` before formal scientific use or before
 archiving a release. It downloads the requested RJ tables, computes checksum and
@@ -236,13 +269,35 @@ vigiar_desconectar()
 
 When `require_complete = TRUE`, the audit stops if any table is partial,
 truncated, lacks a municipality code, lacks a schema hash, or otherwise fails.
-This is intentionally stricter than checking that `nrow(dados) > 0`.
+It also requires an explicit expected temporal domain. This is intentionally
+stricter than checking that `nrow(dados) > 0`.
 
-The objective conclusion is one of `complete`, `partial`, `truncated`,
-`schema_changed`, or `failed`. `complete` means that the expected RJ grid was
-observed for the audited table and time grain. It does not prove causal
-validity, exposure measurement validity, model adequacy, or epidemiological
-identifiability.
+```{r}
+years <- 2018:2023
+
+strict_audit <- vigiar_auditar_rj_online(
+  tabelas = c("df_anual", "df_mensal", "df_dias", "pop"),
+  dominios_esperados = list(
+    df_anual = list(anos_esperados = years),
+    df_mensal = list(anos_esperados = years, meses_esperados = 1:12),
+    df_dias = list(anos_esperados = years, meses_esperados = 1:12),
+    pop = list(anos_esperados = years)
+  ),
+  salvar = TRUE,
+  require_complete = TRUE
+)
+```
+
+The objective conclusion can be `complete`, `complete_within_inferred_domain`,
+`complete_within_observed_domain`, `partial`, `truncated`, `schema_changed`,
+`schema_unverified`, or `failed`. Plain `complete` is reserved for an explicit
+expected domain, complete RJ panel, matching critical schema, and no truncation
+evidence. It does not prove causal validity, exposure measurement validity,
+model adequacy, or epidemiological identifiability.
+
+Truncation evidence is recorded separately as `no_evidence`, `possible`,
+`probable`, `confirmed`, or `unknown`. The raw response is assessed before any
+client-side UF filter, so filtering cannot erase a response-limit signal.
 
 ## Processing
 
@@ -274,6 +329,10 @@ vigiar_exportar_auditoria(audit, "audit-pm25-rj.json")
 ```
 
 Snapshots preserve RJ metadata, including coverage and truncation attributes.
+Canonicalization version 2 stores separate data, schema, and metadata checksums.
+`vigiar_checksum(mode = "canonical")` ignores row/column order and equivalent
+factor/character or integer/double representations while preserving full
+numeric precision; `mode = "ordered"` retains table order as part of identity.
 
 Schema locks can be used to detect dashboard changes before an analysis is
 reused. `vigiar_esquema_verificar_critico()` checks the locked critical columns
@@ -294,13 +353,28 @@ Set `VIGIAR_VALIDATION_RELEASE` before running the script to bind the output to
 a formal release. Generated reports are intended to be archived with a release
 or local validation record, not committed as package data.
 
+For strict runs, set `VIGIAR_EXPECTED_YEARS` or both
+`VIGIAR_EXPECTED_PERIOD_START` and `VIGIAR_EXPECTED_PERIOD_END`. The script
+refuses `VIGIAR_REQUIRE_COMPLETE=true` without an explicit temporal domain.
+
 The optional online test is also an audit, not only a smoke test. With
 `VIGIAR_RUN_ONLINE_TESTS=true`, it downloads `df_anual`, `df_mensal`, and
-`df_dias`, writes a manifest with timestamp, row count, checksum, missing
+`df_dias`, and `pop`, writes a manifest with timestamp, row count, checksum,
+schema and verification states, missing
 municipalities, missing years, and missing months, and validates the expected
 table grain for each table. Set `VIGIAR_ONLINE_REPORT_DIR` to choose the output
 directory and set `VIGIAR_REQUIRE_ONLINE_COMPLETENESS=true` for formal release
 checks that must fail when table-grain completeness or truncation is detected.
+The scheduled `online-canary` workflow archives these artifacts independently
+of pull-request checks. Offline coverage is a separate CI gate at 70%, with a
+Cobertura XML report and RDS evidence artifact.
+
+## API Lifecycle
+
+`vigiar_api_status()` classifies every exported symbol as `stable`,
+`experimental`, or `deprecated`. Internal dot-prefixed helpers are not exported.
+The language and compatibility policy is documented in
+[`LANGUAGE_POLICY.md`](LANGUAGE_POLICY.md).
 
 ## Exploratory Plot
 
@@ -308,7 +382,7 @@ checks that must fail when table-grain completeness or truncation is detected.
 pm25 <- vigiar_baixar_rj("df_anual", processar = TRUE, tipo = "anual")
 
 vigiar_plot_pm25_rj(pm25, por = "ano")
-vigiar_plot_pm25_rj(pm25, por = "macrorregiao")
+vigiar_plot_pm25_rj(pm25, por = "macrorregiao") # compatibility alias
 ```
 
 This plot is exploratory. It does not download, process, or repair data
@@ -340,7 +414,7 @@ Run `vigiar_info()` for the live table catalogue after connecting.
 - VIGIAR data are public, aggregated surveillance data.
 - PM2.5 may be estimated or modelled, not measured at every ground location.
 - A dataset can be available and still be incomplete for RJ.
-- Spatial coverage must be checked before municipality or macro-region claims.
+- Spatial coverage must be checked before municipality or health-region claims.
 - The Power BI API may truncate large responses.
 - Tables without municipality codes cannot prove 92/92 RJ coverage.
 - Short time series and missing months limit trend interpretation.

@@ -90,13 +90,13 @@ test_that("vigiar_auditar_tudo runs on named list", {
 test_that("print.vigiar_audit works", {
   dados <- data.frame(cod_municipio = 355030L, ano = 2022L)
   audit <- vigiar_auditar(dados, tabela = "test", verbose = FALSE)
-  expect_message(print(audit), "Auditoria")
+  expect_message(print(audit), "audit report")
 })
 
 test_that("print.vigiar_audit_list works", {
   df1 <- data.frame(cod_municipio = 355030L, ano = 2022L)
   result <- vigiar_auditar_tudo(list(t1 = df1), verbose = FALSE)
-  expect_message(print(result), "Multi-Tabela")
+  expect_message(print(result), "Multi-table audit")
 })
 
 test_that("vigiar_compliance_check runs all profiles", {
@@ -117,7 +117,7 @@ test_that("print.vigiar_compliance works", {
   dados <- data.frame(cod_municipio = 355030L, ano = 2022L)
   result <- vigiar_compliance_check(dados, tabela = "test", profiles = "basico",
                                      verbose = FALSE)
-  expect_message(print(result), "Compliance")
+  expect_message(print(result), "compliance report")
 })
 
 test_that("vigiar_checksum returns consistent hash", {
@@ -189,7 +189,7 @@ test_that("vigiar_resumo_log works", {
   .vigiar_env$log <- list()
   .vigiar_log("INFO", "msg1")
   .vigiar_log("WARN", "msg2")
-  expect_message(vigiar_resumo_log(), "Resumo do Log")
+  expect_message(vigiar_resumo_log(), "Log summary")
 })
 
 test_that("vigiar_historico_downloads returns empty initially", {
@@ -211,7 +211,7 @@ test_that("vigiar_resumo_downloads works", {
   .vigiar_env$download_history <- list()
   .vigiar_registrar_download("t1", 100L, 5L, 1.0, "url")
   .vigiar_registrar_download("t2", 200L, 3L, 2.0, "url")
-  expect_message(vigiar_resumo_downloads(), "Downloads")
+  expect_message(vigiar_resumo_downloads(), "Download summary")
 })
 
 # -- Snapshot ------------------------------------------------------------------
@@ -226,7 +226,7 @@ test_that("vigiar_snapshot creates object from data frame", {
 })
 
 test_that("vigiar_snapshot errors without data", {
-  expect_error(vigiar_snapshot(), "Forneca")
+  expect_error(vigiar_snapshot(), "Provide either")
 })
 
 test_that("vigiar_verificar_snapshot confirms integrity", {
@@ -324,18 +324,18 @@ test_that("vigiar_limpar_cache handles empty cache", {
 })
 
 test_that("vigiar_baixar_com_cache errors without session", {
-  expect_error(vigiar_baixar_com_cache("df_anual"), "Nenhuma sessao")
+  expect_error(vigiar_baixar_com_cache("df_anual"), "No active session")
 })
 
 # -- Schema Lock ---------------------------------------------------------------
 
 test_that("vigiar_esquema_lock errors without session", {
-  expect_error(vigiar_esquema_lock(), "Nenhuma sessao")
+  expect_error(vigiar_esquema_lock(), "No active session")
 })
 
 test_that("vigiar_esquema_carregar_lock errors on missing file", {
   tmp <- file.path(tempdir(), "nonexistent_lock.json")
-  expect_error(vigiar_esquema_carregar_lock(tmp), "nao encontrado")
+  expect_error(vigiar_esquema_carregar_lock(tmp), "not found")
 })
 
 test_that("vigiar_esquema_carregar_lock loads valid lock", {
@@ -359,7 +359,7 @@ test_that("vigiar_esquema_carregar_lock loads valid lock", {
 })
 
 test_that("vigiar_esquema_verificar errors without session", {
-  expect_error(vigiar_esquema_verificar(), "Nenhuma sessao")
+  expect_error(vigiar_esquema_verificar(), "No active session")
 })
 
 # -- Export edge cases ---------------------------------------------------------
@@ -370,7 +370,7 @@ test_that("vigiar_exportar_log refuses to overwrite", {
   tmp <- file.path(tempdir(), "log_ow.csv")
   on.exit(unlink(tmp))
   vigiar_exportar_log(tmp)
-  expect_error(vigiar_exportar_log(tmp), "ja existe")
+  expect_error(vigiar_exportar_log(tmp), "already exists")
 })
 
 test_that("vigiar_salvar_snapshot refuses to overwrite", {
@@ -379,7 +379,7 @@ test_that("vigiar_salvar_snapshot refuses to overwrite", {
   tmp <- file.path(tempdir(), "snap_ow.rds")
   on.exit(unlink(tmp))
   vigiar_salvar_snapshot(snap, tmp)
-  expect_error(vigiar_salvar_snapshot(snap, tmp), "ja existe")
+  expect_error(vigiar_salvar_snapshot(snap, tmp), "already exists")
 })
 
 test_that("vigiar_salvar_snapshot adds .rds extension", {

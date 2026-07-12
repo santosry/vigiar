@@ -13,6 +13,7 @@
 ^CONTRIBUTING\.md$
 ^CODE_OF_CONDUCT\.md$
 ^SECURITY\.md$
+^LANGUAGE_POLICY\.md$
 ^LICENSE\.md$
 ^\.lintr$
 ^testar_vigiar\.R$
@@ -22,3 +23,4 @@
 ^renv/
 ^\.Rhistory$
 ^docs$
+^coverage$

@@ -192,7 +192,7 @@ vigiar_sessao_ativa <- function() {
         httr2::req_perform()
     },
     max_tries = 2,
-    context   = "esquema"
+    context   = "schema"
   )
 
   raw_body <- httr2::resp_body_raw(resp)

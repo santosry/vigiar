@@ -2,54 +2,73 @@
 
 ## Rio de Janeiro completeness hardening
 
-* Added `vigiar_baixar_rj()` with RJ registry filtering, 92-municipality
-  coverage metadata, optional cache, optional snapshots, and explicit failure
-  when full RJ coverage is required but not present.
-* Added `vigiar_rj_cobertura()` and `vigiar_rj_municipios_ausentes()` for
-  coverage checks overall, by year, by month, by year-month, by health
-  macro-region, and by health region.
-* Added `vigiar_rj_completude_tabela()` for table-aware RJ completeness checks,
-  including municipality x year for annual tables and municipality x year x
-  month for monthly tables. `pop` is assessed as municipality x year, and
-  `df_dias` / `df_dias_conama` are assessed as municipality x year x month when
-  month is available.
-* Added `vigiar_auditar_rj_online()` for release-grade online RJ auditing. It
-  downloads `df_anual`, `df_mensal`, `df_dias`, `pop`, or any requested table,
-  computes checksums and schema hashes, saves JSON/CSV/RDS artifacts, records
-  missing municipalities and temporal gaps, and reports `complete`, `partial`,
-  `truncated`, `schema_changed`, or `failed`.
-* Added `vigiar_baixar_municipio()` for code-based municipality downloads with
-  metadata, coverage status, and truncation alerts. Campos dos Goytacazes is
-  covered by a sentinel test using `330100` and `3301009`.
-* Added safe municipality code normalization for 6-digit and 7-digit IBGE
-  codes. The package standard remains the 6-digit IBGE municipality code, with
-  7-digit RJ codes stored in the internal registry for interoperability.
-* Added an IBGE reference fixture for the 92 RJ municipality codes and sentinel
-  tests for Campos dos Goytacazes, Sao Francisco de Itabapoana, Sao Joao da
-  Barra, and all 9 health macro-regions.
-* Added SES-RJ health-region and official-source fixtures so the RJ registry is
-  tested against both IBGE municipality codes and SES-RJ regionalization names.
-* Added `vigiar_baixar_rj_completo()` as an honest preparatory interface for
-  partitioned downloads. It does not claim completeness when validated
-  server-side filters are unavailable.
-* Added `vigiar_esquema_verificar_critico()` and a critical schema lock fixture
-  for RJ PM2.5, municipality, coordinate, and population workflows.
-* Added `vigiar_plot_pm25_rj()` for optional exploratory PM2.5 plots when
-  `ggplot2` is installed.
-* Integrated RJ coverage and possible API truncation into
-  `vigiar_diagnosticar_serie(..., escopo = "rj")`.
-* Strengthened PM2.5 diagnostics for negative values, suspicious zeros,
-  implausible extremes, long missing blocks, and abrupt series changes.
-* Added offline RJ completeness tests, an optional online RJ audit for
-  `df_anual`, `df_mensal`, `df_dias`, and `pop`, and
-  `data-raw/check-rj-download-completeness.R` for manual source validation with
-  release-bound output directories, checksums, table-grain coverage,
-  missing-municipality reports, missing-year reports, missing-month reports,
-  and a strict completeness mode for formal release validation.
-* Updated README, pkgdown reference, and vignettes with offline-safe RJ
-  examples and scientific caveats about aggregate data, source availability,
-  truncation, ecological inference, and the package boundary around causal
-  modelling, GAM, DLNM, relative-risk, and machine-learning analyses.
+* Fixed a false compliance pass for data containing all 92 RJ municipalities
+  plus an external municipality. Audit checks now share explicit `ok`, `status`,
+  `severity`, and `details` contracts; `unknown` never becomes a pass.
+* `vigiar_baixar()` is now geographically generic (`uf = NULL`). RJ scope is
+  explicit in `vigiar_baixar_rj()`, which filters against the official registry
+  rather than a numeric range.
+* Municipality-code validation now separates format, official existence,
+  seven-digit check-code correspondence, and UF membership using a versioned
+  national IBGE reference. Six digits are the internal standard; seven digits
+  are retained for interoperability.
+* The RJ fixture is checked against official IBGE and SES-RJ references,
+  including 92 unique municipalities, nine SES-RJ health regions, and sentinels
+  for Campos dos Goytacazes (`330100`/`3301009`), Italva, and Volta Redonda.
+* `vigiar_rj_completude_tabela()` detects entirely absent internal and boundary
+  periods. Expected domains can be supplied through years, months, or period
+  endpoints; observed, inferred, user-specified, official, and not-applicable
+  domains are not conflated.
+* Spatial coverage, temporal-domain status, panel completeness, schema status,
+  response completeness, truncation evidence, verification, and overall status
+  are reported independently. S3 classes now expose programmatic coverage and
+  completeness summaries.
+* `vigiar_auditar_rj_online()` writes CSV, JSON, and RDS evidence with package
+  version, commit SHA, canonical checksum, schema hash, rows, columns, coverage,
+  missing municipalities, health-region gaps, temporal gaps, and conservative
+  conclusions including `complete_within_inferred_domain` and
+  `schema_unverified`. Plain `complete` requires an explicit expected domain.
+* Truncation is represented as `no_evidence`, `possible`, `probable`,
+  `confirmed`, or `unknown` with supporting evidence. Raw responses are assessed
+  before client-side filters. Strict completeness converts any truncation signal
+  into an actionable error.
+* The DSR parser now validates response envelopes, descriptors, repeat/null
+  masks, dictionaries, compacted rows, and row width. Adversarial and randomized
+  repeat-mask tests protect malformed and partial-response behavior.
+* Canonical checksum version 2 defines semantic table identity without losing
+  double precision. Snapshots store separate data, schema, and metadata hashes;
+  caches include query parameters, schema, package version, and algorithm
+  versions in their keys and validate provenance on read.
+* Structured logs now record connection, download, retry, schema change,
+  truncation, cache, snapshot, audit, and compliance events while redacting
+  cookies, tokens, resource keys, authorization values, and URL queries.
+* Benchmarks now use warm-up and repeated measurements with median, p25, p75,
+  min, max, success/failure counts, checksums, and environment details. The old
+  `year_asc_desc` name is deprecated in favor of the honest
+  `two_ended_sample`; neither strategy claims complete retrieval.
+* CI now uses least-privilege read permissions, enforces a real 70% coverage
+  gate with persisted evidence, and runs a separate scheduled online canary that
+  archives RJ audit artifacts without blocking pull requests.
+* Software metadata and citation files are synchronized at version 0.7.1.9000.
+  User-facing prose and messages use technical English; historical Portuguese
+  API identifiers remain for compatibility and are governed by
+  `vigiar_api_status()` and `LANGUAGE_POLICY.md`.
+* Scientific documentation distinguishes downloaded, filtered, covered,
+  complete, verified, audited, and reproducible data. The package does not
+  validate causal inference, GAM, DLNM, relative risk, machine learning,
+  predictive models, or epidemiologic conclusions.
+
+## Migration notes
+
+* Code that relied on the old implicit RJ default must use
+  `vigiar_baixar_rj()` or pass `uf = "RJ"` explicitly.
+* New code should use `regiao_saude`; `macrorregiao_saude` and
+  `vigiar_rj_macrorregioes()` remain compatibility aliases.
+* Stored checksums created with an earlier algorithm should be regenerated and
+  archived with `canonicalization_version = 2`.
+* Strict online audits must provide `dominios_esperados` for temporal tables.
+* Benchmark consumers must migrate from Portuguese timing columns and
+  `year_asc_desc` to the structured English metrics and `two_ended_sample`.
 
 # vigiar 0.7.0
 

@@ -27,13 +27,13 @@ vigiar_agregar_tempo <- function(dados,
                                   funcoes = list(media = function(x) mean(x, na.rm = TRUE),
                                                  n     = length)) {
   if (!"ano" %in% names(dados)) {
-    stop("A coluna 'ano' e obrigatoria para agregacao temporal.")
+    stop("Column 'ano' is required for temporal aggregation.")
   }
 
   # Validate grouping columns
   validas <- intersect(agregar_por, names(dados))
   if (length(validas) == 0) {
-    stop("Nenhuma coluna de agregacao encontrada nos dados.")
+    stop("No requested aggregation column was found in the data.")
   }
 
   # Auto-detect variable
@@ -41,7 +41,7 @@ vigiar_agregar_tempo <- function(dados,
     variavel <- .vigiar_detectar_variavel_numerica(dados)
   }
   if (is.null(variavel) || !variavel %in% names(dados)) {
-    stop("Nenhuma variavel numerica encontrada para sumarizar.")
+    stop("No numeric variable was found to summarize.")
   }
 
   # Ensure grouping columns are the right type
@@ -82,7 +82,7 @@ vigiar_tendencia_descritiva <- function(dados, variavel = NULL,
     variavel <- .vigiar_detectar_variavel_numerica(dados)
   }
   if (is.null(variavel)) {
-    stop("Nenhuma variavel numerica encontrada.")
+    stop("No numeric variable was found.")
   }
 
   anual <- vigiar_agregar_tempo(
@@ -134,7 +134,7 @@ vigiar_serie_temporal <- function(dados,
 
   variavel <- .vigiar_detectar_variavel_numerica(dados)
   if (is.null(variavel)) {
-    stop("Nenhuma variavel numerica detectada para serie temporal.")
+    stop("No numeric variable was detected for the time series.")
   }
 
   vigiar_agregar_tempo(

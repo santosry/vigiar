@@ -78,13 +78,13 @@ vigiar_diagnosticar_serie <- function(dados,
 
   if (is.na(col_muni)) {
     diag <- .vigiar_add_issue(diag, "critico",
-      "Coluna de codigo municipal nao encontrada. Verifique os nomes das colunas.")
+      "Municipality code column not found. Check the column names.")
     diag <- vigiar_classificar_alertas(diag)
     return(diag)
   }
   if (is.na(col_pm25)) {
     diag <- .vigiar_add_issue(diag, "critico",
-      "Coluna de PM2.5 nao encontrada. Verifique os nomes das colunas.")
+      "PM2.5 column not found. Check the column names.")
     diag <- vigiar_classificar_alertas(diag)
     return(diag)
   }
@@ -147,7 +147,7 @@ vigiar_checar_ibge <- function(diag, dados, col_muni, uf = "RJ",
                                 escopo = "rj") {
   if (!col_muni %in% names(dados)) {
     return(.vigiar_add_issue(diag, "critico",
-      sprintf("Coluna '%s' nao encontrada nos dados.", col_muni)))
+      sprintf("Column '%s' was not found in the data.", col_muni)))
   }
 
   codigos_raw <- dados[[col_muni]]
@@ -221,21 +221,21 @@ vigiar_checar_cobertura_temporal <- function(diag, dados,
 
   if (!col_ano %in% names(dados)) {
     return(.vigiar_add_issue(diag, "critico",
-      sprintf("Coluna '%s' nao encontrada.", col_ano)))
+      sprintf("Column '%s' was not found.", col_ano)))
   }
 
   anos <- as.integer(dados[[col_ano]])
   anos <- anos[!is.na(anos)]
 
   if (length(anos) == 0) {
-    return(.vigiar_add_issue(diag, "critico", "Nenhum ano valido encontrado."))
+    return(.vigiar_add_issue(diag, "critico", "No valid year was found."))
   }
 
   # Year range check
   anos_fora <- anos[anos < 2000 | anos > current_year]
   if (length(anos_fora) > 0) {
     diag <- .vigiar_add_issue(diag, "problema",
-      sprintf("%d anos fora de 2000-%d: %s",
+      sprintf("%d years outside 2000-%d: %s",
               length(anos_fora), current_year,
               paste(utils::head(unique(anos_fora), 5), collapse = ", ")))
   }
@@ -251,7 +251,7 @@ vigiar_checar_cobertura_temporal <- function(diag, dados,
   missing_years <- setdiff(expected_years, anos_unicos)
   if (length(missing_years) > 0) {
     diag <- .vigiar_add_issue(diag, "aviso",
-      sprintf("Anos ausentes na serie: %s",
+      sprintf("Years missing from the series: %s",
               paste(missing_years, collapse = ", ")))
   }
 
@@ -269,7 +269,7 @@ vigiar_checar_cobertura_temporal <- function(diag, dados,
       meses_fora <- meses_validos[meses_validos < 1 | meses_validos > 12]
       if (length(meses_fora) > 0) {
         diag <- .vigiar_add_issue(diag, "problema",
-          sprintf("%d meses fora de 1-12.", length(meses_fora)))
+          sprintf("%d months are outside 1-12.", length(meses_fora)))
       }
 
       # Count truly missing months (not invalid)
@@ -284,7 +284,7 @@ vigiar_checar_cobertura_temporal <- function(diag, dados,
         missing_meses <- setdiff(1:12, meses_ano)
         if (length(missing_meses) > 0 && length(missing_meses) < 12) {
           diag <- .vigiar_add_issue(diag, "aviso",
-            sprintf("Ano %d: meses ausentes: %s",
+            sprintf("Year %d: missing months: %s",
                     y, paste(missing_meses, collapse = ", ")))
         }
       }
@@ -298,7 +298,7 @@ vigiar_checar_cobertura_temporal <- function(diag, dados,
 
   if (length(missing_years) == 0 && length(anos_fora) == 0) {
     .vigiar_add_issue(diag, "ok",
-      sprintf("Temporal: %d anos (%d-%d) completos.", length(anos_unicos), ano_min, ano_max))
+      sprintf("Temporal coverage: %d complete years (%d-%d).", length(anos_unicos), ano_min, ano_max))
   }
 
   diag
@@ -380,10 +380,10 @@ vigiar_checar_cobertura_espacial <- function(diag, dados,
       observed <- if (regiao %in% names(by_region)) as.integer(by_region[regiao]) else 0L
       if (observed < 3 && expected > 3) {
         diag <- .vigiar_add_issue(diag, "problema",
-          sprintf("Macro-region '%s': only %d/%d municipalities.", regiao, observed, expected))
+          sprintf("Health region '%s': only %d/%d municipalities.", regiao, observed, expected))
       } else if (observed < expected * 0.5) {
         diag <- .vigiar_add_issue(diag, "aviso",
-          sprintf("Macro-region '%s': low coverage (%d/%d).", regiao, observed, expected))
+          sprintf("Health region '%s': low coverage (%d/%d).", regiao, observed, expected))
       }
     }
 
@@ -446,7 +446,7 @@ vigiar_checar_cobertura_espacial <- function(diag, dados,
 vigiar_checar_pm25 <- function(diag, dados, col_pm25) {
   if (!col_pm25 %in% names(dados)) {
     return(.vigiar_add_issue(diag, "critico",
-      sprintf("Coluna '%s' nao encontrada.", col_pm25)))
+      sprintf("Column '%s' was not found.", col_pm25)))
   }
 
   vals <- as.numeric(dados[[col_pm25]])
@@ -456,21 +456,21 @@ vigiar_checar_pm25 <- function(diag, dados, col_pm25) {
 
   if (n_total == 0) {
     return(.vigiar_add_issue(diag, "critico",
-      "Todos os valores de PM2.5 sao NA."))
+      "All PM2.5 values are missing."))
   }
 
   # Negative values
   negativos <- sum(vals < 0, na.rm = TRUE)
   if (negativos > 0) {
     diag <- .vigiar_add_issue(diag, "critico",
-      sprintf("%d valores NEGATIVOS de PM2.5 detectados (impossivel fisicamente).", negativos))
+      sprintf("%d negative PM2.5 values detected; negative concentrations are physically impossible.", negativos))
   }
 
   # Implausible high values
   altos <- sum(vals > 1000, na.rm = TRUE)
   if (altos > 0) {
     diag <- .vigiar_add_issue(diag, "critico",
-      sprintf("%d valores > 1000 ug/m3 (improvavel). Verifique unidades.", altos))
+      sprintf("%d values exceed 1000 ug/m3; verify units and source data.", altos))
   }
 
   zeros <- sum(vals == 0, na.rm = TRUE)
@@ -478,11 +478,11 @@ vigiar_checar_pm25 <- function(diag, dados, col_pm25) {
   if (zeros > 0) {
     if (pct_zero >= 30) {
       diag <- .vigiar_add_issue(diag, "problema",
-        sprintf("PM2.5: %.1f%% dos valores sao zero. Verifique zeros estruturais ou falhas de preenchimento.",
+        sprintf("PM2.5: %.1f%% of values are zero. Check structural zeros and missing-data encoding.",
                 pct_zero))
     } else {
       diag <- .vigiar_add_issue(diag, "aviso",
-        sprintf("PM2.5: %d valor(es) zero detectado(s); confirme se representam dado real.", zeros))
+        sprintf("PM2.5: %d zero value(s) detected; confirm that they represent observed data.", zeros))
     }
   }
 
@@ -494,17 +494,17 @@ vigiar_checar_pm25 <- function(diag, dados, col_pm25) {
   extremos <- sum(vals > upper, na.rm = TRUE)
   if (extremos > 0 && extremos / n_total > 0.01) {
     diag <- .vigiar_add_issue(diag, "problema",
-      sprintf("%d valores extremos de PM2.5 (> %.0f ug/m3, IQR*3).", extremos, upper))
+      sprintf("%d extreme PM2.5 values (> %.0f ug/m3, IQR*3); treat as plausibility warnings, not automatic errors.", extremos, upper))
   }
 
   # Missing rate
   pct_na <- round(100 * n_na / nrow(dados), 1)
   if (pct_na > 50) {
     diag <- .vigiar_add_issue(diag, "problema",
-      sprintf("PM2.5: %.0f%% ausente. Analises comprometidas.", pct_na))
+      sprintf("PM2.5: %.0f%% missing; analysis validity is compromised.", pct_na))
   } else if (pct_na > 20) {
     diag <- .vigiar_add_issue(diag, "aviso",
-      sprintf("PM2.5: %.0f%% ausente.", pct_na))
+      sprintf("PM2.5: %.0f%% missing.", pct_na))
   }
 
   diag$metricas$pm25_media <- mean(vals, na.rm = TRUE)
@@ -517,7 +517,7 @@ vigiar_checar_pm25 <- function(diag, dados, col_pm25) {
 
   if (negativos == 0 && altos == 0 && extremos == 0 && zeros == 0) {
     .vigiar_add_issue(diag, "ok",
-      sprintf("PM2.5: media=%.1f, mediana=%.1f, dp=%.1f ug/m3.",
+      sprintf("PM2.5: mean=%.1f, median=%.1f, SD=%.1f ug/m3.",
               diag$metricas$pm25_media, diag$metricas$pm25_mediana,
               diag$metricas$pm25_dp))
   }
@@ -623,13 +623,13 @@ vigiar_checar_duplicatas <- function(diag, dados, col_muni,
     pct <- round(100 * n_dup / nrow(dados), 1)
     if (pct > 10) {
       diag <- .vigiar_add_issue(diag, "problema",
-        sprintf("%d linhas duplicadas (%.1f%%). Dados podem conter repeticoes.", n_dup, pct))
+        sprintf("%d duplicate rows (%.1f%%); data may contain repeated observations.", n_dup, pct))
     } else {
       diag <- .vigiar_add_issue(diag, "aviso",
-        sprintf("%d linhas duplicadas (%.1f%%).", n_dup, pct))
+        sprintf("%d duplicate rows (%.1f%%).", n_dup, pct))
     }
   } else {
-    .vigiar_add_issue(diag, "ok", "Nenhuma duplicata municipio-tempo encontrada.")
+    .vigiar_add_issue(diag, "ok", "No municipality-time duplicates found.")
   }
 
   diag
@@ -680,14 +680,14 @@ vigiar_checar_quebra_serie <- function(diag, dados, col_muni,
 
   if (n_quebras > 0) {
     diag <- .vigiar_add_issue(diag, "problema",
-      sprintf("%d quebras de serie detectadas (variacao >200%% entre anos consecutivos).", n_quebras))
+      sprintf("%d abrupt series changes detected (>200%% between consecutive years).", n_quebras))
     if (length(muni_quebras) <= 5) {
       for (q in muni_quebras) {
-        diag$mensagens <- c(diag$mensagens, sprintf("  Quebra: %s", q))
+        diag$mensagens <- c(diag$mensagens, sprintf("  Break: %s", q))
       }
     }
   } else {
-    .vigiar_add_issue(diag, "ok", "Nenhuma quebra abrupta de serie detectada.")
+    .vigiar_add_issue(diag, "ok", "No abrupt series change detected.")
   }
 
   diag
@@ -725,10 +725,10 @@ vigiar_classificar_alertas <- function(diag) {
 vigiar_relatorio_diagnostico <- function(diag) {
   stopifnot(inherits(diag, "vigiar_diagnostic"))
 
-  cli::cli_h1("Relatorio Diagnostico VIGIAR")
-  cli::cli_text("Tabela: {.strong {diag$tabela}}")
-  cli::cli_text("Data: {format(diag$timestamp)}")
-  cli::cli_text("Dimensoes: {diag$n_rows} linhas x {diag$n_cols} colunas")
+  cli::cli_h1("VIGIAR diagnostic report")
+  cli::cli_text("Table: {.strong {diag$tabela}}")
+  cli::cli_text("Date: {format(diag$timestamp)}")
+  cli::cli_text("Dimensions: {diag$n_rows} rows x {diag$n_cols} columns")
   cli::cli_rule()
 
   severity_color <- switch(diag$severidade,
@@ -739,10 +739,10 @@ vigiar_relatorio_diagnostico <- function(diag) {
     identity
   )
 
-  cli::cli_h2("Severidade: {severity_color(toupper(diag$severidade))}")
+  cli::cli_h2("Severity: {severity_color(toupper(diag$severidade))}")
 
   if (length(diag$resultados) > 0) {
-    cli::cli_h2("Resultados")
+    cli::cli_h2("Results")
     for (r in diag$resultados) {
       icon <- switch(r$severidade,
         ok      = cli::symbol$tick,
@@ -762,7 +762,7 @@ vigiar_relatorio_diagnostico <- function(diag) {
   }
 
   if (length(diag$metricas) > 0) {
-    cli::cli_h2("Metricas")
+    cli::cli_h2("Metrics")
     for (nm in names(diag$metricas)) {
       val <- diag$metricas[[nm]]
       if (is.numeric(val) && length(val) == 1) {
@@ -774,7 +774,7 @@ vigiar_relatorio_diagnostico <- function(diag) {
   }
 
   if (length(diag$recomendacoes) > 0) {
-    cli::cli_h2("Recomendacoes")
+    cli::cli_h2("Recommendations")
     for (rec in diag$recomendacoes) {
       cli::cli_li(rec)
     }
@@ -802,7 +802,7 @@ print.vigiar_diagnostic <- function(x, ...) {
 summary.vigiar_diagnostic <- function(object, ...) {
   cat(sprintf("VIGIAR Diagnostic: %s\n", object$tabela))
   cat(sprintf("Severity: %s\n", object$severidade))
-  cat(sprintf("Issues: ok=%d aviso=%d problema=%d critico=%d\n",
+  cat(sprintf("Issues: ok=%d warning=%d problem=%d critical=%d\n",
     sum(vapply(object$resultados, function(x) x$severidade == "ok", logical(1))),
     sum(vapply(object$resultados, function(x) x$severidade == "aviso", logical(1))),
     sum(vapply(object$resultados, function(x) x$severidade == "problema", logical(1))),
@@ -844,7 +844,7 @@ summary.vigiar_diagnostic <- function(object, ...) {
   }
 
   if (!is.null(diag$metricas$rj_cobertura_pct) && diag$metricas$rj_cobertura_pct < 80) {
-    recs <- c(recs, "[WARNING] Municipal coverage is insufficient for robust macro-region inference.")
+    recs <- c(recs, "[WARNING] Municipal coverage is insufficient for robust health-region inference.")
   }
 
   if (!is.null(diag$metricas$pm25_pct_ausente) && diag$metricas$pm25_pct_ausente > 20) {

@@ -28,7 +28,7 @@ vigiar_client <- function(timeout = 30, max_retries = 3) {
   sid <- regmatches(html, regexpr("(?<=telemetrySessionId = ')[^']+",
                                    html, perl = TRUE))
   if (length(sid) == 0) {
-    stop("Nao foi possivel obter o token de sessao do Power BI.")
+    stop("Could not obtain a Power BI session token.")
   }
 
   # Extract cookies
@@ -55,15 +55,15 @@ vigiar_client <- function(timeout = 30, max_retries = 3) {
   class(client) <- "vigiar_client"
 
   n_tables <- length(schema)
-  message(sprintf("VIGIAR conectado: %d tabelas disponiveis.", n_tables))
+  message(sprintf("VIGIAR connected: %d tables available.", n_tables))
   client
 }
 
 #' @export
 print.vigiar_client <- function(x, ...) {
-  cat(sprintf("VIGIAR client -- %d tabelas\n", length(x$schema)))
-  cat(sprintf("  Criado em: %s\n", format(x$created)))
-  cat(sprintf("  Tabelas:   %s\n",
+  cat(sprintf("VIGIAR client -- %d tables\n", length(x$schema)))
+  cat(sprintf("  Created at: %s\n", format(x$created)))
+  cat(sprintf("  Tables:     %s\n",
               paste(names(x$schema)[1:5], collapse = ", ")))
   invisible(x)
 }
