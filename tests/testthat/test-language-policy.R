@@ -39,14 +39,14 @@ test_that("known accentless Portuguese messages do not return", {
 test_that("narrative files are valid UTF-8 and contain no mojibake markers", {
   root <- .vigiar_test_source_root(c(
     "README.Rmd", "README.md", "NEWS.md", "CONTRIBUTING.md",
-    "LANGUAGE_POLICY.md", "CITATION.cff", "vignettes"
+    "LANGUAGE_POLICY.md", "AUDIT_REPORT.md", "CITATION.cff", "vignettes"
   ))
   skip_if(is.null(root), "Repository narrative files are not installed.")
 
   files <- c(
     file.path(root, c(
       "README.Rmd", "README.md", "NEWS.md", "CONTRIBUTING.md",
-      "LANGUAGE_POLICY.md", "CITATION.cff"
+      "LANGUAGE_POLICY.md", "AUDIT_REPORT.md", "CITATION.cff"
     )),
     list.files(file.path(root, "vignettes"), pattern = "\\.Rmd$", full.names = TRUE)
   )
