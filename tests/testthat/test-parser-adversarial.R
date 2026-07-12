@@ -69,6 +69,26 @@ test_that("DSR parser detects inconsistent dictionaries and row widths", {
   )
   expect_true(is.na(parsed$label[[1]]))
   expect_equal(parsed$value[[1]], 1L)
+  expect_identical(attr(parsed, "vigiar_parser_status"), "issues")
+})
+
+test_that("DSR parser accepts inline strings after dictionary values", {
+  response <- .adversarial_dsr(
+    list(list(Name = "label", Type = 1L)),
+    list(
+      list(S = list(list(DN = "D0")), C = list(0L)),
+      list(C = list("value-after-dictionary-cap"))
+    ),
+    value_dicts = list(D0 = "dictionary-value")
+  )
+
+  expect_no_warning(parsed <- .vigiar_parse_dados(response, "inline-dict"))
+  expect_equal(
+    parsed$label,
+    c("dictionary-value", "value-after-dictionary-cap")
+  )
+  expect_identical(attr(parsed, "vigiar_parser_status"), "pass")
+  expect_length(attr(parsed, "vigiar_parser_issues"), 0L)
 })
 
 test_that("DSR parser rejects invalid masks", {

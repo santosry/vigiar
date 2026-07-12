@@ -23,7 +23,10 @@ library(vigiar)
   }
   grid$pm25_media_anual <- rep(value, nrow(grid))
   grid$sigla_uf <- rep("RJ", nrow(grid))
-  tibble::as_tibble(grid)
+  out <- tibble::as_tibble(grid)
+  attr(out, "vigiar_parser_status") <- "pass"
+  attr(out, "vigiar_parser_issues") <- character()
+  out
 }
 
 .with_mock_vigiar_session <- function(code) {
@@ -478,6 +481,70 @@ test_that("RJ download handles non-municipal tables and possible truncation", {
   })
 })
 
+test_that("strict RJ downloads reject unverified or structurally invalid parsing", {
+  parser_issue <- .make_rj_data(.rj_codes6())
+  attr(parser_issue, "vigiar_parser_status") <- "issues"
+  attr(parser_issue, "vigiar_parser_issues") <-
+    "row 2 has fewer changed values than required"
+
+  .with_mock_vigiar_session({
+    testthat::local_mocked_bindings(
+      vigiar_baixar = function(...) parser_issue,
+      .package = "vigiar"
+    )
+
+    out <- vigiar_baixar_rj(
+      "df_anual",
+      validar_cobertura = FALSE,
+      require_complete = FALSE
+    )
+    expect_identical(attr(out, "vigiar_parser_status"), "issues")
+    expect_match(attr(out, "vigiar_parser_issues"), "fewer changed values")
+    expect_error(
+      vigiar_baixar_rj(
+        "df_anual",
+        validar_cobertura = FALSE,
+        require_complete = TRUE
+      ),
+      "parsing was not structurally verified"
+    )
+  })
+})
+
+test_that("strict RJ cache hits cannot bypass parser verification", {
+  parser_issue <- .make_rj_data(.rj_codes6())
+  attr(parser_issue, "vigiar_parser_status") <- "issues"
+  attr(parser_issue, "vigiar_parser_issues") <- "row width mismatch"
+  old_cache <- .vigiar_env$cache_dir
+  on.exit({
+    .vigiar_env$cache_dir <- old_cache
+  }, add = TRUE)
+  .vigiar_env$cache_dir <- tempfile("vigiar-rj-parser-cache-")
+
+  .with_mock_vigiar_session({
+    testthat::local_mocked_bindings(
+      vigiar_baixar = function(...) parser_issue,
+      .package = "vigiar"
+    )
+
+    first <- vigiar_baixar_rj(
+      "df_anual",
+      validar_cobertura = FALSE,
+      usar_cache = TRUE
+    )
+    expect_identical(attr(first, "vigiar_cache_status"), "miss")
+    expect_error(
+      vigiar_baixar_rj(
+        "df_anual",
+        validar_cobertura = FALSE,
+        usar_cache = TRUE,
+        require_complete = TRUE
+      ),
+      "cached RJ response was not structurally verified"
+    )
+  })
+})
+
 test_that("municipality download filters only by IBGE code and keeps metadata", {
   mixed <- tibble::tibble(
     muni = c(3301009L, 3300936L, 3300902L, 3301157L, 3550308L),
@@ -611,6 +678,8 @@ test_that("RJ online audit saves complete artifacts with preserved metadata", {
     manifest <- jsonlite::read_json(file.path(report_dir, "manifest.json"))
     expect_equal(manifest$tables[[1]]$summary$conclusion, "complete")
     expect_equal(manifest$tables[[1]]$summary$tabela, "df_anual")
+    expect_equal(manifest$tables[[1]]$summary$parser_status, "pass")
+    expect_equal(manifest$tables[[1]]$summary$parser_issue_count, 0)
   })
 })
 
@@ -705,6 +774,37 @@ test_that("RJ online audit detects missing municipal columns and truncation", {
         require_complete = TRUE
       )),
       "truncated"
+    )
+  })
+})
+
+test_that("RJ online audit fails on parser structural issues", {
+  parser_issue <- .make_rj_data(.rj_codes6(), years = 2022L)
+  attr(parser_issue, "vigiar_parser_status") <- "issues"
+  attr(parser_issue, "vigiar_parser_issues") <- "row width mismatch"
+
+  .with_mock_vigiar_session({
+    testthat::local_mocked_bindings(
+      vigiar_baixar = function(...) parser_issue,
+      .package = "vigiar"
+    )
+
+    audit <- vigiar_auditar_rj_online("df_anual", salvar = FALSE)
+    expect_equal(audit$conclusion, "failed")
+    expect_equal(audit$parser_status, "issues")
+    expect_equal(audit$parser_issue_count, 1L)
+    expect_match(audit$parser_issues, "row width mismatch")
+    expect_equal(audit$response_completeness_status, "structural_issues")
+    expect_error(
+      vigiar_auditar_rj_online(
+        "df_anual",
+        salvar = FALSE,
+        require_complete = TRUE,
+        dominios_esperados = list(
+          df_anual = list(anos_esperados = 2022L)
+        )
+      ),
+      "not complete"
     )
   })
 })

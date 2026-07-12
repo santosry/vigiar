@@ -371,6 +371,32 @@ vigiar_baixar_rj <- function(
         .vigiar_log("INFO", "RJ cache hit", table = tabela,
                     metadata = list(age_seconds = age), event = "cache_hit")
         out <- cached$dados
+        if (isTRUE(complete_required)) {
+          cache_truncation <- attr(out, "vigiar_truncation_status") %||% "unknown"
+          if (cache_truncation != "no_evidence" ||
+              isTRUE(attr(out, "vigiar_possivel_truncamento"))) {
+            stop(
+              "The cached RJ response has truncation evidence; complete data cannot be guaranteed.",
+              call. = FALSE
+            )
+          }
+          if (!identical(attr(out, "vigiar_parser_status"), "pass")) {
+            stop(
+              "The cached RJ response was not structurally verified by the parser; complete data cannot be guaranteed.",
+              call. = FALSE
+            )
+          }
+          cache_coverage <- suppressWarnings(vigiar_rj_cobertura(out))
+          if (!isTRUE(cache_coverage$completo[[1]])) {
+            stop(
+              sprintf(
+                "Cached RJ coverage is incomplete: %d/92 municipalities present.",
+                cache_coverage$n_municipios_presentes[[1]]
+              ),
+              call. = FALSE
+            )
+          }
+        }
         attr(out, "vigiar_cache_status") <- "hit"
         attr(out, "vigiar_cache_age_seconds") <- age
         return(out)
@@ -399,12 +425,24 @@ vigiar_baixar_rj <- function(
   )
 
   dados <- do.call(vigiar_baixar, args)
+  parser_status <- attr(dados, "vigiar_parser_status") %||% "unknown"
+  parser_issues <- as.character(
+    attr(dados, "vigiar_parser_issues") %||% character()
+  )
   dados <- .vigiar_detectar_truncamento(dados, tabela = tabela, limite = limite)
   possivel_truncamento <- isTRUE(attr(dados, "vigiar_possivel_truncamento"))
   if (isTRUE(possivel_truncamento) && isTRUE(complete_required)) {
     stop(
       "Possible API truncation was detected; complete RJ data cannot be guaranteed. ",
       "Use a validated partitioned download before running scientific analyses.",
+      call. = FALSE
+    )
+  }
+  if (isTRUE(complete_required) && !identical(parser_status, "pass")) {
+    stop(
+      "Power BI response parsing was not structurally verified; complete RJ data cannot be guaranteed. ",
+      if (length(parser_issues) > 0L) paste(parser_issues, collapse = "; ") else
+        "No parser verification status was available.",
       call. = FALSE
     )
   }
@@ -462,6 +500,8 @@ vigiar_baixar_rj <- function(
     attr(dados, "vigiar_truncation_evidence") %||% character()
   attr(dados_rj, "vigiar_truncation_assessment") <-
     attr(dados, "vigiar_truncation_assessment") %||% list()
+  attr(dados_rj, "vigiar_parser_status") <- parser_status
+  attr(dados_rj, "vigiar_parser_issues") <- parser_issues
 
   if (isTRUE(snapshot)) {
     attr(dados_rj, "vigiar_snapshot") <- vigiar_snapshot(dados = dados_rj, tabela = tabela)
@@ -484,7 +524,10 @@ vigiar_baixar_rj <- function(
     cli::cli_alert_success("RJ cache saved: {tabela}")
   }
 
-  tibble::as_tibble(dados_rj)
+  out <- tibble::as_tibble(dados_rj)
+  attr(out, "vigiar_parser_status") <- parser_status
+  attr(out, "vigiar_parser_issues") <- parser_issues
+  out
 }
 
 #' Download one Rio de Janeiro municipality
@@ -569,6 +612,13 @@ vigiar_baixar_municipio <- function(
       call. = FALSE
     )
   }
+  if (isTRUE(require_complete) &&
+      !identical(attr(dados_rj, "vigiar_parser_status"), "pass")) {
+    stop(
+      "Power BI response parsing was not structurally verified; complete municipality data cannot be guaranteed.",
+      call. = FALSE
+    )
+  }
 
   out <- dados_rj[dados_rj$codigo_ibge_6 == codigo6, , drop = FALSE]
   reg <- RJ_MUNICIPIOS[RJ_MUNICIPIOS$codigo_ibge_6 == codigo6, ]
@@ -600,6 +650,9 @@ vigiar_baixar_municipio <- function(
     "server_side_municipality_filter_with_local_verification"
   }
   attr(out, "vigiar_possivel_truncamento") <- isTRUE(attr(dados_rj, "vigiar_possivel_truncamento"))
+  attr(out, "vigiar_parser_status") <- attr(dados_rj, "vigiar_parser_status") %||% "unknown"
+  attr(out, "vigiar_parser_issues") <-
+    attr(dados_rj, "vigiar_parser_issues") %||% character()
   attr(out, "vigiar_download_timestamp") <- Sys.time()
 
   if (isTRUE(snapshot)) {

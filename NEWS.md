@@ -34,7 +34,14 @@
   into an actionable error.
 * The DSR parser now validates response envelopes, descriptors, repeat/null
   masks, dictionaries, compacted rows, and row width. Adversarial and randomized
-  repeat-mask tests protect malformed and partial-response behavior.
+  repeat-mask tests protect malformed and partial-response behavior. It also
+  supports Power BI's valid hybrid dictionary encoding, where strings after the
+  dictionary cap are emitted inline. Parser status and issues survive filtering
+  and processing, are written to online audit artifacts, and block strict
+  completeness when structural verification does not pass.
+* The live `pop` schema lock now records its source population column as integer,
+  matching the audited dashboard schema while processing still standardizes the
+  analysis column to numeric.
 * Canonical checksum version 2 defines semantic table identity without losing
   double precision. Snapshots store separate data, schema, and metadata hashes;
   caches include query parameters, schema, package version, and algorithm

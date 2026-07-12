@@ -242,8 +242,9 @@ truncation.
 Use `vigiar_auditar_rj_online()` before formal scientific use or before
 archiving a release. It downloads the requested RJ tables, computes checksum and
 schema hash, evaluates table-grain completeness, lists absent municipalities,
-records temporal gaps, flags possible Power BI truncation, and writes CSV, JSON,
-and RDS artifacts under `data-raw/rj-download-completeness-output/`.
+records temporal gaps, verifies parser structure, flags possible Power BI
+truncation, and writes CSV, JSON, and RDS artifacts under
+`data-raw/rj-download-completeness-output/`.
 
 ```{r}
 vigiar_conectar()
@@ -260,6 +261,7 @@ audit[, c(
   "checksum",
   "completeness_grade",
   "n_incomplete_groups",
+  "parser_status",
   "possivel_truncamento",
   "conclusion"
 )]
@@ -268,9 +270,9 @@ vigiar_desconectar()
 ```
 
 When `require_complete = TRUE`, the audit stops if any table is partial,
-truncated, lacks a municipality code, lacks a schema hash, or otherwise fails.
-It also requires an explicit expected temporal domain. This is intentionally
-stricter than checking that `nrow(dados) > 0`.
+truncated, has parser issues, lacks a municipality code, lacks a schema hash,
+or otherwise fails. It also requires an explicit expected temporal domain. This
+is intentionally stricter than checking that `nrow(dados) > 0`.
 
 ```{r}
 years <- 2018:2023
@@ -292,12 +294,16 @@ The objective conclusion can be `complete`, `complete_within_inferred_domain`,
 `complete_within_observed_domain`, `partial`, `truncated`, `schema_changed`,
 `schema_unverified`, or `failed`. Plain `complete` is reserved for an explicit
 expected domain, complete RJ panel, matching critical schema, and no truncation
-evidence. It does not prove causal validity, exposure measurement validity,
-model adequacy, or epidemiological identifiability.
+evidence or parser issues. It does not prove causal validity, exposure
+measurement validity, model adequacy, or epidemiological identifiability.
 
 Truncation evidence is recorded separately as `no_evidence`, `possible`,
 `probable`, `confirmed`, or `unknown`. The raw response is assessed before any
 client-side UF filter, so filtering cannot erase a response-limit signal.
+Parser evidence is recorded as `parser_status`, `parser_issue_count`, and
+`parser_issues`. Power BI may mix dictionary indices with inline text after a
+dictionary reaches its cap; valid inline values are preserved, while actual
+row-width, mask, or dictionary-index violations prevent a `complete` result.
 
 ## Processing
 

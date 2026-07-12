@@ -15,7 +15,8 @@
 #' @param salvar If \code{TRUE}, write CSV, JSON, and RDS audit artifacts.
 #' @param dir Output directory for audit artifacts.
 #' @param require_complete If \code{TRUE}, error when any table is incomplete,
-#'   truncated, lacks municipality codes, has no schema hash, or fails.
+#'   truncated, has parser issues, lacks municipality codes, has no schema
+#'   hash, or fails.
 #' @param timeout Timeout in seconds for each download.
 #' @param timestamp Timestamp used in the audit records and output directory.
 #' @param dominios_esperados Optional named list with one entry per table. Each
@@ -91,7 +92,7 @@ print.vigiar_online_audit <- function(x, ...) {
   cat("<vigiar_online_audit>\n")
   display <- x[c(
     "tabela", "n_rows", "n_municipios_presentes", "n_incomplete_groups",
-    "truncation_status", "schema_status", "conclusion"
+    "parser_status", "truncation_status", "schema_status", "conclusion"
   )]
   class(display) <- setdiff(class(display), "vigiar_online_audit")
   print(display, ...)
@@ -150,6 +151,10 @@ summary.vigiar_online_audit <- function(object, ...) {
                                          dominio_esperado = list()) {
   truncation_status <- attr(dados, "vigiar_truncation_status") %||% "unknown"
   truncation_evidence <- attr(dados, "vigiar_truncation_evidence") %||% character()
+  parser_status <- attr(dados, "vigiar_parser_status") %||% "unknown"
+  parser_issues <- as.character(
+    attr(dados, "vigiar_parser_issues") %||% character()
+  )
   dados <- tibble::as_tibble(dados)
   col_muni <- .vigiar_coluna_municipio(dados)
   has_municipality <- !is.na(col_muni)
@@ -214,7 +219,8 @@ summary.vigiar_online_audit <- function(object, ...) {
     possivel_truncamento = possivel_truncamento,
     erro = erro,
     truncation_status = truncation_status,
-    schema_status = schema_assessment$status
+    schema_status = schema_assessment$status,
+    parser_status = parser_status
   )
   spatial_status <- if (
     nrow(cobertura_geral) > 0L && all(cobertura_geral$completo)
@@ -232,7 +238,13 @@ summary.vigiar_online_audit <- function(object, ...) {
   } else {
     schema_assessment$status
   }
-  response_status <- if (truncation_status == "no_evidence") {
+  response_status <- if (!identical(parser_status, "pass")) {
+    if (identical(parser_status, "issues")) {
+      "structural_issues"
+    } else {
+      "parser_unverified"
+    }
+  } else if (truncation_status == "no_evidence") {
     "unverified"
   } else {
     truncation_status
@@ -265,6 +277,9 @@ summary.vigiar_online_audit <- function(object, ...) {
     meses_ausentes_por_ano = temporal$meses_ausentes_por_ano,
     campos_dos_goytacazes_presente = campos_presente,
     possivel_truncamento = possivel_truncamento,
+    parser_status = parser_status,
+    parser_issue_count = length(parser_issues),
+    parser_issues = paste(parser_issues, collapse = "; "),
     truncation_status = truncation_status,
     truncation_evidence = paste(truncation_evidence, collapse = "; "),
     spatial_coverage_status = spatial_status,
@@ -311,6 +326,9 @@ summary.vigiar_online_audit <- function(object, ...) {
     meses_ausentes_por_ano = NA_character_,
     campos_dos_goytacazes_presente = FALSE,
     possivel_truncamento = NA,
+    parser_status = "unknown",
+    parser_issue_count = NA_integer_,
+    parser_issues = NA_character_,
     truncation_status = "unknown",
     truncation_evidence = NA_character_,
     spatial_coverage_status = "unknown",
@@ -336,7 +354,8 @@ summary.vigiar_online_audit <- function(object, ...) {
 .vigiar_rj_audit_conclusion <- function(has_municipality, schema_hash,
                                         completude, possivel_truncamento,
                                         erro, truncation_status = "unknown",
-                                        schema_status = "unknown") {
+                                        schema_status = "unknown",
+                                        parser_status = "unknown") {
   if (!is.na(erro)) {
     if (!has_municipality) {
       return("failed")
@@ -357,6 +376,9 @@ summary.vigiar_online_audit <- function(object, ...) {
     any(completude$possivel_truncamento %||% FALSE)
   if (truncated) {
     return("truncated")
+  }
+  if (!identical(parser_status, "pass")) {
+    return("failed")
   }
   if (nrow(completude) == 0 || any(!completude$completo)) {
     return("partial")
@@ -443,8 +465,8 @@ summary.vigiar_online_audit <- function(object, ...) {
   stop(
     "RJ online audit is not complete. require_complete=TRUE requires ",
     "all audited tables to have complete 92-municipality coverage at the ",
-    "expected table grain, no API truncation, municipality codes, and a ",
-    "stable schema hash, and an explicit expected temporal domain. ",
+    "expected table grain, no parser issues or API truncation, municipality ",
+    "codes, a stable schema hash, and an explicit expected temporal domain. ",
     "Provide 'dominios_esperados' for temporal tables. Failing tables: ",
     paste(details, collapse = "; "),
     call. = FALSE

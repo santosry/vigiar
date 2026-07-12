@@ -22,7 +22,8 @@ vigiar_auditar_rj_online(
 \item{dir}{Output directory for audit artifacts.}
 
 \item{require_complete}{If \code{TRUE}, error when any table is incomplete,
-truncated, lacks municipality codes, has no schema hash, or fails.}
+truncated, has parser issues, lacks municipality codes, has no schema
+hash, or fails.}
 
 \item{timeout}{Timeout in seconds for each download.}
 

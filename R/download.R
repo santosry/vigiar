@@ -107,20 +107,20 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
   })
   response_rows <- nrow(dados)
   dados <- .vigiar_detectar_truncamento(dados, tabela = tabela, limite = limite)
-  truncation_metadata <- lapply(c(
+  response_attribute_names <- c(
     "vigiar_truncation_status",
     "vigiar_truncation_evidence",
     "vigiar_truncation_assessment",
     "vigiar_possivel_truncamento",
-    "vigiar_response_metadata"
-  ), function(name) attr(dados, name))
-  names(truncation_metadata) <- c(
-    "vigiar_truncation_status",
-    "vigiar_truncation_evidence",
-    "vigiar_truncation_assessment",
-    "vigiar_possivel_truncamento",
-    "vigiar_response_metadata"
+    "vigiar_response_metadata",
+    "vigiar_parser_status",
+    "vigiar_parser_issues"
   )
+  response_attributes <- lapply(
+    response_attribute_names,
+    function(name) attr(dados, name)
+  )
+  names(response_attributes) <- response_attribute_names
 
   uf_normalized <- if (is.null(uf)) NULL else .vigiar_normalizar_uf(uf)
   if (!is.null(uf_normalized) &&
@@ -137,8 +137,8 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
     cli::cli_alert_info(
       "UF filter '{uf_normalized}': {nrow(dados)} rows from {n_antes}."
     )
-    for (name in names(truncation_metadata)) {
-      attr(dados, name) <- truncation_metadata[[name]]
+    for (name in names(response_attributes)) {
+      attr(dados, name) <- response_attributes[[name]]
     }
   }
 
@@ -170,7 +170,11 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
     paste0("truncation_", truncation_status)
   }
   attr(dados, "vigiar_download_timestamp") <- Sys.time()
-  tibble::as_tibble(dados)
+  out <- tibble::as_tibble(dados)
+  for (name in response_attribute_names) {
+    attr(out, name) <- attr(dados, name)
+  }
+  out
 }
 
 #' Download multiple tables

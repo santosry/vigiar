@@ -33,14 +33,14 @@ test_that("online RJ audit validates table-grain completeness evidence", {
     )), tables)
   }
 
-  audit <- suppressWarnings(vigiar_auditar_rj_online(
+  audit <- vigiar_auditar_rj_online(
     tabelas = tables,
     salvar = TRUE,
     dir = report_dir,
     require_complete = strict,
     timeout = 240,
     dominios_esperados = expected_domains
-  ))
+  )
 
   expect_s3_class(audit, "tbl_df")
   expect_s3_class(audit, "vigiar_online_audit")
@@ -61,7 +61,12 @@ test_that("online RJ audit validates table-grain completeness evidence", {
   expect_true(all(audit$truncation_status %in% c(
     "no_evidence", "possible", "probable", "confirmed", "unknown"
   )))
+  expect_true(all(audit$parser_status == "pass"))
+  expect_true(all(audit$parser_issue_count == 0L))
+  expect_true(all(!nzchar(audit$parser_issues)))
+  expect_true(all(audit$truncation_status == "no_evidence"))
   expect_true(all(audit$schema_status %in% c("pass", "fail", "unknown")))
+  expect_true(all(audit$schema_status == "pass"))
   expect_true(all(audit$spatial_coverage_status %in% c("complete", "incomplete")))
   expect_true(all(audit$panel_completeness_status %in% c(
     "complete", "incomplete", "unknown"

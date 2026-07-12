@@ -8,7 +8,8 @@
 #   - "R": bitmask indicating which columns REPEAT from previous row
 #          (bit i set => column i repeats).  R=3 (0b011) means cols 0,1
 #          repeat; R=6 (0b110) means cols 1,2 repeat.
-#   - ValueDicts: integer indices into a string dictionary (0-based).
+#   - ValueDicts: integer indices into a string dictionary (0-based). Power BI
+#     may emit later string values inline after a dictionary reaches its cap.
 #
 # This is a reverse-engineered format -- no official specification exists.
 # It may change without notice.  The parser validates structural
@@ -168,9 +169,9 @@
               ))
               val <- NA
             }
-          } else {
+          } else if (!is.character(val) || length(val) != 1L) {
             issues <- c(issues, sprintf(
-              "row %d column %d has a non-numeric dictionary index", i, col
+              "row %d column %d has an invalid inline dictionary value", i, col
             ))
             val <- NA
           }
@@ -200,12 +201,27 @@
   rows <- rows[seq_len(out_idx)]
 
   if (raw) {
-    attr(rows, "vigiar_parser_issues") <- unique(issues)
+    issues <- unique(issues)
+    attr(rows, "vigiar_parser_issues") <- issues
+    attr(rows, "vigiar_parser_status") <- if (length(issues) == 0L) {
+      "pass"
+    } else {
+      "issues"
+    }
     return(rows)
   }
 
   # ---- Build data.frame ----
-  if (length(rows) == 0L) return(data.frame())
+  if (length(rows) == 0L) {
+    out <- data.frame()
+    attr(out, "vigiar_parser_issues") <- unique(issues)
+    attr(out, "vigiar_parser_status") <- if (length(issues) == 0L) {
+      "pass"
+    } else {
+      "issues"
+    }
+    return(out)
+  }
 
   n_rows <- length(rows)
   df <- as.data.frame(matrix(nrow = n_rows, ncol = n_cols),
@@ -226,6 +242,11 @@
 
   issues <- unique(issues)
   attr(df, "vigiar_parser_issues") <- issues
+  attr(df, "vigiar_parser_status") <- if (length(issues) == 0L) {
+    "pass"
+  } else {
+    "issues"
+  }
   response_metadata <- list(
     has_more = isTRUE(data_section$has_more) || isTRUE(data_section$hasMore) ||
       isTRUE(data_section$continuation),

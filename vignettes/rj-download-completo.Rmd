@@ -197,8 +197,8 @@ function writes `manifest.csv`, `manifest.json`, `audit.rds`, and per-table
 coverage CSV files. These outputs include the table name, execution time,
 package version, commit SHA when available, checksum, schema hash, row and
 column counts, general coverage, table-grain completeness, missing
-municipalities, incomplete health regions, truncation evidence, and an objective
-conclusion.
+municipalities, incomplete health regions, parser status, truncation evidence,
+and an objective conclusion.
 
 ```{r, eval = FALSE}
 vigiar_conectar()
@@ -219,10 +219,15 @@ audit <- vigiar_auditar_rj_online(
 vigiar_desconectar()
 ```
 
-The `require_complete = TRUE` mode turns partial coverage, possible truncation,
-missing municipality codes, missing schema hashes, and failed downloads into a
-clear error. It requires an explicit expected temporal domain. Use it for
-release validation, not for exploratory checks.
+The `require_complete = TRUE` mode turns partial coverage, parser issues,
+possible truncation, missing municipality codes, missing schema hashes, and
+failed downloads into a clear error. It requires an explicit expected temporal
+domain. Use it for release validation, not for exploratory checks.
+
+The audit records `parser_status`, `parser_issue_count`, and `parser_issues`.
+Power BI can use dictionary indices for early string values and inline strings
+after a dictionary cap. The parser preserves both valid forms, but structural
+mask, width, or index violations block strict completeness.
 
 ## Possible Truncation
 
