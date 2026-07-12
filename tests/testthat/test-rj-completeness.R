@@ -185,7 +185,7 @@ test_that("RJ registry matches the official IBGE municipality code reference", {
   expect_equal(nrow(ibge), 92)
   expect_setequal(rj$codigo_ibge_6, ibge$codigo_ibge_6)
   expect_setequal(rj$codigo_ibge_7, ibge$codigo_ibge_7)
-  expect_setequal(rj$municipio, iconv(ibge$municipio, to = "ASCII//TRANSLIT"))
+  expect_setequal(rj$municipio, .vigiar_ascii_transliterate(ibge$municipio))
   expect_false(330033L %in% all_ibge$codigo_ibge_6)
 
   merged <- merge(rj, ibge, by = c("codigo_ibge_6", "codigo_ibge_7"))
@@ -206,6 +206,23 @@ test_that("RJ registry matches the official IBGE municipality code reference", {
     "utf8_lf_final_newline_v1"
   )
   expect_identical(metadata$sha256, checksum)
+})
+
+test_that("official RJ names are transliterated consistently across platforms", {
+  official <- c(
+    "Aperibé", "Armação dos Búzios", "Barra do Piraí",
+    "Conceição de Macabu", "Itaboraí", "Macaé", "Magé", "Niterói",
+    "Petrópolis", "São João da Barra"
+  )
+  expected <- c(
+    "Aperibe", "Armacao dos Buzios", "Barra do Pirai",
+    "Conceicao de Macabu", "Itaborai", "Macae", "Mage", "Niteroi",
+    "Petropolis", "Sao Joao da Barra"
+  )
+
+  transliterated <- .vigiar_ascii_transliterate(official)
+  expect_identical(transliterated, expected)
+  expect_false(any(grepl("['~]", transliterated)))
 })
 
 test_that("official text fixture checksums are line-ending independent", {

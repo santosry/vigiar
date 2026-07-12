@@ -93,6 +93,9 @@ software metadata files.
 21. The IBGE fixture checksum was calculated from platform-specific raw line
     endings, so identical CSV content produced different hashes on Windows and
     Linux.
+22. `iconv(..., "ASCII//TRANSLIT")` produced different official municipality
+    names across C libraries; macOS inserted apostrophes and tildes where the
+    Windows and Linux checks expected plain ASCII.
 
 ## Changes implemented
 
@@ -107,6 +110,9 @@ software metadata files.
   `479769cde2d37da6d35e39bbe234740a2ac6c7b178fe516c62f0470439856ff0`.
 - Fixture checksum metadata declares SHA-256 canonicalization version
   `utf8_lf_final_newline_v1`, making CRLF and LF checkouts equivalent.
+- Portuguese diacritics are transliterated through an explicit package mapping,
+  so official municipality-name checks are identical on Windows, Linux, and
+  macOS.
 - SES-RJ fixtures lock the nine official health regions.
 - Sentinel tests cover Campos dos Goytacazes (`330100`/`3301009`, Norte),
   Italva (`330205`/`3302056`), Volta Redonda (`330630`/`3306305`), and rejection
@@ -379,9 +385,9 @@ Local platform: Windows 11 x64, R 4.6.0, UTF-8 session.
 | Check | Result |
 |---|---|
 | `devtools::document()` | Passed; generated Rd synchronized |
-| `devtools::test()` with online disabled | 741 passed, 1 expected online skip, 0 failed, 0 warnings |
+| `devtools::test()` with online disabled | 743 passed, 1 expected online skip, 0 failed, 0 warnings |
 | Strict online test | 58 passed, 0 skipped, 0 failed, 0 warnings |
-| Coverage gate | 75.18%, required 70.00%, passed |
+| Coverage gate | 75.23%, required 70.00%, passed |
 | `pkgdown::build_site()` | Passed, including all reference pages, six offline articles, and this report |
 | `devtools::check(error_on = "never", args = character())` | 0 errors, 0 warnings, 0 notes |
 | `lintr::lint_package()` | Exited successfully; 288 diagnostics remain, mostly cross-file usage and inherited style rules |
