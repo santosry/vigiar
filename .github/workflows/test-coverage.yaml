@@ -6,12 +6,16 @@ on:
 
 name: test-coverage
 
+permissions:
+  contents: read
+
 jobs:
   test-coverage:
     runs-on: ubuntu-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       VIGIAR_RUN_ONLINE_TESTS: false
+      VIGIAR_COVERAGE_MIN: 70
 
     steps:
       - uses: actions/checkout@v4
@@ -25,7 +29,14 @@ jobs:
           extra-packages: any::covr
           needs: coverage
 
-      - name: Test coverage
-        run: |
-          covr::package_coverage(type = "none", quiet = FALSE)
-        shell: Rscript {0}
+      - name: Enforce package coverage threshold
+        run: Rscript tools/run-coverage.R
+
+      - name: Publish coverage evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          if-no-files-found: warn
+          retention-days: 30

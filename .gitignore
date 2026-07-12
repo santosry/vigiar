@@ -30,6 +30,9 @@ vignettes/*.pdf
 # Code coverage
 covr_*
 *.lcov
+coverage/
+coverage.rds
+coverage.xml
 
 # renv
 renv/library/
