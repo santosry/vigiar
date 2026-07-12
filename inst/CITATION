@@ -1,19 +1,30 @@
+meta <- packageDescription("vigiar")
+
 citHeader("To cite the vigiar package in publications, use:")
 
 bibentry(
-  bibtype    = "Manual",
-  title      = "vigiar.rj: VIGIAR Environmental Health Data for Rio de Janeiro",
-  author     = c(person(given = "Ryan", family = "Santos",
-                         email = "ryan.paulo@gsuite.iff.edu.br",
-                         comment = c(ORCID = "0009-0005-6770-2001"))),
-  year       = "2026",
-  note       = "R package version 0.4.0, https://github.com/santosry/vigiar.rj",
+  bibtype = "Manual",
+  title = "vigiar: VIGIAR Environmental Health Data for Rio de Janeiro",
+  author = c(person(
+    given = "Ryan",
+    family = "Santos",
+    email = "ryan.paulo@gsuite.iff.edu.br",
+    comment = c(ORCID = "0009-0005-6770-2001")
+  )),
+  year = "2026",
+  note = sprintf("R package version %s", meta$Version),
+  url = "https://github.com/santosry/vigiar",
   textVersion = paste(
     "Ryan Santos (2026).",
-    "vigiar.rj: VIGIAR Environmental Health Data for Rio de Janeiro.",
-    "R package version 0.4.0.",
-    "https://github.com/santosry/vigiar.rj"
+    "vigiar: VIGIAR Environmental Health Data for Rio de Janeiro.",
+    sprintf("R package version %s.", meta$Version),
+    "https://github.com/santosry/vigiar"
   )
 )
 
-citFooter("Data source: Brazilian Ministry of Health, VIGIAR Environmental Health Surveillance.")
+citFooter(
+  paste(
+    "Data source: Brazilian Ministry of Health VIGIAR public dashboard.",
+    "Citing the software does not establish source completeness or causal validity."
+  )
+)

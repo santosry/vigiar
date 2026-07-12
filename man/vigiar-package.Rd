@@ -6,7 +6,7 @@
 \alias{vigiar-package}
 \title{vigiar: VIGIAR Environmental Health Data for Rio de Janeiro}
 \description{
-Specialized package to download, process, validate and analyse environmental health surveillance data from Brazil's VIGIAR (Vigilancia em Saude Ambiental) public Power BI dashboard, maintained by the Brazilian Ministry of Health, with focus on the state of Rio de Janeiro. Includes the official registry of 92 municipalities with health macro-regions (SES-RJ), automatic RJ filtering, IBGE code validation, PM2.5 air quality processing, benchmark and compliance auditing, structured logging, local caching, data snapshots with SHA256 checksums, schema version locking, and integration-ready municipality codes for SIH, SIM and DATASUS. Built on httr2, dplyr, cli, openssl, and tibble.
+Specialized package to download, process, validate and analyze environmental health surveillance data from Brazil's VIGIAR (Vigilancia em Saude Ambiental) public Power BI dashboard, maintained by the Brazilian Ministry of Health, with focus on the state of Rio de Janeiro. Includes the official registry of 92 municipalities with health regions (SES-RJ), automatic RJ filtering, IBGE code validation, PM2.5 air quality processing, benchmark and compliance auditing, structured logging, local caching, versioned data snapshots with SHA256 checksums, schema locking, and integration-ready municipality codes for SIH, SIM and DATASUS. Built on httr2, dplyr, cli, openssl, and tibble.
 }
 \seealso{
 Useful links:

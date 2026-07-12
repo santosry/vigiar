@@ -1,21 +1,21 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "vigiar.rj: VIGIAR Environmental Health Data for Rio de Janeiro"
-version: 0.4.0
-date-released: 2026-06-20
+title: "vigiar: VIGIAR Environmental Health Data for Rio de Janeiro"
+version: "0.7.1.9000"
 authors:
   - family-names: Santos
     given-names: Ryan
     email: ryan.paulo@gsuite.iff.edu.br
     orcid: "https://orcid.org/0009-0005-6770-2001"
-repository-code: "https://github.com/santosry/vigiar-download"
-url: "https://github.com/santosry/vigiar-download"
+repository-code: "https://github.com/santosry/vigiar"
+url: "https://santosry.github.io/vigiar/"
 abstract: >
-  R package to programmatically download the complete dataset
-  from Brazil's VIGIAR Environmental Health Surveillance public Power BI
-  dashboard, maintained by the Brazilian Ministry of Health.
-  Provides PM2.5 air quality data, population exposure, epidemiological
-  health indicators, and indoor solid fuel exposure.
+  R package to download, process, validate, and audit environmental health
+  surveillance data from Brazil's public VIGIAR Power BI dashboard, with
+  explicit Rio de Janeiro municipality coverage, panel-completeness,
+  truncation, schema, provenance, and reproducibility diagnostics. The package
+  does not claim that the external source is complete and does not validate
+  epidemiologic or causal inference.
 keywords:
   - R
   - air-quality
@@ -26,5 +26,7 @@ keywords:
   - VIGIAR
   - Power-BI
   - environmental-health
+  - reproducibility
+  - data-audit
 license: MIT
 type: software

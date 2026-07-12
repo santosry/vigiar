@@ -11,14 +11,14 @@ Authors@R: c(
 Author: Ryan Santos
 Maintainer: Ryan Santos <ryan.paulo@gsuite.iff.edu.br>
 Description: Specialized package to download, process, validate and
-    analyse environmental health surveillance data from Brazil's
+    analyze environmental health surveillance data from Brazil's
     VIGIAR (Vigilancia em Saude Ambiental) public Power BI dashboard,
     maintained by the Brazilian Ministry of Health, with focus on the
     state of Rio de Janeiro. Includes the official registry of 92
-    municipalities with health macro-regions (SES-RJ), automatic RJ
+    municipalities with health regions (SES-RJ), automatic RJ
     filtering, IBGE code validation, PM2.5 air quality processing,
     benchmark and compliance auditing, structured logging, local caching,
-    data snapshots with SHA256 checksums, schema version locking, and
+    versioned data snapshots with SHA256 checksums, schema locking, and
     integration-ready municipality codes for SIH, SIM and DATASUS.
     Built on httr2, dplyr, cli, openssl, and tibble.
 License: MIT + file LICENSE
