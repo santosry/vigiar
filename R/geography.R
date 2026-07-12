@@ -46,6 +46,15 @@
   reference
 }
 
+.vigiar_text_file_checksum <- function(path) {
+  if (!file.exists(path)) {
+    stop("Text file not found: ", path, call. = FALSE)
+  }
+  lines <- readLines(path, warn = FALSE, encoding = "UTF-8")
+  payload <- charToRaw(enc2utf8(paste0(paste(lines, collapse = "\n"), "\n")))
+  paste(format(openssl::sha256(payload)), collapse = "")
+}
+
 .vigiar_ascii_upper <- function(x) {
   converted <- iconv(as.character(x), from = "", to = "ASCII//TRANSLIT")
   toupper(trimws(converted))

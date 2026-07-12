@@ -197,12 +197,27 @@ test_that("RJ registry matches the official IBGE municipality code reference", {
   expect_equal(length(unique(rj$macrorregiao_saude)), 9)
 
   metadata <- jsonlite::fromJSON(metadata_path)
-  checksum_connection <- file(ref_path, open = "rb")
-  checksum <- paste(format(openssl::sha256(checksum_connection)), collapse = "")
-  close(checksum_connection)
+  checksum <- .vigiar_text_file_checksum(ref_path)
   expect_equal(metadata$n_municipalities, nrow(all_ibge))
   expect_equal(metadata$n_rj_municipalities, 92)
+  expect_identical(metadata$checksum_algorithm, "sha256")
+  expect_identical(
+    metadata$checksum_canonicalization,
+    "utf8_lf_final_newline_v1"
+  )
   expect_identical(metadata$sha256, checksum)
+})
+
+test_that("official text fixture checksums are line-ending independent", {
+  lf <- tempfile(fileext = ".csv")
+  crlf <- tempfile(fileext = ".csv")
+  writeBin(charToRaw("a,b\n1,2\n"), lf)
+  writeBin(charToRaw("a,b\r\n1,2\r\n"), crlf)
+
+  expect_identical(
+    .vigiar_text_file_checksum(lf),
+    .vigiar_text_file_checksum(crlf)
+  )
 })
 
 test_that("RJ registry matches the official SES-RJ health-region reference", {

@@ -3,5 +3,7 @@
   "retrieved_at": "2026-07-11 16:05:21 UTC",
   "n_municipalities": 5571,
   "n_rj_municipalities": 92,
-  "sha256": "a86e57e34937627513142a21cde03ed0556bfddf7014420d4e6994825dbe07a1"
+  "sha256": "479769cde2d37da6d35e39bbe234740a2ac6c7b178fe516c62f0470439856ff0",
+  "checksum_algorithm": "sha256",
+  "checksum_canonicalization": "utf8_lf_final_newline_v1"
 }

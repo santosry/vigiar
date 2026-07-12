@@ -90,6 +90,9 @@ software metadata files.
     pkgdown reference index.
 20. A legacy standalone validation runner in `inst/extdata/testar_vigiar.R`
     duplicated `testthat` and the release audit script.
+21. The IBGE fixture checksum was calculated from platform-specific raw line
+    endings, so identical CSV content produced different hashes on Windows and
+    Linux.
 
 ## Changes implemented
 
@@ -100,8 +103,10 @@ software metadata files.
 - Format normalization, structural validity, official existence, seven-digit
   correspondence, and RJ membership are evaluated separately.
 - A versioned national IBGE fixture contains 5,571 municipalities and exactly
-  92 RJ municipalities. Its SHA-256 is
-  `a86e57e34937627513142a21cde03ed0556bfddf7014420d4e6994825dbe07a1`.
+  92 RJ municipalities. Its canonical UTF-8/LF SHA-256 is
+  `479769cde2d37da6d35e39bbe234740a2ac6c7b178fe516c62f0470439856ff0`.
+- Fixture checksum metadata declares SHA-256 canonicalization version
+  `utf8_lf_final_newline_v1`, making CRLF and LF checkouts equivalent.
 - SES-RJ fixtures lock the nine official health regions.
 - Sentinel tests cover Campos dos Goytacazes (`330100`/`3301009`, Norte),
   Italva (`330205`/`3302056`), Volta Redonda (`330630`/`3306305`), and rejection
@@ -307,6 +312,20 @@ environment value and skips only repository-only files when they are genuinely
 not installed.
 **Regression test:** Metadata tests pass directly and under the coverage gate.
 
+### Platform-dependent official-fixture checksum
+
+**Problem:** The IBGE reference metadata stored a SHA-256 calculated from raw
+Windows CRLF bytes, while the Linux CI checkout used LF bytes.
+**Risk:** Identical official data failed integrity checks on another platform.
+**Reproduction:** Run the coverage suite on Windows and Ubuntu checkouts of the
+same commit.
+**Root cause:** File transport line endings were included in the identity
+without a declared text canonicalization rule.
+**Fix:** Normalize the text to UTF-8, LF, and one final newline before hashing;
+record the canonicalization version in metadata and the refresh script.
+**Regression test:** LF and CRLF fixtures now produce an identical checksum, and
+the official fixture metadata is verified through that canonical contract.
+
 ## Scientific integrity assessment
 
 ### Spatial completeness
@@ -360,9 +379,9 @@ Local platform: Windows 11 x64, R 4.6.0, UTF-8 session.
 | Check | Result |
 |---|---|
 | `devtools::document()` | Passed; generated Rd synchronized |
-| `devtools::test()` with online disabled | 738 passed, 1 expected online skip, 0 failed, 0 warnings |
+| `devtools::test()` with online disabled | 741 passed, 1 expected online skip, 0 failed, 0 warnings |
 | Strict online test | 58 passed, 0 skipped, 0 failed, 0 warnings |
-| Coverage gate | 75.17%, required 70.00%, passed |
+| Coverage gate | 75.18%, required 70.00%, passed |
 | `pkgdown::build_site()` | Passed, including all reference pages, six offline articles, and this report |
 | `devtools::check(error_on = "never", args = character())` | 0 errors, 0 warnings, 0 notes |
 | `lintr::lint_package()` | Exited successfully; 288 diagnostics remain, mostly cross-file usage and inherited style rules |

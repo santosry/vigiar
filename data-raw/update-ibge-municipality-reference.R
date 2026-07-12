@@ -30,15 +30,19 @@ stopifnot(
 )
 
 utils::write.csv(reference, output, row.names = FALSE, fileEncoding = "UTF-8")
-checksum_connection <- file(output, open = "rb")
-checksum <- paste(format(openssl::sha256(checksum_connection)), collapse = "")
-close(checksum_connection)
+lines <- readLines(output, warn = FALSE, encoding = "UTF-8")
+canonical_text <- charToRaw(enc2utf8(
+  paste0(paste(lines, collapse = "\n"), "\n")
+))
+checksum <- paste(format(openssl::sha256(canonical_text)), collapse = "")
 metadata <- list(
   source_url = url,
   retrieved_at = format(Sys.time(), tz = "UTC", usetz = TRUE),
   n_municipalities = nrow(reference),
   n_rj_municipalities = sum(reference$sigla_uf == "RJ", na.rm = TRUE),
-  sha256 = checksum
+  sha256 = checksum,
+  checksum_algorithm = "sha256",
+  checksum_canonicalization = "utf8_lf_final_newline_v1"
 )
 writeLines(
   jsonlite::toJSON(metadata, auto_unbox = TRUE, pretty = TRUE),
