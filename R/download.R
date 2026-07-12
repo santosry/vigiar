@@ -105,6 +105,22 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
     )
     stop(e)
   })
+  response_rows <- nrow(dados)
+  dados <- .vigiar_detectar_truncamento(dados, tabela = tabela, limite = limite)
+  truncation_metadata <- lapply(c(
+    "vigiar_truncation_status",
+    "vigiar_truncation_evidence",
+    "vigiar_truncation_assessment",
+    "vigiar_possivel_truncamento",
+    "vigiar_response_metadata"
+  ), function(name) attr(dados, name))
+  names(truncation_metadata) <- c(
+    "vigiar_truncation_status",
+    "vigiar_truncation_evidence",
+    "vigiar_truncation_assessment",
+    "vigiar_possivel_truncamento",
+    "vigiar_response_metadata"
+  )
 
   uf_normalized <- if (is.null(uf)) NULL else .vigiar_normalizar_uf(uf)
   if (!is.null(uf_normalized) &&
@@ -121,9 +137,10 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
     cli::cli_alert_info(
       "UF filter '{uf_normalized}': {nrow(dados)} rows from {n_antes}."
     )
+    for (name in names(truncation_metadata)) {
+      attr(dados, name) <- truncation_metadata[[name]]
+    }
   }
-
-  dados <- .vigiar_detectar_truncamento(dados, tabela = tabela, limite = limite)
 
   elapsed <- as.numeric(difftime(Sys.time(), t_start, units = "secs"))
 
@@ -141,6 +158,7 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
 
   attr(dados, "vigiar_tabela") <- tabela
   attr(dados, "vigiar_requested_scope") <- requested_scope
+  attr(dados, "vigiar_response_rows") <- response_rows
   attr(dados, "vigiar_returned_rows") <- nrow(dados)
   attr(dados, "vigiar_server_filter") <- filtros
   attr(dados, "vigiar_requested_limit") <- limite

@@ -248,6 +248,42 @@ test_that("generic downloads no longer default silently to RJ", {
   expect_null(formals(vigiar_baixar)$uf)
 })
 
+test_that("raw response truncation evidence survives a local UF filter", {
+  old_session <- .vigiar_env$sessao
+  old_schema <- .vigiar_env$esquema
+  on.exit({
+    .vigiar_env$sessao <- old_session
+    .vigiar_env$esquema <- old_schema
+  }, add = TRUE)
+  .vigiar_env$sessao <- list(
+    model_id = 1L,
+    api_url = "https://example.org/",
+    created_at = Sys.time()
+  )
+  .vigiar_env$esquema <- list(test = list(
+    UF = list(tipo = "character"),
+    value = list(tipo = "integer")
+  ))
+  raw <- data.frame(
+    UF = c("RJ", rep("SP", 28499L)),
+    value = seq_len(28500L)
+  )
+  testthat::local_mocked_bindings(
+    .vigiar_executar_query = function(...) list(),
+    .vigiar_parse_dados = function(...) raw,
+    .package = "vigiar"
+  )
+
+  expect_warning(
+    filtered <- vigiar_baixar("test", uf = "RJ"),
+    "conservative Power BI response threshold"
+  )
+  expect_equal(nrow(filtered), 1L)
+  expect_equal(attr(filtered, "vigiar_response_rows"), 28500L)
+  expect_true(isTRUE(attr(filtered, "vigiar_possivel_truncamento")))
+  expect_identical(attr(filtered, "vigiar_truncation_status"), "possible")
+})
+
 test_that("UF filtering handles labels and numeric codes", {
   labelled <- data.frame(UF = factor(c("RJ", "SP")), value = 1:2)
   numeric <- data.frame(cod_uf = c(33L, 35L), value = 1:2)
