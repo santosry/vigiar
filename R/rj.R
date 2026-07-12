@@ -369,15 +369,20 @@ vigiar_baixar_rj <- function(
       if (isTRUE(valid)) {
         cli::cli_alert_success("RJ cache hit: {tabela}")
         .vigiar_log("INFO", "RJ cache hit", table = tabela,
-                    metadata = list(age_seconds = age))
+                    metadata = list(age_seconds = age), event = "cache_hit")
         out <- cached$dados
         attr(out, "vigiar_cache_status") <- "hit"
         attr(out, "vigiar_cache_age_seconds") <- age
         return(out)
       }
       .vigiar_log("WARN", "RJ cache entry expired or failed validation",
-                  table = tabela, metadata = list(age_seconds = age))
+                  table = tabela, metadata = list(age_seconds = age),
+                  event = "cache_invalid")
     }
+    .vigiar_log(
+      "INFO", "RJ cache miss", table = tabela,
+      metadata = list(cache_file = basename(cache_file)), event = "cache_miss"
+    )
   }
 
   args <- c(
@@ -744,7 +749,9 @@ vigiar_rj_cobertura <- function(
   out$municipios_ausentes <- I(lapply(rows, `[[`, "municipios_ausentes"))
   out$codigos_ausentes <- I(lapply(rows, `[[`, "codigos_ausentes"))
   out$macrorregioes_incompletas <- I(lapply(rows, `[[`, "macrorregioes_incompletas"))
-  tibble::as_tibble(out)
+  out <- tibble::as_tibble(out)
+  class(out) <- c("vigiar_coverage", class(out))
+  out
 }
 
 #' Check RJ completeness using the table's expected panel grain
@@ -863,6 +870,10 @@ vigiar_rj_completude_tabela <- function(
   cobertura <- cobertura[
     c("tabela", "grade", setdiff(names(cobertura), c("tabela", "grade")))
   ]
+  class(cobertura) <- c(
+    "vigiar_completeness",
+    setdiff(class(cobertura), "vigiar_completeness")
+  )
 
   incomplete <- any(!cobertura$completo)
   truncated <- any(cobertura$possivel_truncamento)
@@ -892,6 +903,79 @@ vigiar_rj_completude_tabela <- function(
     overall = overall_status
   )
   cobertura
+}
+
+#' Print an RJ coverage result
+#'
+#' @param x A `vigiar_coverage` object.
+#' @param ... Additional arguments passed to the tibble print method.
+#' @return `x`, invisibly.
+#' @export
+print.vigiar_coverage <- function(x, ...) {
+  complete <- sum(x$completo %in% TRUE, na.rm = TRUE)
+  cat(sprintf("<vigiar_coverage> %d/%d group(s) complete\n", complete, nrow(x)))
+  out <- x
+  class(out) <- setdiff(class(out), "vigiar_coverage")
+  print(out, ...)
+  invisible(x)
+}
+
+#' Summarise an RJ coverage result
+#'
+#' @param object A `vigiar_coverage` object.
+#' @param ... Additional arguments (unused).
+#' @return A named list with machine-readable coverage status.
+#' @export
+summary.vigiar_coverage <- function(object, ...) {
+  list(
+    status = if (nrow(object) > 0L && all(object$completo %in% TRUE)) {
+      "complete"
+    } else {
+      "incomplete"
+    },
+    n_groups = nrow(object),
+    n_complete_groups = sum(object$completo %in% TRUE, na.rm = TRUE),
+    n_incomplete_groups = sum(object$completo %in% FALSE, na.rm = TRUE),
+    possible_truncation = any(object$possivel_truncamento %in% TRUE, na.rm = TRUE)
+  )
+}
+
+#' Print an RJ panel-completeness result
+#'
+#' @param x A `vigiar_completeness` object.
+#' @param ... Additional arguments passed to the coverage print method.
+#' @return `x`, invisibly.
+#' @export
+print.vigiar_completeness <- function(x, ...) {
+  status <- unique(x$overall_status %||% "unknown")
+  cat(sprintf(
+    "<vigiar_completeness> overall=%s, verification=%s\n",
+    paste(status, collapse = ","),
+    paste(unique(x$verification_status %||% "unverified"), collapse = ",")
+  ))
+  out <- x
+  class(out) <- setdiff(class(out), "vigiar_completeness")
+  print(out, ...)
+  invisible(x)
+}
+
+#' Summarise an RJ panel-completeness result
+#'
+#' @param object A `vigiar_completeness` object.
+#' @param ... Additional arguments (unused).
+#' @return The structured completeness summary attached by
+#'   `vigiar_rj_completude_tabela()`.
+#' @export
+summary.vigiar_completeness <- function(object, ...) {
+  attr(object, "vigiar_completeness_summary") %||% list(
+    spatial_coverage = "unknown",
+    temporal_domain = "unknown",
+    panel_completeness = "unknown",
+    schema = "unknown",
+    truncation = "unknown",
+    verification = "unverified",
+    overall = "unknown"
+  )
 }
 
 #' List absent Rio de Janeiro municipalities
@@ -1224,7 +1308,10 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
       "Truncation status '%s' for table '%s': %s",
       status, table_label, paste(evidence, collapse = " ")
     )
-    .vigiar_log("WARN", msg, table = table_label, metadata = assessment)
+    .vigiar_log(
+      "WARN", msg, table = table_label, metadata = assessment,
+      event = "possible_truncation"
+    )
     warning(
       msg,
       " Use validated partitions before claiming response completeness.",
@@ -1459,7 +1546,9 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
   row$municipios_ausentes <- I(list(RJ_MUNICIPIOS$municipio))
   row$codigos_ausentes <- I(list(RJ_MUNICIPIOS$codigo_ibge_6))
   row$macrorregioes_incompletas <- I(list(vigiar_rj_macrorregioes()))
-  tibble::as_tibble(row)
+  row <- tibble::as_tibble(row)
+  class(row) <- c("vigiar_coverage", class(row))
+  row
 }
 
 .vigiar_validar_temporal_rj <- function(dados, por) {

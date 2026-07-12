@@ -59,14 +59,19 @@
 #' @param message Log message.
 #' @param table Table name (optional).
 #' @param metadata Named list of additional metadata.
+#' @param event Stable machine-readable event name. When omitted, the event is
+#'   recorded as `operation` for backwards compatibility.
 #' @return Invisibly, the log entry (as a list).
 #' @keywords internal
-.vigiar_log <- function(level, message, table = NULL, metadata = NULL) {
+.vigiar_log <- function(level, message, table = NULL, metadata = NULL,
+                        event = "operation") {
   message <- .vigiar_sanitize_text(message)
   metadata <- .vigiar_sanitize_log_value(metadata %||% list())
+  event <- .vigiar_sanitize_text(event %||% "operation")
   entry <- list(
     timestamp = format(Sys.time(), "%Y-%m-%dT%H:%M:%OS3"),
     level     = level,
+    event     = event,
     message   = message,
     table     = table %||% NA_character_,
     metadata  = metadata
@@ -96,7 +101,7 @@
 #' Returns a tibble with all logged operations since package load
 #' or last \code{vigiar_limpar_log()}.
 #'
-#' @return A tibble with columns: timestamp, level, message,
+#' @return A tibble with columns: timestamp, level, event, message,
 #'   table, metadata_json.
 #' @export
 vigiar_log <- function() {
@@ -105,6 +110,7 @@ vigiar_log <- function() {
     return(tibble::tibble(
       timestamp = character(0),
       level     = character(0),
+      event     = character(0),
       message   = character(0),
       table     = character(0),
       metadata  = character(0)
@@ -117,6 +123,8 @@ vigiar_log <- function() {
   df <- tibble::tibble(
     timestamp = vapply(entries, `[[`, "", "timestamp", USE.NAMES = FALSE),
     level     = vapply(entries, `[[`, "", "level", USE.NAMES = FALSE),
+    event     = vapply(entries, function(e) e$event %||% "operation", "",
+                       USE.NAMES = FALSE),
     message   = vapply(entries, `[[`, "", "message", USE.NAMES = FALSE),
     table     = vapply(entries, function(e) {
       t <- e$table %||% NA_character_
@@ -233,10 +241,19 @@ vigiar_resumo_log <- function() {
   }
   .vigiar_env$download_history[[length(.vigiar_env$download_history) + 1L]] <- entry
 
-  .vigiar_log("INFO", sprintf("Download: %s (%d linhas x %d colunas, %.1fs)",
-                               tabela, n_rows, n_cols, elapsed),
-               table = tabela,
-               metadata = list(n_rows = n_rows, n_cols = n_cols, elapsed = elapsed))
+  .vigiar_log(
+    "INFO",
+    sprintf("Download succeeded: %s (%d rows x %d columns, %.1fs)",
+            tabela, n_rows, n_cols, elapsed),
+    table = tabela,
+    metadata = list(
+      returned_rows = n_rows,
+      returned_columns = n_cols,
+      elapsed_seconds = elapsed,
+      endpoint = url
+    ),
+    event = "download_success"
+  )
 
   invisible(entry)
 }

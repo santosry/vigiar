@@ -7,11 +7,11 @@ library(vigiar)
 # -- Benchmark -----------------------------------------------------------------
 
 test_that("vigiar_benchmark errors without session", {
-  expect_error(vigiar_benchmark("df_anual"), "Nenhuma sessao")
+  expect_error(vigiar_benchmark("df_anual"), "No active session")
 })
 
 test_that("vigiar_benchmark_tabelas errors without session", {
-  expect_error(vigiar_benchmark_tabelas(), "Nenhuma sessao")
+  expect_error(vigiar_benchmark_tabelas(), "No active session")
 })
 
 test_that("vigiar_health_check errors gracefully without connection", {
@@ -156,6 +156,7 @@ test_that(".vigiar_log adds entries", {
   expect_equal(nrow(df), 2)
   expect_true(df$level[1] == "INFO")
   expect_true(df$level[2] == "ERROR")
+  expect_true(all(df$event == "operation"))
 })
 
 test_that("vigiar_limpar_log clears entries", {

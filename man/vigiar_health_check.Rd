@@ -2,17 +2,20 @@
 % Please edit documentation in R/benchmark.R
 \name{vigiar_health_check}
 \alias{vigiar_health_check}
-\title{Run a full health check on the VIGIAR API}
+\title{Run a conservative health check on the VIGIAR API}
 \usage{
-vigiar_health_check(timeout = 120)
+vigiar_health_check(timeout = 120, require_healthy = FALSE)
 }
 \arguments{
-\item{timeout}{Timeout per operation.}
+\item{timeout}{Timeout per online operation.}
+
+\item{require_healthy}{If `TRUE`, error unless the final status is `pass`.}
 }
 \value{
-Invisibly, a list with health metrics.
+A structured `vigiar_health_report` object.
 }
 \description{
-Connects, validates schema, benchmarks downloads, and checks
-data quality. Returns a comprehensive health report.
+The report separates connection, critical-schema compatibility, and download
+canary status. Unknown evidence never becomes a pass. This online function is
+disabled when `VIGIAR_RUN_ONLINE_TESTS=false`.
 }

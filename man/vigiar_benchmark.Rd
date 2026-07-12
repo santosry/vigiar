@@ -6,29 +6,36 @@
 \usage{
 vigiar_benchmark(
   tabela,
-  strategies = c("direct", "year_asc_desc", "minimal_columns"),
+  strategies = c("direct", "two_ended_sample", "minimal_columns"),
   repeticoes = 3L,
-  timeout = 120
+  timeout = 120,
+  warmup = 1L,
+  limite = 10000L
 )
 }
 \arguments{
 \item{tabela}{Table name to benchmark.}
 
-\item{strategies}{Character vector of strategies to test.
-Options: \code{"direct"}, \code{"year_asc_desc"},
-\code{"minimal_columns"}, \code{"all"}.}
+\item{strategies}{Character vector containing `direct`,
+`two_ended_sample`, or `minimal_columns`. The legacy name
+`year_asc_desc` is accepted with a deprecation warning.}
 
-\item{repeticoes}{Number of repetitions per strategy.}
+\item{repeticoes}{Number of measured repetitions per strategy.}
 
 \item{timeout}{Timeout per download in seconds.}
+
+\item{warmup}{Number of unmeasured warm-up repetitions per strategy.}
+
+\item{limite}{Requested row limit for each query.}
 }
 \value{
-A tibble with columns: estrategia, tempo_medio,
-  tempo_min, tempo_max, n_linhas, n_colunas, n_ausentes,
-  taxa_sucesso.
+A `vigiar_benchmark` tibble with reproducible timing and result
+  identity metrics.
 }
 \description{
-Tests different download strategies (direct, year-partitioned,
-column-restricted) on a given table and reports timing,
-row counts, and data quality metrics.
+Runs an excluded warm-up followed by repeated timed downloads. The returned
+metrics include the median, quartiles, range, successes, failures, row counts,
+canonical checksums, and execution environment. The `two_ended_sample`
+strategy combines ascending and descending samples; it does not prove that
+the interval between those samples was downloaded.
 }

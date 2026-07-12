@@ -122,16 +122,28 @@ vigiar_auditar <- function(dados, tabela = NULL, verbose = TRUE) {
   audit$passed <- identical(audit$status, "pass")
   audit$ok <- audit$passed
 
+  .vigiar_log(
+    if (audit$status == "pass") "INFO" else if (audit$status == "unknown") "WARN" else "ERROR",
+    sprintf("Audit completed with status '%s'.", audit$status),
+    table = tabela,
+    metadata = list(
+      status = audit$status,
+      severity = audit$severity,
+      details = audit$details
+    ),
+    event = "audit"
+  )
+
   if (verbose) {
     cli::cli_rule()
     if (audit$status == "pass") {
-      cli::cli_alert_success("AUDITORIA APROVADA -- Todos os checks passaram")
+      cli::cli_alert_success("AUDIT PASSED -- all required checks passed")
     } else if (audit$status == "unknown") {
       cli::cli_alert_warning(
         "AUDIT UNVERIFIED -- one or more required properties are unknown"
       )
     } else {
-      cli::cli_alert_danger("AUDITORIA REPROVADA -- Verificar sessoes com FAIL")
+      cli::cli_alert_danger("AUDIT FAILED -- inspect sections marked FAIL")
     }
   }
 
@@ -329,14 +341,34 @@ vigiar_compliance_check <- function(dados, tabela = NULL,
   }
 
   all_ok <- all(vapply(results, function(x) isTRUE(x$ok), logical(1)))
+  overall_status <- if (any(vapply(
+    results, function(x) identical(x$status, "fail"), logical(1)
+  ))) {
+    "fail"
+  } else if (all_ok) {
+    "pass"
+  } else {
+    "unknown"
+  }
+  .vigiar_log(
+    if (overall_status == "pass") "INFO" else if (overall_status == "unknown") "WARN" else "ERROR",
+    sprintf("Compliance completed with status '%s'.", overall_status),
+    table = tabela,
+    metadata = list(
+      status = overall_status,
+      profiles = profiles,
+      profile_status = vapply(results, `[[`, "", "status")
+    ),
+    event = if (overall_status == "fail") "compliance_failure" else "compliance"
+  )
 
   if (verbose) {
     cli::cli_rule()
     if (all_ok) {
-      cli::cli_alert_success("COMPLIANCE: Todos os perfis aprovados")
+      cli::cli_alert_success("COMPLIANCE PASSED: all requested profiles passed")
     } else {
       fails <- names(results)[!vapply(results, function(x) isTRUE(x$ok), logical(1))]
-      cli::cli_alert_danger("COMPLIANCE FALHOU nos perfis: {paste(fails, collapse=', ')}")
+      cli::cli_alert_danger("COMPLIANCE FAILED for profiles: {paste(fails, collapse=', ')}")
     }
   }
 

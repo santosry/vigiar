@@ -57,6 +57,7 @@ vigiar_auditar_rj_online <- function(
     )
   })
   audit <- dplyr::bind_rows(rows)
+  class(audit) <- c("vigiar_online_audit", class(audit))
 
   if (isTRUE(salvar)) {
     out_dir <- .vigiar_rj_write_audit_artifacts(audit, dir, timestamp)
@@ -68,7 +69,44 @@ vigiar_auditar_rj_online <- function(
     .vigiar_rj_require_complete_audit(audit)
   }
 
+  .vigiar_log(
+    if (any(audit$overall_status == "fail")) "ERROR" else if (
+      all(audit$overall_status == "pass")
+    ) "INFO" else "WARN",
+    "RJ online audit completed.",
+    metadata = list(
+      tables = audit$tabela,
+      conclusions = stats::setNames(audit$conclusion, audit$tabela),
+      overall_status = stats::setNames(audit$overall_status, audit$tabela),
+      artifact_directory = attr(audit, "vigiar_audit_dir") %||% NA_character_
+    ),
+    event = "online_audit"
+  )
+
   audit
+}
+
+#' @export
+print.vigiar_online_audit <- function(x, ...) {
+  cat("<vigiar_online_audit>\n")
+  display <- x[c(
+    "tabela", "n_rows", "n_municipios_presentes", "n_incomplete_groups",
+    "truncation_status", "schema_status", "conclusion"
+  )]
+  class(display) <- setdiff(class(display), "vigiar_online_audit")
+  print(display, ...)
+  invisible(x)
+}
+
+#' @export
+summary.vigiar_online_audit <- function(object, ...) {
+  list(
+    tables = nrow(object),
+    conclusions = table(object$conclusion, useNA = "ifany"),
+    all_complete = nrow(object) > 0L && all(object$conclusion == "complete"),
+    any_failed = any(object$overall_status == "fail"),
+    artifact_directory = attr(object, "vigiar_audit_dir") %||% NA_character_
+  )
 }
 
 .vigiar_auditar_rj_tabela_online <- function(tabela, checked_at,
@@ -244,6 +282,7 @@ vigiar_auditar_rj_online <- function(
     cobertura_ano_mes = list(cobertura_ano_mes),
     completude_tabela = list(completude),
     municipios_ausentes = list(ausentes),
+    regioes_saude_incompletas = list(macro_incomplete),
     macrorregioes_incompletas = list(macro_incomplete)
   )
 }
@@ -289,6 +328,7 @@ vigiar_auditar_rj_online <- function(
     cobertura_ano_mes = list(tibble::tibble()),
     completude_tabela = list(tibble::tibble()),
     municipios_ausentes = list(tibble::tibble()),
+    regioes_saude_incompletas = list(character(0)),
     macrorregioes_incompletas = list(character(0))
   )
 }
@@ -537,11 +577,11 @@ vigiar_auditar_rj_online <- function(
     )
     .vigiar_rj_write_optional_csv(
       data.frame(
-        macrorregiao_saude = audit$macrorregioes_incompletas[[i]],
+        regiao_saude = audit$regioes_saude_incompletas[[i]],
         stringsAsFactors = FALSE
       ),
       out_dir,
-      paste0(tab, "-incomplete-macroregions.csv")
+      paste0(tab, "-incomplete-health-regions.csv")
     )
   }
 
@@ -615,6 +655,7 @@ vigiar_auditar_rj_online <- function(
         cobertura_ano_mes = .vigiar_rj_df_records(audit$cobertura_ano_mes[[i]]),
         completude_tabela = .vigiar_rj_df_records(audit$completude_tabela[[i]]),
         municipios_ausentes = .vigiar_rj_df_records(audit$municipios_ausentes[[i]]),
+        regioes_saude_incompletas = audit$regioes_saude_incompletas[[i]],
         macrorregioes_incompletas = audit$macrorregioes_incompletas[[i]]
       )
     })

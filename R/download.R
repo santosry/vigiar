@@ -68,8 +68,18 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
   .vigiar_check_tabela(tabela)
 
   t_start <- Sys.time()
-  .vigiar_log("INFO", sprintf("Iniciando download: %s", tabela), table = tabela)
-  cli::cli_alert_info("Baixando tabela '{tabela}'...")
+  .vigiar_log(
+    "INFO", sprintf("Starting download: %s", tabela), table = tabela,
+    metadata = list(
+      columns = colunas,
+      order_by = ordenar_por,
+      requested_limit = limite,
+      uf = uf,
+      filters = filtros
+    ),
+    event = "download_start"
+  )
+  cli::cli_alert_info("Downloading table '{tabela}'...")
 
   query <- .vigiar_construir_query(
     tabela      = tabela,
@@ -81,10 +91,20 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
     modelo_id   = .vigiar_env$sessao$model_id
   )
 
-  resposta <- .vigiar_executar_query(
-    .vigiar_env$sessao, query, timeout = timeout
-  )
-  dados <- .vigiar_parse_dados(resposta, tabela)
+  dados <- tryCatch({
+    resposta <- .vigiar_executar_query(
+      .vigiar_env$sessao, query, timeout = timeout
+    )
+    .vigiar_parse_dados(resposta, tabela)
+  }, error = function(e) {
+    .vigiar_log(
+      "ERROR", paste("Download failed:", conditionMessage(e)),
+      table = tabela,
+      metadata = list(requested_limit = limite, filters = filtros),
+      event = "download_failure"
+    )
+    stop(e)
+  })
 
   uf_normalized <- if (is.null(uf)) NULL else .vigiar_normalizar_uf(uf)
   if (!is.null(uf_normalized) &&
@@ -116,7 +136,7 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
   )
 
   cli::cli_alert_success(
-    "Tabela '{tabela}' baixada: {nrow(dados)} linhas x {ncol(dados)} colunas ({round(elapsed, 1)}s)"
+    "Table '{tabela}' downloaded: {nrow(dados)} rows x {ncol(dados)} columns ({round(elapsed, 1)}s)"
   )
 
   attr(dados, "vigiar_tabela") <- tabela

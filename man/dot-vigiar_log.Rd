@@ -4,7 +4,7 @@
 \alias{.vigiar_log}
 \title{Structured log entry}
 \usage{
-.vigiar_log(level, message, table = NULL, metadata = NULL)
+.vigiar_log(level, message, table = NULL, metadata = NULL, event = "operation")
 }
 \arguments{
 \item{level}{Log level: \code{"INFO"}, \code{"WARN"}, \code{"ERROR"}, \code{"DEBUG"}.}
@@ -14,6 +14,9 @@
 \item{table}{Table name (optional).}
 
 \item{metadata}{Named list of additional metadata.}
+
+\item{event}{Stable machine-readable event name. When omitted, the event is
+recorded as `operation` for backwards compatibility.}
 }
 \value{
 Invisibly, the log entry (as a list).

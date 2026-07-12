@@ -1,295 +1,409 @@
 # Package: vigiar
-# Performance benchmarks
-#
-# Measures download and processing performance across strategies,
-# enabling users to choose optimal approaches for their use case.
-# Analogous to microdatasus::microdatasus_benchmark() pattern.
+# Reproducible performance benchmarks and API health assessment
 
 #' Benchmark VIGIAR download strategies
 #'
-#' Tests different download strategies (direct, year-partitioned,
-#' column-restricted) on a given table and reports timing,
-#' row counts, and data quality metrics.
+#' Runs an excluded warm-up followed by repeated timed downloads. The returned
+#' metrics include the median, quartiles, range, successes, failures, row counts,
+#' canonical checksums, and execution environment. The `two_ended_sample`
+#' strategy combines ascending and descending samples; it does not prove that
+#' the interval between those samples was downloaded.
 #'
 #' @param tabela Table name to benchmark.
-#' @param strategies Character vector of strategies to test.
-#'   Options: \code{"direct"}, \code{"year_asc_desc"},
-#'   \code{"minimal_columns"}, \code{"all"}.
-#' @param repeticoes Number of repetitions per strategy.
+#' @param strategies Character vector containing `direct`,
+#'   `two_ended_sample`, or `minimal_columns`. The legacy name
+#'   `year_asc_desc` is accepted with a deprecation warning.
+#' @param repeticoes Number of measured repetitions per strategy.
 #' @param timeout Timeout per download in seconds.
-#' @return A tibble with columns: estrategia, tempo_medio,
-#'   tempo_min, tempo_max, n_linhas, n_colunas, n_ausentes,
-#'   taxa_sucesso.
+#' @param warmup Number of unmeasured warm-up repetitions per strategy.
+#' @param limite Requested row limit for each query.
+#' @return A `vigiar_benchmark` tibble with reproducible timing and result
+#'   identity metrics.
 #' @export
-vigiar_benchmark <- function(tabela,
-                              strategies = c("direct", "year_asc_desc",
-                                             "minimal_columns"),
-                              repeticoes = 3L,
-                              timeout = 120) {
+vigiar_benchmark <- function(
+  tabela,
+  strategies = c("direct", "two_ended_sample", "minimal_columns"),
+  repeticoes = 3L,
+  timeout = 120,
+  warmup = 1L,
+  limite = 10000L
+) {
   if (is.null(.vigiar_env$esquema)) {
-    stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
+    stop("No active session. Run vigiar_conectar() first.", call. = FALSE)
   }
   .vigiar_check_tabela(tabela)
+  repeticoes <- .vigiar_positive_count(repeticoes, "repeticoes", allow_zero = FALSE)
+  warmup <- .vigiar_positive_count(warmup, "warmup", allow_zero = TRUE)
 
-  cli::cli_h1("VIGIAR Benchmark")
-  cli::cli_text("Tabela: {.strong {tabela}}")
-  cli::cli_text("Repeticoes por estrategia: {repeticoes}")
-  cli::cli_text("Sessao criada em: {format(.vigiar_env$sessao$created_at)}")
-  cli::cli_rule()
-
-  all_strategies <- c("direct", "year_asc_desc", "minimal_columns")
-  if ("all" %in% strategies) strategies <- all_strategies
-  strategies <- match.arg(strategies, all_strategies, several.ok = TRUE)
-
-  results <- vector("list", length(strategies) * repeticoes)
-  row_idx <- 1L
-
-  # Minimal columns for this table
-  col_min <- .vigiar_benchmark_minimal_columns(tabela)
-
-  for (strategy in strategies) {
-    cli::cli_h2("Estrategia: {strategy}")
-    times <- numeric(repeticoes)
-    rows <- integer(repeticoes)
-    cols <- integer(repeticoes)
-    nas <- integer(repeticoes)
-    success <- logical(repeticoes)
-
-    for (rep in seq_len(repeticoes)) {
-      cli::cli_progress_step("Repeticao {rep}/{repeticoes}")
-
-      t_start <- Sys.time()
-      result <- tryCatch({
-        switch(strategy,
-          direct = {
-            vigiar_baixar(tabela, limite = 10000, timeout = timeout)
-          },
-          year_asc_desc = {
-            d1 <- vigiar_baixar(tabela, colunas = col_min,
-                                ordenar_por = "ano", direcao = "asc",
-                                limite = 10000, timeout = timeout)
-            d2 <- vigiar_baixar(tabela, colunas = col_min,
-                                ordenar_por = "ano", direcao = "desc",
-                                limite = 10000, timeout = timeout)
-            dados <- rbind(d1, d2)
-            dados[!duplicated(dados), ]
-          },
-          minimal_columns = {
-            vigiar_baixar(tabela, colunas = col_min,
-                          limite = 10000, timeout = timeout)
-          }
-        )
-      }, error = function(e) NULL)
-
-      t_end <- Sys.time()
-      elapsed <- as.numeric(difftime(t_end, t_start, units = "secs"))
-      times[rep] <- elapsed
-
-      if (is.null(result)) {
-        success[rep] <- FALSE
-        rows[rep] <- 0L
-        cols[rep] <- 0L
-        nas[rep] <- 0L
-        cli::cli_alert_danger("Falhou ({round(elapsed, 1)}s)")
-      } else {
-        success[rep] <- TRUE
-        rows[rep] <- nrow(result)
-        cols[rep] <- ncol(result)
-        nas[rep] <- sum(is.na(result))
-        cli::cli_alert_success(
-          "{rows[rep]} linhas x {cols[rep]} cols ({round(elapsed, 1)}s)"
-        )
-      }
-    }
-
-    results[[row_idx]] <- tibble::tibble(
-      estrategia   = strategy,
-      tempo_medio  = mean(times[success], na.rm = TRUE),
-      tempo_min    = if (any(success)) min(times[success]) else NA_real_,
-      tempo_max    = if (any(success)) max(times[success]) else NA_real_,
-      tempo_dp     = if (any(success)) stats::sd(times[success]) else NA_real_,
-      n_linhas     = stats::median(rows[success], na.rm = TRUE),
-      n_colunas    = stats::median(cols[success], na.rm = TRUE),
-      n_ausentes   = stats::median(nas[success], na.rm = TRUE),
-      taxa_sucesso = sum(success) / repeticoes,
-      repeticoes   = repeticoes
+  if ("year_asc_desc" %in% strategies) {
+    warning(
+      "Strategy 'year_asc_desc' is deprecated; use 'two_ended_sample'. ",
+      "This strategy samples both ends and does not prove completeness.",
+      call. = FALSE
     )
-    row_idx <- row_idx + 1L
+    strategies[strategies == "year_asc_desc"] <- "two_ended_sample"
   }
+  if ("all" %in% strategies) {
+    strategies <- c("direct", "two_ended_sample", "minimal_columns")
+  }
+  strategies <- unique(match.arg(
+    strategies,
+    c("direct", "two_ended_sample", "minimal_columns"),
+    several.ok = TRUE
+  ))
 
-  out <- do.call(rbind, results[seq_len(row_idx - 1L)])
-  rownames(out) <- NULL
-
+  cli::cli_h1("VIGIAR benchmark")
+  cli::cli_text("Table: {.strong {tabela}}")
+  cli::cli_text("Warm-up: {warmup}; measured repetitions: {repeticoes}")
   cli::cli_rule()
-  cli::cli_h1("Resultados")
 
-  # Find best strategy
-  best <- out[which.min(out$tempo_medio), ]
-  cli::cli_alert_success(
-    "Melhor estrategia: {.strong {best$estrategia}} ({round(best$tempo_medio, 1)}s medio)"
+  minimal_columns <- intersect(
+    .vigiar_benchmark_minimal_columns(tabela) %||% character(),
+    names(.vigiar_env$esquema[[tabela]])
   )
-
-  tibble::as_tibble(out)
-}
-
-#' Compare download performance across tables
-#'
-#' Runs benchmarks on multiple tables and compares download performance.
-#' Useful for monitoring API health and choosing strategies.
-#'
-#' @param tabelas Character vector of table names. Default: main tables.
-#' @param repeticoes Number of repetitions per table.
-#' @param timeout Timeout per download.
-#' @return A tibble with per-table performance metrics.
-#' @export
-vigiar_benchmark_tabelas <- function(tabelas = NULL, repeticoes = 2L,
-                                      timeout = 120) {
-  if (is.null(.vigiar_env$esquema)) {
-    stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
-  }
-
-  if (is.null(tabelas)) {
-    tabelas <- c("df_anual", "df_mensal", "df_muni",
-                 "pop", "tb_brasil", "df_indoor")
-  }
-  tabelas <- intersect(tabelas, names(.vigiar_env$esquema))
-
-  cli::cli_h1("Benchmark Multi-Tabela")
-  results <- vector("list", length(tabelas))
-
-  for (i in seq_along(tabelas)) {
-    tab <- tabelas[i]
-    n_cols_schema <- length(.vigiar_env$esquema[[tab]])
-
-    cli::cli_h2("[{i}/{length(tabelas)}] {tab} ({n_cols_schema} colunas)")
-
-    times <- numeric(repeticoes)
-    rows <- integer(repeticoes)
-    ok <- logical(repeticoes)
-
-    for (rep in seq_len(repeticoes)) {
-      t0 <- Sys.time()
-      dados <- tryCatch(
-        vigiar_baixar(tab, limite = 1000, timeout = timeout),
-        error = function(e) NULL
+  environment <- .vigiar_benchmark_environment()
+  results <- lapply(strategies, function(strategy) {
+    for (i in seq_len(warmup)) {
+      try(
+        .vigiar_run_benchmark_strategy(
+          tabela, strategy, minimal_columns, limite, timeout
+        ),
+        silent = TRUE
       )
-      elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
-      times[rep] <- elapsed
-      ok[rep] <- !is.null(dados)
-      if (ok[rep]) rows[rep] <- nrow(dados)
     }
 
-    results[[i]] <- tibble::tibble(
-      tabela        = tab,
-      colunas       = n_cols_schema,
-      tempo_medio   = mean(times[ok], na.rm = TRUE),
-      tempo_min     = if (any(ok)) min(times[ok]) else NA_real_,
-      tempo_max     = if (any(ok)) max(times[ok]) else NA_real_,
-      n_linhas      = if (any(ok)) stats::median(rows[ok], na.rm = TRUE) else NA_real_,
-      taxa_sucesso  = sum(ok) / repeticoes,
-      status        = if (all(ok)) "OK" else if (any(ok)) "PARCIAL" else "FALHA"
+    runs <- vector("list", repeticoes)
+    for (i in seq_len(repeticoes)) {
+      started <- Sys.time()
+      run <- tryCatch(
+        list(
+          ok = TRUE,
+          data = .vigiar_run_benchmark_strategy(
+            tabela, strategy, minimal_columns, limite, timeout
+          ),
+          error = NA_character_
+        ),
+        error = function(e) list(
+          ok = FALSE, data = NULL, error = conditionMessage(e)
+        )
+      )
+      run$elapsed <- as.numeric(difftime(Sys.time(), started, units = "secs"))
+      runs[[i]] <- run
+    }
+    .vigiar_summarize_benchmark_runs(
+      tabela, strategy, runs, warmup, limite, environment
     )
-  }
+  })
 
   out <- do.call(rbind, results)
   rownames(out) <- NULL
+  out <- tibble::as_tibble(out)
+  class(out) <- c("vigiar_benchmark", class(out))
 
-  cli::cli_rule()
-  cli::cli_h1("Resumo")
-  n_ok <- sum(out$status == "OK")
-  cli::cli_alert_info(
-    "{n_ok}/{length(tabelas)} tabelas baixadas com sucesso"
-  )
-  if (any(out$status != "OK")) {
-    problemas <- out[out$status != "OK", ]
-    cli::cli_alert_warning(
-      "Tabelas com problemas: {.strong {paste(problemas$tabela, collapse=', ')}}"
+  successful <- out[out$n_success > 0L, , drop = FALSE]
+  if (nrow(successful) > 0L) {
+    best <- successful[which.min(successful$elapsed_median), , drop = FALSE]
+    cli::cli_alert_success(
+      paste0(
+        "Fastest measured strategy: {best$strategy[[1]]} ",
+        "({round(best$elapsed_median[[1]], 3)} seconds median)."
+      )
+    )
+  } else {
+    cli::cli_alert_danger("Every measured benchmark run failed.")
+  }
+  out
+}
+
+#' Compare reproducible download benchmarks across tables
+#'
+#' @param tabelas Character vector of table names. Defaults to key tables that
+#'   are present in the live schema.
+#' @param repeticoes Number of measured repetitions per table.
+#' @param timeout Timeout per download in seconds.
+#' @param warmup Number of unmeasured warm-up repetitions per table.
+#' @param limite Requested row limit per query.
+#' @return A `vigiar_benchmark` tibble with one direct-strategy row per table.
+#' @export
+vigiar_benchmark_tabelas <- function(
+  tabelas = NULL,
+  repeticoes = 2L,
+  timeout = 120,
+  warmup = 1L,
+  limite = 1000L
+) {
+  if (is.null(.vigiar_env$esquema)) {
+    stop("No active session. Run vigiar_conectar() first.", call. = FALSE)
+  }
+  if (is.null(tabelas)) {
+    tabelas <- c("df_anual", "df_mensal", "df_muni", "pop", "tb_brasil")
+  }
+  unknown <- setdiff(tabelas, names(.vigiar_env$esquema))
+  if (length(unknown) > 0L) {
+    warning(
+      "Skipping tables absent from the live schema: ",
+      paste(unknown, collapse = ", "),
+      call. = FALSE
+    )
+  }
+  tabelas <- intersect(tabelas, names(.vigiar_env$esquema))
+  if (length(tabelas) == 0L) {
+    stop("None of the requested tables exists in the live schema.", call. = FALSE)
+  }
+
+  results <- lapply(tabelas, function(tabela) {
+    result <- vigiar_benchmark(
+      tabela = tabela,
+      strategies = "direct",
+      repeticoes = repeticoes,
+      timeout = timeout,
+      warmup = warmup,
+      limite = limite
+    )
+    result$schema_columns <- length(.vigiar_env$esquema[[tabela]])
+    result$status <- if (result$success_rate == 1) {
+      "pass"
+    } else if (result$success_rate > 0) {
+      "partial"
+    } else {
+      "fail"
+    }
+    result
+  })
+  out <- tibble::as_tibble(do.call(rbind, results))
+  class(out) <- c("vigiar_benchmark", class(out))
+  out
+}
+
+#' Run a conservative health check on the VIGIAR API
+#'
+#' The report separates connection, critical-schema compatibility, and download
+#' canary status. Unknown evidence never becomes a pass. This online function is
+#' disabled when `VIGIAR_RUN_ONLINE_TESTS=false`.
+#'
+#' @param timeout Timeout per online operation.
+#' @param require_healthy If `TRUE`, error unless the final status is `pass`.
+#' @return A structured `vigiar_health_report` object.
+#' @export
+vigiar_health_check <- function(timeout = 120, require_healthy = FALSE) {
+  run_online <- Sys.getenv("VIGIAR_RUN_ONLINE_TESTS", unset = NA_character_)
+  if (identical(tolower(run_online), "false")) {
+    stop("Online health check disabled by VIGIAR_RUN_ONLINE_TESTS=false.",
+         call. = FALSE)
+  }
+
+  started <- Sys.time()
+  .vigiar_log("INFO", "Starting VIGIAR API health check.",
+              event = "health_check_start")
+  connection_error <- NULL
+  if (is.null(.vigiar_env$sessao)) {
+    tryCatch(
+      vigiar_conectar(timeout = timeout),
+      error = function(e) connection_error <<- conditionMessage(e)
     )
   }
 
-  tibble::as_tibble(out)
-}
-
-#' Run a full health check on the VIGIAR API
-#'
-#' Connects, validates schema, benchmarks downloads, and checks
-#' data quality. Returns a comprehensive health report.
-#'
-#' @param timeout Timeout per operation.
-#' @return Invisibly, a list with health metrics.
-#' @export
-vigiar_health_check <- function(timeout = 120) {
-  run_online <- Sys.getenv("VIGIAR_RUN_ONLINE_TESTS", unset = NA_character_)
-  if (identical(tolower(run_online), "false")) {
-    stop("Online health check disabled by VIGIAR_RUN_ONLINE_TESTS=false.")
+  connection_status <- if (is.null(.vigiar_env$sessao)) "fail" else "pass"
+  if (connection_status == "fail") {
+    report <- .vigiar_health_report(
+      started = started,
+      connection = .vigiar_check_result("fail", details = connection_error),
+      schema = .vigiar_check_result("unknown", details = "No live schema."),
+      canary = .vigiar_check_result("unknown", details = "No download attempted."),
+      benchmark = NULL
+    )
+    return(.vigiar_finish_health_report(report, require_healthy))
   }
 
-  cli::cli_h1("VIGIAR Health Check")
-  start_time <- Sys.time()
-
-  # 1. Connection
-  cli::cli_h2("1. Conexao")
-  conn_ok <- FALSE
-  tryCatch({
-    vigiar_conectar(timeout = timeout)
-    conn_ok <- TRUE
-    cli::cli_alert_success("Dashbord conectado")
-  }, error = function(e) {
-    cli::cli_alert_danger("Falha na conexao: {e$message}")
-  })
-
-  if (!conn_ok) {
-    return(invisible(list(online = FALSE, error = "Conexao falhou")))
-  }
-
-  # 2. Schema
-  cli::cli_h2("2. Esquema")
-  n_tables <- length(vigiar_tabelas())
-  cli::cli_alert_info("{n_tables} tabelas disponiveis")
-
-  # 3. Benchmark key tables
-  cli::cli_h2("3. Benchmark")
-  bench <- tryCatch(
-    vigiar_benchmark_tabelas(
-      tabelas = c("df_anual", "df_muni", "pop", "tb_brasil"),
-      repeticoes = 1L,
-      timeout = timeout
-    ),
+  schema_error <- NULL
+  schema_diff <- tryCatch(
+    vigiar_esquema_verificar_critico(error = FALSE),
     error = function(e) {
-      cli::cli_alert_danger("Benchmark falhou: {e$message}")
+      schema_error <<- conditionMessage(e)
       NULL
     }
   )
-
-  # 4. Schema compliance
-  cli::cli_h2("4. Compliance de Esquema")
-  compliance <- tryCatch({
-    vigiar_validar_dicionario()
-  }, error = function(e) {
-    cli::cli_alert_danger("Validacao de dicionario falhou: {e$message}")
-    NULL
-  })
-
-  # 5. Summary
-  elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
-  cli::cli_h1("Health Check Completo")
-  cli::cli_alert_info("Tempo total: {round(elapsed, 1)}s")
-  cli::cli_alert_info("Tabelas: {n_tables}")
-  if (!is.null(bench)) {
-    cli::cli_alert_info("Benchmark: {sum(bench$status == 'OK')}/{nrow(bench)} tabelas OK")
+  schema_check <- if (!is.null(schema_error)) {
+    .vigiar_check_result("unknown", details = schema_error)
+  } else if (length(schema_diff) == 0L) {
+    .vigiar_check_result("pass", details = "Critical schema matches the lock.")
+  } else {
+    .vigiar_check_result("fail", details = jsonlite::toJSON(
+      schema_diff, auto_unbox = TRUE, null = "null"
+    ))
   }
 
-  invisible(list(
-    online      = TRUE,
-    n_tables    = n_tables,
-    benchmark   = bench,
-    compliance  = compliance,
-    elapsed     = elapsed,
-    timestamp   = start_time
-  ))
+  tables <- intersect(
+    c("df_anual", "df_muni", "pop", "tb_brasil"),
+    names(.vigiar_env$esquema)
+  )
+  benchmark <- if (length(tables) == 0L) NULL else tryCatch(
+    vigiar_benchmark_tabelas(
+      tabelas = tables, repeticoes = 1L, timeout = timeout,
+      warmup = 0L, limite = 1000L
+    ),
+    error = function(e) e
+  )
+  canary_check <- if (inherits(benchmark, "error")) {
+    .vigiar_check_result("fail", details = conditionMessage(benchmark))
+  } else if (is.null(benchmark)) {
+    .vigiar_check_result("unknown", details = "No canary table is available.")
+  } else if (all(benchmark$status == "pass")) {
+    .vigiar_check_result("pass", details = "All download canaries succeeded.")
+  } else if (all(benchmark$status == "fail")) {
+    .vigiar_check_result("fail", details = "Every download canary failed.")
+  } else {
+    .vigiar_check_result("unknown", details = "Download canaries were only partial.")
+  }
+
+  report <- .vigiar_health_report(
+    started = started,
+    connection = .vigiar_check_result("pass", details = "Connection established."),
+    schema = schema_check,
+    canary = canary_check,
+    benchmark = if (inherits(benchmark, "error")) NULL else benchmark
+  )
+  .vigiar_finish_health_report(report, require_healthy)
 }
 
-# -- Internal helpers ----------------------------------------------------------
+#' @export
+print.vigiar_health_report <- function(x, ...) {
+  cat("<vigiar_health_report>\n")
+  cat("  status:     ", x$status, "\n", sep = "")
+  cat("  connection: ", x$connection$status, "\n", sep = "")
+  cat("  schema:     ", x$schema$status, "\n", sep = "")
+  cat("  canary:     ", x$canary$status, "\n", sep = "")
+  cat("  elapsed:    ", round(x$elapsed_seconds, 3), " seconds\n", sep = "")
+  invisible(x)
+}
+
+.vigiar_health_report <- function(started, connection, schema, canary, benchmark) {
+  checks <- list(connection = connection, schema = schema, canary = canary)
+  aggregate <- .vigiar_aggregate_checks(checks)
+  report <- list(
+    status = aggregate$status,
+    ok = identical(aggregate$status, "pass"),
+    connection = connection,
+    schema = schema,
+    canary = canary,
+    benchmark = benchmark,
+    started_at = started,
+    finished_at = Sys.time(),
+    elapsed_seconds = as.numeric(difftime(Sys.time(), started, units = "secs")),
+    environment = .vigiar_benchmark_environment()
+  )
+  class(report) <- "vigiar_health_report"
+  report
+}
+
+.vigiar_finish_health_report <- function(report, require_healthy) {
+  .vigiar_log(
+    if (report$status == "pass") "INFO" else if (report$status == "unknown") "WARN" else "ERROR",
+    sprintf("VIGIAR API health check finished with status '%s'.", report$status),
+    metadata = list(
+      status = report$status,
+      connection = report$connection$status,
+      schema = report$schema$status,
+      canary = report$canary$status
+    ),
+    event = "health_check"
+  )
+  if (isTRUE(require_healthy) && !identical(report$status, "pass")) {
+    stop(
+      sprintf("VIGIAR health status is '%s'; inspect the structured report.",
+              report$status),
+      call. = FALSE
+    )
+  }
+  invisible(report)
+}
+
+.vigiar_run_benchmark_strategy <- function(tabela, strategy, minimal_columns,
+                                            limite, timeout) {
+  switch(strategy,
+    direct = vigiar_baixar(tabela, limite = limite, timeout = timeout),
+    two_ended_sample = {
+      first <- vigiar_baixar(
+        tabela, colunas = minimal_columns, ordenar_por = "ano",
+        direcao = "asc", limite = limite, timeout = timeout
+      )
+      last <- vigiar_baixar(
+        tabela, colunas = minimal_columns, ordenar_por = "ano",
+        direcao = "desc", limite = limite, timeout = timeout
+      )
+      combined <- rbind(first, last)
+      combined[!duplicated(combined), , drop = FALSE]
+    },
+    minimal_columns = vigiar_baixar(
+      tabela, colunas = minimal_columns, limite = limite, timeout = timeout
+    )
+  )
+}
+
+.vigiar_summarize_benchmark_runs <- function(tabela, strategy, runs, warmup,
+                                              limite, environment) {
+  ok <- vapply(runs, `[[`, logical(1), "ok")
+  elapsed <- vapply(runs, `[[`, numeric(1), "elapsed")
+  success_elapsed <- elapsed[ok]
+  data <- lapply(runs[ok], `[[`, "data")
+  rows <- vapply(data, nrow, integer(1))
+  columns <- vapply(data, ncol, integer(1))
+  checksums <- vapply(data, vigiar_checksum, character(1))
+  errors <- vapply(runs[!ok], `[[`, character(1), "error")
+
+  stat <- function(fun, default = NA_real_) {
+    if (length(success_elapsed) == 0L) default else fun(success_elapsed)
+  }
+  quant <- function(prob) stat(function(x) {
+    as.numeric(stats::quantile(x, prob, names = FALSE, type = 7))
+  })
+  tibble::tibble(
+    table = tabela,
+    strategy = strategy,
+    warmup_runs = warmup,
+    measured_runs = length(runs),
+    n_success = sum(ok),
+    n_failure = sum(!ok),
+    success_rate = mean(ok),
+    elapsed_median = stat(stats::median),
+    elapsed_p25 = quant(0.25),
+    elapsed_p75 = quant(0.75),
+    elapsed_min = stat(min),
+    elapsed_max = stat(max),
+    rows_median = if (length(rows) == 0L) NA_real_ else stats::median(rows),
+    columns_median = if (length(columns) == 0L) NA_real_ else stats::median(columns),
+    checksums = if (length(checksums) == 0L) NA_character_ else
+      paste(sort(unique(checksums)), collapse = ";"),
+    errors = if (length(errors) == 0L) NA_character_ else
+      paste(unique(errors), collapse = "; "),
+    requested_limit = limite %||% NA_integer_,
+    environment = environment
+  )
+}
+
+.vigiar_positive_count <- function(x, name, allow_zero) {
+  if (length(x) != 1L || is.na(x) || x != as.integer(x) ||
+      x < if (allow_zero) 0L else 1L) {
+    stop(sprintf("'%s' must be %s integer.", name,
+                 if (allow_zero) "a non-negative" else "a positive"),
+         call. = FALSE)
+  }
+  as.integer(x)
+}
+
+.vigiar_benchmark_environment <- function() {
+  jsonlite::toJSON(
+    list(
+      r_version = R.version.string,
+      vigiar_version = as.character(utils::packageVersion("vigiar")),
+      platform = R.version$platform,
+      os = unname(Sys.info()[["sysname"]]),
+      machine = unname(Sys.info()[["machine"]])
+    ),
+    auto_unbox = TRUE,
+    null = "null"
+  )
+}
 
 .vigiar_benchmark_minimal_columns <- function(tabela) {
   switch(tabela,

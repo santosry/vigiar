@@ -171,4 +171,5 @@ reference:
   - starts_with("validate.vigiar")
 - title: Utilities
   contents:
+  - vigiar_api_status
   - null-coalesce

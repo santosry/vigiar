@@ -2,21 +2,31 @@
 % Please edit documentation in R/benchmark.R
 \name{vigiar_benchmark_tabelas}
 \alias{vigiar_benchmark_tabelas}
-\title{Compare download performance across tables}
+\title{Compare reproducible download benchmarks across tables}
 \usage{
-vigiar_benchmark_tabelas(tabelas = NULL, repeticoes = 2L, timeout = 120)
+vigiar_benchmark_tabelas(
+  tabelas = NULL,
+  repeticoes = 2L,
+  timeout = 120,
+  warmup = 1L,
+  limite = 1000L
+)
 }
 \arguments{
-\item{tabelas}{Character vector of table names. Default: main tables.}
+\item{tabelas}{Character vector of table names. Defaults to key tables that
+are present in the live schema.}
 
-\item{repeticoes}{Number of repetitions per table.}
+\item{repeticoes}{Number of measured repetitions per table.}
 
-\item{timeout}{Timeout per download.}
+\item{timeout}{Timeout per download in seconds.}
+
+\item{warmup}{Number of unmeasured warm-up repetitions per table.}
+
+\item{limite}{Requested row limit per query.}
 }
 \value{
-A tibble with per-table performance metrics.
+A `vigiar_benchmark` tibble with one direct-strategy row per table.
 }
 \description{
-Runs benchmarks on multiple tables and compares download performance.
-Useful for monitoring API health and choosing strategies.
+Compare reproducible download benchmarks across tables
 }

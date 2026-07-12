@@ -23,16 +23,27 @@ test_that("online RJ audit validates table-grain completeness evidence", {
     "VIGIAR_ONLINE_REPORT_DIR",
     unset = file.path(tempdir(), "vigiar-online-rj-report")
   )
+  expected_start <- Sys.getenv("VIGIAR_EXPECTED_PERIOD_START", unset = "")
+  expected_end <- Sys.getenv("VIGIAR_EXPECTED_PERIOD_END", unset = "")
+  expected_domains <- NULL
+  if (nzchar(expected_start) && nzchar(expected_end)) {
+    expected_domains <- stats::setNames(lapply(tables, function(x) list(
+      periodo_inicio = expected_start,
+      periodo_fim = expected_end
+    )), tables)
+  }
 
   audit <- suppressWarnings(vigiar_auditar_rj_online(
     tabelas = tables,
     salvar = TRUE,
     dir = report_dir,
     require_complete = strict,
-    timeout = 240
+    timeout = 240,
+    dominios_esperados = expected_domains
   ))
 
   expect_s3_class(audit, "tbl_df")
+  expect_s3_class(audit, "vigiar_online_audit")
   expect_setequal(audit$tabela, tables)
   expect_true(all(audit$conclusion %in% c(
     "complete", "complete_within_inferred_domain",
@@ -47,6 +58,31 @@ test_that("online RJ audit validates table-grain completeness evidence", {
   expect_true(all(audit$n_municipios_presentes > 0))
   expect_true(all(audit$n_municipios_presentes <= 92))
   expect_true(all(audit$n_municipios_esperados == 92))
+  expect_true(all(audit$truncation_status %in% c(
+    "no_evidence", "possible", "probable", "confirmed", "unknown"
+  )))
+  expect_true(all(audit$schema_status %in% c("pass", "fail", "unknown")))
+  expect_true(all(audit$spatial_coverage_status %in% c("complete", "incomplete")))
+  expect_true(all(audit$panel_completeness_status %in% c(
+    "complete", "incomplete", "unknown"
+  )))
+  expect_true(all(audit$overall_status %in% c("pass", "fail", "unknown")))
+  expect_true(all(nchar(audit$verification_status) > 0L))
+
+  complete_rows <- audit$conclusion == "complete"
+  if (any(complete_rows)) {
+    expect_false(is.null(expected_domains))
+    expect_true(all(audit$overall_status[complete_rows] == "pass"))
+    expect_true(all(audit$truncation_status[complete_rows] == "no_evidence"))
+    expect_true(all(audit$schema_status[complete_rows] == "pass"))
+    expect_true(all(audit$campos_dos_goytacazes_presente[complete_rows]))
+  }
+  missing_campos <- !audit$campos_dos_goytacazes_presente
+  expect_false(any(audit$conclusion[missing_campos] == "complete"))
+  truncated <- audit$truncation_status %in% c("possible", "probable", "confirmed")
+  expect_true(all(audit$conclusion[truncated] == "truncated"))
+  partial <- audit$conclusion == "partial"
+  expect_true(all(audit$n_incomplete_groups[partial] > 0L))
 
   expect_equal(
     audit$completeness_grade[audit$tabela == "df_anual"],
@@ -70,6 +106,10 @@ test_that("online RJ audit validates table-grain completeness evidence", {
     expect_s3_class(audit$completude_tabela[[i]], "tbl_df")
     expect_s3_class(audit$municipios_ausentes[[i]], "tbl_df")
     expect_gt(nrow(audit$completude_tabela[[i]]), 0)
+    expect_equal(
+      nrow(audit$municipios_ausentes[[i]]),
+      audit$n_municipios_ausentes[[i]]
+    )
   }
 
   out_dir <- attr(audit, "vigiar_audit_dir")

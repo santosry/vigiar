@@ -7,7 +7,7 @@
 vigiar_log()
 }
 \value{
-A tibble with columns: timestamp, level, message,
+A tibble with columns: timestamp, level, event, message,
   table, metadata_json.
 }
 \description{

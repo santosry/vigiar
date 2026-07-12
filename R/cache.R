@@ -67,8 +67,22 @@ vigiar_snapshot <- function(dados = NULL, tabela = NULL, ...,
 
   class(snapshot) <- "vigiar_snapshot"
 
+  .vigiar_log(
+    "INFO", sprintf("Snapshot created for table '%s'.", tabela),
+    table = tabela,
+    metadata = list(
+      n_rows = nrow(dados),
+      n_columns = ncol(dados),
+      data_checksum = data_checksum,
+      schema_checksum = schema_checksum,
+      metadata_checksum = metadata_checksum,
+      canonicalization_version = .VIGIAR_CANONICALIZATION_VERSION
+    ),
+    event = "snapshot_creation"
+  )
+
   cli::cli_alert_success(paste0(
-    "Snapshot criado: {tabela} (",
+    "Snapshot created: {tabela} (",
     nrow(dados), " x ", ncol(dados), ")",
     " SHA256: {substr(snapshot$checksum_sha256, 1, 16)}..."
   ))
@@ -361,7 +375,8 @@ vigiar_baixar_com_cache <- function(tabela, max_age = 86400,
         ))
         .vigiar_log(
           "INFO", "Cache hit", table = tabela,
-          metadata = list(cache_key = key$hash, age_seconds = as.numeric(cache_age))
+          metadata = list(cache_key = key$hash, age_seconds = as.numeric(cache_age)),
+          event = "cache_hit"
         )
         dados <- cached$dados
         attr(dados, "vigiar_cache_status") <- "hit"
@@ -372,7 +387,8 @@ vigiar_baixar_com_cache <- function(tabela, max_age = 86400,
       }
       .vigiar_log(
         "WARN", "Cache entry failed provenance or checksum validation",
-        table = tabela, metadata = list(cache_key = key$hash)
+        table = tabela, metadata = list(cache_key = key$hash),
+        event = "cache_invalid"
       )
     }
   }
@@ -381,7 +397,7 @@ vigiar_baixar_com_cache <- function(tabela, max_age = 86400,
   cli::cli_alert_info("Cache miss: baixando '{tabela}'...")
   .vigiar_log(
     "INFO", "Cache miss", table = tabela,
-    metadata = list(cache_key = key$hash)
+    metadata = list(cache_key = key$hash), event = "cache_miss"
   )
   dados <- do.call(vigiar_baixar, c(list(tabela = tabela), args))
   attr(dados, "vigiar_cache_status") <- "miss"
