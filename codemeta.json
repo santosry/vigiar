@@ -2,7 +2,7 @@
   "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
   "@type": "SoftwareSourceCode",
   "name": "vigiar: VIGIAR Environmental Health Data for Rio de Janeiro",
-  "description": "R package to download, process, validate, and audit environmental health surveillance data from Brazil's public VIGIAR Power BI dashboard, with explicit Rio de Janeiro municipality coverage, panel-completeness, truncation, schema, provenance, and reproducibility diagnostics. It does not validate epidemiologic or causal inference.",
+  "description": "R package to download, process, validate, and audit environmental health surveillance data from Brazil's public VIGIAR Power BI dashboard, with explicit annual and monthly PM2.5 workflows for Rio de Janeiro municipality coverage, expected-panel completeness, server-side partitioning, truncation, schema, parser, provenance, and reproducibility diagnostics. It does not validate epidemiologic, causal, or predictive inference.",
   "version": "0.7.1.9000",
   "license": "https://spdx.org/licenses/MIT",
   "codeRepository": "https://github.com/santosry/vigiar",

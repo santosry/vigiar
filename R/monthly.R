@@ -7,6 +7,11 @@
 #' parser, schema, truncation, query, and checksum provenance. Server-side year
 #' and month filters are used when a subset is requested.
 #'
+#' `anos` and `meses` define the requested download scope. The expected-domain
+#' arguments define the panel that must exist before completeness can be
+#' asserted. Keeping these concepts separate prevents observed data from
+#' defining their own completeness boundary.
+#'
 #' @param anos Optional years to download.
 #' @param meses Optional months (1 to 12) to download.
 #' @param validar_completude If `TRUE`, report panel completeness.
@@ -28,6 +33,39 @@
 #'   `vigiar_baixar_rj_completo()`.
 #' @return A processed monthly PM2.5 tibble with a `periodo` Date column and
 #'   structured completeness and quality attributes.
+#' @section Return contract:
+#' The returned object inherits from `vigiar_pm25_monthly`, `vigiar_pm25`,
+#' `vigiar_air_quality`, and `vigiar_tbl`. Its canonical analysis columns are
+#' `codigo_ibge_6`, `ano`, `mes`, `periodo`, and `pm25_media`. The package keeps
+#' the source query, parser, schema, checksum, truncation, partition, and
+#' download evidence as attributes.
+#'
+#' `attr(x, "vigiar_rj_completude")` contains the table-grain completeness
+#' result. `attr(x, "vigiar_monthly_analysis")` contains the structured monthly
+#' audit returned by `vigiar_analisar_pm25_mensal_rj()`.
+#' @section Strict completeness:
+#' With `require_complete = TRUE`, the function uses server-side year-month
+#' partitions and requires an explicit expected temporal domain. It fails when
+#' a partition fails, an expected municipality-month cell is absent, a key is
+#' duplicated, PM2.5 contains impossible values, the critical schema or parser
+#' does not pass, or truncation evidence is present. A successful strict result
+#' proves retrieval completeness only for the declared grid and execution time.
+#' @section Scientific scope:
+#' This function verifies download and data-integrity evidence. It does not
+#' validate exposure measurement error, causal inference, GAM, DLNM,
+#' relative-risk estimates, prediction, or epidemiologic conclusions.
+#' @seealso [vigiar_analisar_pm25_mensal_rj()],
+#'   [vigiar_rj_completude_tabela()], [vigiar_auditar_rj_online()]
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' monthly <- vigiar_baixar_pm25_mensal_rj(
+#'   anos_esperados = 2024,
+#'   meses_esperados = 1:12,
+#'   require_complete = TRUE
+#' )
+#' vigiar_desconectar()
+#' }
 #' @export
 vigiar_baixar_pm25_mensal_rj <- function(
   anos = NULL,
@@ -229,7 +267,50 @@ vigiar_baixar_pm25_mensal_rj <- function(
 #'   source and unit review, not automatically removed.
 #' @param completude Optional precomputed `vigiar_rj_completude_tabela()` result.
 #' @param schema_status Optional schema status (`pass`, `fail`, or `unknown`).
-#' @return A structured `vigiar_monthly_analysis` list.
+#' @return A structured `vigiar_monthly_analysis` list. It contains overall and
+#'   period summaries, temporal-domain evidence, municipality and health-region
+#'   summaries, table-grain completeness, missing municipalities, quality
+#'   checks, diagnostics, parser/schema/truncation/partition status, an
+#'   objective conclusion, and a scientific-scope statement.
+#' @section Result components:
+#' `summary` describes the complete input. `by_year`, `by_year_month`,
+#' `by_calendar_month`, `by_municipality`, `by_health_region`, and
+#' `by_health_region_year_month` provide descriptive aggregation views.
+#' `completeness` and `missing_municipalities` describe the expected panel.
+#' `quality` and `quality_by_year_month` report missing, negative, zero,
+#' implausibly high, duplicate, invalid-code, and invalid-date evidence.
+#'
+#' `conclusion` is one of `complete`, `complete_within_inferred_domain`,
+#' `partial`, `truncated`, `schema_changed`, or `failed`. `overall_status` is a
+#' conservative programmatic status and should be used instead of parsing print
+#' output.
+#' @section Scientific scope:
+#' All summaries are descriptive data-audit outputs. They do not estimate or
+#' validate causal effects, GAM, DLNM, relative risk, prediction, or individual
+#' exposure.
+#' @seealso [vigiar_baixar_pm25_mensal_rj()],
+#'   [vigiar_rj_completude_tabela()], [vigiar_diagnosticar_serie()]
+#' @examples
+#' rj <- vigiar_rj_municipios()
+#' simulated <- merge(
+#'   data.frame(codigo_ibge_6 = rj$codigo_ibge_6),
+#'   data.frame(ano = 2024L, mes = 1:2),
+#'   by = NULL
+#' )
+#' simulated$pm25_media <- 10 + simulated$mes
+#' completeness <- vigiar_rj_completude_tabela(
+#'   simulated,
+#'   tabela = "df_mensal",
+#'   anos_esperados = 2024L,
+#'   meses_esperados = 1:2
+#' )
+#' analysis <- vigiar_analisar_pm25_mensal_rj(
+#'   simulated,
+#'   completude = completeness,
+#'   schema_status = "pass"
+#' )
+#' analysis$summary
+#' analysis$quality_by_year_month
 #' @export
 vigiar_analisar_pm25_mensal_rj <- function(
   dados,

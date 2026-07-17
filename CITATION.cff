@@ -12,10 +12,11 @@ url: "https://santosry.github.io/vigiar/"
 abstract: >
   R package to download, process, validate, and audit environmental health
   surveillance data from Brazil's public VIGIAR Power BI dashboard, with
-  explicit Rio de Janeiro municipality coverage, panel-completeness,
-  truncation, schema, provenance, and reproducibility diagnostics. The package
-  does not claim that the external source is complete and does not validate
-  epidemiologic or causal inference.
+  explicit annual and monthly PM2.5 workflows for Rio de Janeiro municipality
+  coverage, expected-panel completeness, server-side partitioning, truncation,
+  schema, parser, provenance, and reproducibility diagnostics. The package does
+  not claim that the external source is complete and does not validate
+  epidemiologic, causal, or predictive inference.
 keywords:
   - R
   - air-quality

@@ -154,6 +154,10 @@ means. It uses `df_mensal`, returns the canonical value column `pm25_media`, and
 assesses the expected municipality by year by month grid. The analysis helper is
 offline-capable and can also be used with simulated or archived data.
 
+See `vignette("monthly-pm25-rj", package = "vigiar")` for the complete monthly
+output contract, strict versus exploratory behavior, partition evidence,
+period-specific quality fields, and a worked offline missing-month example.
+
 ```{r}
 monthly_completeness <- vigiar_rj_completude_tabela(
   pm25_months,

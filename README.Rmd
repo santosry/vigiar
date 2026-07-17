@@ -19,7 +19,6 @@ knitr::opts_chunk$set(
 [![lint](https://github.com/santosry/vigiar/actions/workflows/lint.yaml/badge.svg)](https://github.com/santosry/vigiar/actions/workflows/lint.yaml)
 [![pkgdown](https://github.com/santosry/vigiar/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/santosry/vigiar/actions/workflows/pkgdown.yaml)
 [![test-coverage](https://github.com/santosry/vigiar/actions/workflows/test-coverage.yaml/badge.svg)](https://github.com/santosry/vigiar/actions/workflows/test-coverage.yaml)
-[![online-canary](https://github.com/santosry/vigiar/actions/workflows/online-canary.yaml/badge.svg)](https://github.com/santosry/vigiar/actions/workflows/online-canary.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![R >= 4.1.0](https://img.shields.io/badge/R-%3E%3D%204.1.0-blue.svg)](https://www.r-project.org/)
 <!-- badges: end -->
@@ -47,6 +46,23 @@ remotes::install_github("santosry/vigiar")
 Core dependencies are `httr2`, `jsonlite`, `tibble`, `dplyr`, `cli`, and
 `openssl`. Vignettes use `knitr` and `rmarkdown`. The exploratory RJ plot uses
 `ggplot2` only when it is installed.
+
+## Choose the Right Workflow
+
+The public entry points intentionally serve different evidence needs:
+
+| Goal | Recommended function | Evidence produced |
+| --- | --- | --- |
+| Download any VIGIAR table without an implicit geographic restriction | `vigiar_baixar()` | Response, parser, query, schema, and truncation metadata |
+| Download an RJ table and measure municipal coverage | `vigiar_baixar_rj()` | Official-code RJ filtering, 92-municipality coverage, and table-grain checks |
+| Download monthly RJ PM2.5 means | `vigiar_baixar_pm25_mensal_rj()` | Processed monthly values plus municipality-year-month completeness and quality evidence |
+| Download one municipality safely | `vigiar_baixar_municipio()` | Code-based filtering and municipality-specific provenance |
+| Partition a large RJ table | `vigiar_baixar_rj_completo()` | Per-partition retry, failure, deduplication, and truncation evidence |
+| Produce release-grade multi-table evidence | `vigiar_auditar_rj_online()` | CSV, JSON, and RDS audit artifacts with objective conclusions |
+
+Use the narrowest function that matches the research question. Do not use a
+generic successful response as evidence that an RJ municipality-time panel is
+complete.
 
 ## Quick Start
 
@@ -177,6 +193,38 @@ monthly_analysis$quality
 monthly_analysis$quality_by_year_month
 ```
 
+The returned monthly object has a stable analysis contract:
+
+| Component | Meaning |
+| --- | --- |
+| `codigo_ibge_6` | Canonical internal municipality identifier |
+| `ano`, `mes`, `periodo` | Integer year/month and first-day monthly `Date` |
+| `pm25_media` | Canonical monthly PM2.5 mean in `ug/m3` |
+| `attr(x, "vigiar_rj_completude")` | Expected municipality-year-month grid assessment |
+| `attr(x, "vigiar_monthly_analysis")` | Structured summaries, quality evidence, and conclusion |
+| `attr(x, "vigiar_partition_report")` | Per-partition status when partitioning was used |
+| parser, schema, checksum, query, and truncation attributes | Retrieval and provenance evidence preserved through processing |
+
+Inspect structured fields instead of parsing console messages:
+
+```{r}
+monthly_analysis$conclusion
+monthly_analysis$overall_status
+monthly_analysis$parser_status
+monthly_analysis$schema_status
+monthly_analysis$truncation_status
+monthly_analysis$partition_status
+monthly_analysis$n_failed_partitions
+```
+
+Exploratory and strict downloads have different contracts:
+
+| Mode | Expected domain | Download strategy | Incomplete result |
+| --- | --- | --- | --- |
+| Exploratory | May be inferred from observed data | One scoped response unless `particionar = TRUE` | Returned with structured warning/evidence |
+| Strict | Must be declared with expected years/months or period endpoints | Server-side year-month partitions | Actionable error; no completeness claim |
+| Offline re-analysis | Comes from the archived completeness object | No network call | Recomputes summaries without changing source evidence |
+
 For scientific release checks, declare the expected temporal domain and require
 verified completeness. The strict path downloads server-side year-month
 partitions and stops if a partition fails, any municipality-month cell is
@@ -195,6 +243,12 @@ A `complete` result means that the declared municipality by year by month grid
 was observed with passing retrieval checks. It does not validate causal
 inference, GAM, DLNM, relative risk, predictive models, or the epidemiological
 fitness of the exposure measure.
+
+The dedicated offline-safe article can be opened with:
+
+```{r}
+vignette("monthly-pm25-rj", package = "vigiar")
+```
 
 ## Municipality Code Standard
 
@@ -421,13 +475,13 @@ For strict runs, set `VIGIAR_EXPECTED_YEARS` or both
 refuses `VIGIAR_REQUIRE_COMPLETE=true` without an explicit temporal domain.
 
 The optional online test is also an audit, not only a smoke test. With
-`VIGIAR_RUN_ONLINE_TESTS=true`, it downloads `df_anual`, `df_mensal`, and
-`df_dias`, and `pop`, writes a manifest with timestamp, row count, checksum,
-schema and verification states, missing
-municipalities, missing years, and missing months, and validates the expected
-table grain for each table. Set `VIGIAR_ONLINE_REPORT_DIR` to choose the output
-directory and set `VIGIAR_REQUIRE_ONLINE_COMPLETENESS=true` for formal release
-checks that must fail when table-grain completeness or truncation is detected.
+`VIGIAR_RUN_ONLINE_TESTS=true`, it downloads `df_anual`, `df_mensal`, `df_dias`,
+and `pop`; writes a manifest with timestamp, row count, checksum, schema and
+verification states, missing municipalities, missing years, and missing months;
+and validates the expected table grain for each table. Set
+`VIGIAR_ONLINE_REPORT_DIR` to choose the output directory and set
+`VIGIAR_REQUIRE_ONLINE_COMPLETENESS=true` for formal release checks that must
+fail when table-grain completeness or truncation is detected.
 The scheduled `online-canary` workflow archives these artifacts independently
 of pull-request checks. Offline coverage is a separate CI gate at 70%, with a
 Cobertura XML report and RDS evidence artifact.
@@ -438,6 +492,19 @@ Cobertura XML report and RDS evidence artifact.
 `experimental`, or `deprecated`. Internal dot-prefixed helpers are not exported.
 The language and compatibility policy is documented in
 [`LANGUAGE_POLICY.md`](LANGUAGE_POLICY.md).
+
+## Documentation Map
+
+- `vignette("vigiar")` introduces connection, RJ downloads, and processing.
+- `vignette("monthly-pm25-rj")` documents the monthly PM2.5 contract, strict
+  mode, output structure, and offline re-analysis.
+- `vignette("rj-download-completo")` covers official RJ coverage, expected
+  grids, truncation, and reproducible online audits.
+- `vignette("fluxo-download-processamento")` covers the generic download,
+  processing, and snapshot flow.
+- `vignette("uso-responsavel-dados")` states the scientific and epidemiologic
+  interpretation limits.
+- `AUDIT_REPORT.md` records the current technical and scientific audit evidence.
 
 ## Exploratory Plot
 

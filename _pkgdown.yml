@@ -23,6 +23,8 @@ navbar:
         href: articles/fluxo-download-processamento.html
       - text: "Verifiable RJ Downloads"
         href: articles/rj-download-completo.html
+      - text: "Monthly PM2.5 for Rio de Janeiro"
+        href: articles/monthly-pm25-rj.html
       - text: "-------"
       - text: "Data Dictionary"
       - text: "Variable Dictionary"

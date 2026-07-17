@@ -63,6 +63,28 @@ attr(pm25_rj, "vigiar_rj_cobertura_pct")
 This step uses the internal 92-municipality registry. It does not rely on a
 numeric code interval alone.
 
+## Dedicated Monthly Flow
+
+The monthly PM2.5 helper combines scoped download, processing, and table-grain
+validation without discarding the original retrieval evidence:
+
+```r
+monthly <- vigiar_baixar_pm25_mensal_rj(
+  anos = 2024,
+  meses = 1:12,
+  validar_completude = TRUE
+)
+
+attr(monthly, "vigiar_rj_completude")
+attr(monthly, "vigiar_monthly_analysis")
+attr(monthly, "vigiar_parser_status")
+attr(monthly, "vigiar_truncation_status")
+```
+
+For release work, use explicit expected years/months with
+`require_complete = TRUE`. See `vignette("monthly-pm25-rj", package = "vigiar")`
+for strict partitioning and offline re-analysis examples.
+
 ## Processing
 
 ```r
@@ -86,6 +108,10 @@ Common mappings are:
 | `pop` | `populacao` | Population |
 | `Code` | `cod_uf` | State code |
 | `Ano` | `ano` | Year |
+
+All public processors restore source, query, parser, schema, checksum, and
+truncation attributes after standardizing the data. Processing therefore does
+not erase the evidence required by later completeness or audit checks.
 
 ## Snapshots
 

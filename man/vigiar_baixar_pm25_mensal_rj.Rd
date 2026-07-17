@@ -65,3 +65,54 @@ Downloads `df_mensal`, processes its monthly PM2.5 value into
 parser, schema, truncation, query, and checksum provenance. Server-side year
 and month filters are used when a subset is requested.
 }
+\details{
+`anos` and `meses` define the requested download scope. The expected-domain
+arguments define the panel that must exist before completeness can be
+asserted. Keeping these concepts separate prevents observed data from
+defining their own completeness boundary.
+}
+\section{Return contract}{
+
+The returned object inherits from `vigiar_pm25_monthly`, `vigiar_pm25`,
+`vigiar_air_quality`, and `vigiar_tbl`. Its canonical analysis columns are
+`codigo_ibge_6`, `ano`, `mes`, `periodo`, and `pm25_media`. The package keeps
+the source query, parser, schema, checksum, truncation, partition, and
+download evidence as attributes.
+
+`attr(x, "vigiar_rj_completude")` contains the table-grain completeness
+result. `attr(x, "vigiar_monthly_analysis")` contains the structured monthly
+audit returned by `vigiar_analisar_pm25_mensal_rj()`.
+}
+
+\section{Strict completeness}{
+
+With `require_complete = TRUE`, the function uses server-side year-month
+partitions and requires an explicit expected temporal domain. It fails when
+a partition fails, an expected municipality-month cell is absent, a key is
+duplicated, PM2.5 contains impossible values, the critical schema or parser
+does not pass, or truncation evidence is present. A successful strict result
+proves retrieval completeness only for the declared grid and execution time.
+}
+
+\section{Scientific scope}{
+
+This function verifies download and data-integrity evidence. It does not
+validate exposure measurement error, causal inference, GAM, DLNM,
+relative-risk estimates, prediction, or epidemiologic conclusions.
+}
+
+\examples{
+\dontrun{
+vigiar_conectar()
+monthly <- vigiar_baixar_pm25_mensal_rj(
+  anos_esperados = 2024,
+  meses_esperados = 1:12,
+  require_complete = TRUE
+)
+vigiar_desconectar()
+}
+}
+\seealso{
+[vigiar_analisar_pm25_mensal_rj()],
+  [vigiar_rj_completude_tabela()], [vigiar_auditar_rj_online()]
+}

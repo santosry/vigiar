@@ -10,17 +10,17 @@ Authors@R: c(
            comment = c(ORCID = "0009-0005-6770-2001")))
 Author: Ryan Santos
 Maintainer: Ryan Santos <ryan.paulo@gsuite.iff.edu.br>
-Description: Specialized package to download, process, validate and
-    analyze environmental health surveillance data from Brazil's
-    VIGIAR (Vigilancia em Saude Ambiental) public Power BI dashboard,
-    maintained by the Brazilian Ministry of Health, with focus on the
-    state of Rio de Janeiro. Includes the official registry of 92
-    municipalities with health regions (SES-RJ), automatic RJ
-    filtering, IBGE code validation, PM2.5 air quality processing,
-    benchmark and compliance auditing, structured logging, local caching,
-    versioned data snapshots with SHA256 checksums, schema locking, and
-    integration-ready municipality codes for SIH, SIM and DATASUS.
-    Built on httr2, dplyr, cli, openssl, and tibble.
+Description: Downloads, processes, validates, and audits environmental
+    health surveillance data from Brazil's VIGIAR (Vigilancia em Saude
+    Ambiental) public Power BI dashboard, maintained by the Brazilian
+    Ministry of Health, with a verified workflow for the 92 municipalities
+    of Rio de Janeiro. Provides annual and monthly PM2.5 processing,
+    municipality-year-month completeness, official six- and seven-digit
+    IBGE code validation, server-side partitioning, parser and truncation
+    evidence, critical-schema locks, structured online audit artifacts,
+    logging, caching, and versioned snapshots with SHA256 checksums. The
+    package prepares and diagnoses aggregate public data; it does not
+    validate causal or predictive models.
 License: MIT + file LICENSE
 URL: https://github.com/santosry/vigiar,
      https://santosry.github.io/vigiar/

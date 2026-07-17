@@ -4,8 +4,9 @@
 
 This audit started from commit
 `b01554229c9dd5a153c1dfbe9d92ce224bbd4bce` on branch
-`harden-rj-completeness`. The implementation audited online is commit
-`8c80af865fe3632a9664eb2cba283546853a5ca5`.
+`harden-rj-completeness`. The current functional implementation audited locally,
+online, and through the remote platform matrix is commit
+`d6bb40d3c3d0abaa1875aea77d75babcb0b9ec55`.
 
 The package now treats download success, spatial coverage, expected temporal
 domain, panel completeness, schema compatibility, parser integrity, response
@@ -18,7 +19,7 @@ explicit `df_mensal` entry point, verified server-side year-month partitioning,
 period-specific descriptive quality evidence, and provenance preservation in
 all public processors.
 
-The strict live audit on 2026-07-12 used an explicit January 2010 through
+The repeated strict live audit completed on 2026-07-17 using an explicit January 2010 through
 December 2024 expected domain. `df_anual`, `df_mensal`, `df_dias`, and `pop`
 all returned all 92 RJ municipalities in every expected table-grain group. The
 four tables had `parser_status = pass`, `schema_status = pass`,
@@ -27,8 +28,8 @@ four tables had `parser_status = pass`, `schema_status = pass`,
 grid at that timestamp. It is not evidence of causal validity, exposure
 measurement validity, model adequacy, or future source stability.
 
-The package is **READY FOR RELEASE CANDIDATE** after the current branch passes
-the remote platform matrix. It is not classified as ready for a stable release
+The package is **READY FOR RELEASE CANDIDATE**. The functional implementation
+passed the full remote platform matrix. It is not classified as ready for a stable release
 because the source is an external, reverse-engineered Power BI endpoint without
 an availability or schema-stability guarantee, and because the repository still
 has non-blocking static-style debt described below.
@@ -410,18 +411,19 @@ Local platform: Windows 11 x64, R 4.6.0, UTF-8 session.
 | Check | Result |
 |---|---|
 | `devtools::document()` | Passed; generated Rd synchronized |
-| `devtools::test()` with online disabled | 839 passed, 1 expected online skip, 0 failed, 0 warnings |
+| `devtools::test()` with online disabled | 864 recorded assertions, 1 expected online context skip, 0 failed, 0 warnings |
 | Strict online test | 70 passed, 0 skipped, 0 failed, 0 warnings |
 | Coverage gate | 76.22%, required 70.00%, passed |
-| `pkgdown::build_site()` | Passed, including all reference pages, six offline articles, and this report |
+| `pkgdown::build_site()` | Passed, including all reference pages, seven offline articles, and this report |
 | `devtools::check(error_on = "never", args = character())` | 0 errors, 0 warnings, 0 notes |
-| `lintr::lint_package()` | Exited successfully; 181 non-blocking inherited diagnostics remain |
+| `lintr::lint_package()` | Exited successfully; 328 non-blocking inherited diagnostics remain |
 | Metadata consistency | 13 assertions passed |
+| Documentation synchronization and offline-vignette safety | 23 assertions passed |
 | Parser adversarial/property tests | Passed, including hybrid dictionary and malformed-response cases |
-| GitHub matrix | Configured for Windows release, macOS release, Ubuntu release, devel, and oldrel; current branch result must be read from PR checks |
+| GitHub matrix | Passed on Windows release, macOS release, Ubuntu release, devel, and oldrel |
 
 Strict online evidence for commit
-`8c80af865fe3632a9664eb2cba283546853a5ca5`:
+`d6bb40d3c3d0abaa1875aea77d75babcb0b9ec55`:
 
 | Table | Rows | Expected groups | Incomplete | Municipalities | Parser | Schema | Truncation | Conclusion |
 |---|---:|---:|---:|---:|---|---|---|---|
@@ -436,7 +438,7 @@ incomplete groups, passing parser and schema evidence, no truncation evidence,
 and `complete` conclusions. This supports short-term retrieval stability but is
 not a guarantee about future source behavior.
 
-The 2026-07-14 monthly release-script canary independently downloaded January
+The 2026-07-17 monthly release-script canary independently downloaded January
 2024 through `vigiar_baixar_pm25_mensal_rj(require_complete = TRUE)`. It returned
 92 rows and 92 unique municipalities, with PM2.5 values from 7.31 to 13.75
 ug/m3, `parser_status = pass`, `schema_status = pass`,
@@ -469,12 +471,13 @@ artifact. A formal release should archive one strict run with the release.
 7. PM2.5 may be modelled or estimated. The package does not validate exposure
    measurement error, causal inference, GAM, DLNM, relative risk, machine
    learning, prediction, or epidemiologic conclusions.
-8. The current lint workflow reports but does not fail on its 288 diagnostics.
+8. The current lint workflow reports but does not fail on its 328 diagnostics.
    Most are inherited style or static cross-file false positives, but this debt
    should be handled in a dedicated non-behavioral cleanup before a stable
    release rather than mixed into integrity fixes.
-9. Remote multi-platform CI is authoritative for Linux and macOS behavior and
-   must be green on the published branch before merge.
+9. Remote multi-platform CI is authoritative for Linux and macOS behavior. It
+   passed for the audited functional commit and remains required for every
+   release commit.
 10. No GitHub release was created by this audit. Release artifacts therefore
     cannot yet be attached to a release, by design.
 
@@ -533,8 +536,8 @@ artifact. A formal release should archive one strict run with the release.
 
 ## Release recommendation
 
-**READY FOR RELEASE CANDIDATE**, conditional on the published branch passing
-the current GitHub Actions matrix.
+**READY FOR RELEASE CANDIDATE**. The audited functional commit passed the
+current GitHub Actions matrix, including all five R CMD check environments.
 
 The package is suitable for a controlled release-candidate evaluation because
 the known false passes were removed, strict RJ completeness is programmatic,
@@ -543,7 +546,7 @@ evidence are enforced, local R CMD check is clean, and reproducibility artifacts
 are generated.
 
 The package should not yet be labeled **READY FOR STABLE RELEASE**. A stable
-release should additionally require a green remote matrix on the exact release
-commit, an archived strict audit artifact attached to that release, at least one
+release should additionally require an archived strict audit artifact attached
+to the exact release, at least one
 subsequent scheduled canary confirming source stability, and a deliberate
 resolution or policy decision for the remaining static-lint diagnostics.

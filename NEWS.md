@@ -8,6 +8,10 @@
 * Added `vigiar_analisar_pm25_mensal_rj()` with structured summaries by month,
   municipality, and SES-RJ health region plus missing-cell, duplicate-key,
   impossible-value, parser, schema, and truncation evidence.
+* Added the offline-safe `monthly-pm25-rj` article and expanded README and help
+  contracts for choosing the correct downloader, distinguishing exploratory
+  from strict monthly retrieval, interpreting every monthly analysis component,
+  and archiving release-grade evidence.
 * `vigiar_baixar_rj_completo()` now performs real server-side year, month, or
   municipality partitioning with retry and a per-partition evidence report.
   Strict mode rejects failed partitions and never labels a single unverified

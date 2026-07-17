@@ -77,6 +77,31 @@ pm25_rj <- vigiar_baixar_rj(
 `exigir_completo = TRUE` fails loudly if any expected RJ municipality is absent.
 This is useful for research workflows that require a complete municipal panel.
 
+## Monthly PM2.5
+
+Use the dedicated monthly entry point instead of downloading `df_mensal` and
+reconstructing its contract manually:
+
+```r
+monthly <- vigiar_baixar_pm25_mensal_rj(
+  anos = 2024,
+  meses = 1:12,
+  validar_completude = TRUE
+)
+
+monthly_analysis <- vigiar_analisar_pm25_mensal_rj(monthly)
+monthly_analysis$by_year_month
+monthly_analysis$quality_by_year_month
+```
+
+For a formal completeness claim, declare the expected domain and use
+`require_complete = TRUE`. The strict path partitions requests by year-month and
+stops on incomplete cells, failed partitions, parser or schema failures,
+duplicate keys, impossible PM2.5 values, or truncation evidence.
+
+See `vignette("monthly-pm25-rj", package = "vigiar")` for a fully offline worked
+example and the complete return contract.
+
 ## Processing
 
 ```r
@@ -96,8 +121,8 @@ VIGIAR data are public and aggregated. PM2.5 may be estimated or modelled, and
 coverage can vary by table, year, month, and source availability. A dataset can
 be available without being complete for RJ.
 
-Always inspect coverage before making municipality, macro-region, or temporal
-claims.
+Always inspect coverage before making municipality, SES-RJ health-region, or
+temporal claims.
 
 ## Closing the Session
 
