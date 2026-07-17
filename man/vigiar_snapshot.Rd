@@ -23,6 +23,7 @@ A \code{vigiar_snapshot} object (list subclass).
 \description{
 Downloads (or accepts) data and wraps it with comprehensive
 metadata: checksums, session info, timestamps, parameters.
-Snapshots enable perfect reproducibility -- the same parameters
-always produce the same checksum.
+Snapshots preserve versioned data, schema, metadata, and provenance hashes.
+They detect changes but cannot by themselves guarantee that an external
+source remains available or scientifically complete.
 }

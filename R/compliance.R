@@ -5,6 +5,74 @@
 # philosophy: every download is validated, every deviation is reported,
 # and audit trails are preserved for reproducibility.
 
+.vigiar_check_result <- function(status = c("pass", "fail", "unknown", "not_applicable"),
+                                 severity = NULL, details = character(), ...) {
+  status <- match.arg(status)
+  if (is.null(severity)) {
+    severity <- switch(status,
+      pass = "ok",
+      fail = "error",
+      unknown = "warning",
+      not_applicable = "info"
+    )
+  }
+  list(
+    ok = identical(status, "pass"),
+    status = status,
+    severity = severity,
+    details = as.character(details),
+    ...
+  )
+}
+
+.vigiar_normalize_check <- function(x, label = "check") {
+  if (!is.list(x)) {
+    return(.vigiar_check_result(
+      "unknown",
+      details = sprintf("%s did not return a structured result.", label)
+    ))
+  }
+
+  status <- x$status %||% NULL
+  if (is.null(status)) {
+    legacy_ok <- x$ok %||% x$passed %||% x$valido %||% NULL
+    if (is.null(legacy_ok) || length(legacy_ok) != 1L || is.na(legacy_ok)) {
+      status <- "unknown"
+    } else {
+      status <- if (isTRUE(legacy_ok)) "pass" else "fail"
+    }
+  }
+
+  if (!status %in% c("pass", "fail", "unknown", "not_applicable")) {
+    status <- "unknown"
+  }
+  normalized <- .vigiar_check_result(
+    status,
+    severity = x$severity %||% NULL,
+    details = x$details %||% character()
+  )
+  utils::modifyList(x, normalized)
+}
+
+.vigiar_aggregate_checks <- function(checks) {
+  normalized <- Map(.vigiar_normalize_check, checks, names(checks))
+  statuses <- vapply(normalized, `[[`, character(1), "status")
+  status <- if (any(statuses == "fail")) {
+    "fail"
+  } else if (any(statuses == "unknown")) {
+    "unknown"
+  } else if (length(statuses) > 0L && all(statuses == "not_applicable")) {
+    "not_applicable"
+  } else {
+    "pass"
+  }
+  result <- .vigiar_check_result(
+    status,
+    details = unlist(lapply(normalized, `[[`, "details"), use.names = FALSE)
+  )
+  c(normalized, result)
+}
+
 #' Full data compliance audit
 #'
 #' Performs a comprehensive audit of a VIGIAR data table against
@@ -18,12 +86,12 @@
 #'   \code{temporal}, \code{units}, \code{coverage}, \code{checksums}.
 #' @export
 vigiar_auditar <- function(dados, tabela = NULL, verbose = TRUE) {
-  tabela <- tabela %||% attr(dados, "vigiar_tabela") %||% "desconhecida"
+  tabela <- tabela %||% attr(dados, "vigiar_tabela") %||% "unknown"
 
   if (verbose) {
-    cli::cli_h1("Auditoria VIGIAR")
-    cli::cli_text("Tabela: {.strong {tabela}}")
-    cli::cli_text("Auditado em: {format(Sys.time())}")
+    cli::cli_h1("VIGIAR audit")
+    cli::cli_text("Table: {.strong {tabela}}")
+    cli::cli_text("Audited at: {format(Sys.time())}")
     cli::cli_rule()
   }
 
@@ -36,38 +104,46 @@ vigiar_auditar <- function(dados, tabela = NULL, verbose = TRUE) {
   )
 
   # 1. Schema compliance
-  audit$schema <- .vigiar_auditar_schema(dados, tabela, verbose)
+  checks <- list(
+    schema = .vigiar_auditar_schema(dados, tabela, verbose),
+    ibge = .vigiar_auditar_ibge(dados, verbose),
+    temporal = .vigiar_auditar_temporal(dados, verbose, tabela),
+    units = .vigiar_auditar_units(dados, tabela, verbose),
+    coverage = .vigiar_auditar_coverage(dados, verbose, tabela),
+    checksums = .vigiar_auditar_checksums(dados, verbose)
+  )
+  assessment <- .vigiar_aggregate_checks(checks)
+  for (name in names(checks)) {
+    audit[[name]] <- assessment[[name]]
+  }
+  audit$status <- assessment$status
+  audit$severity <- assessment$severity
+  audit$details <- assessment$details
+  audit$passed <- identical(audit$status, "pass")
+  audit$ok <- audit$passed
 
-  # 2. IBGE code validation
-  audit$ibge <- .vigiar_auditar_ibge(dados, verbose)
-
-  # 3. Temporal consistency
-  audit$temporal <- .vigiar_auditar_temporal(dados, verbose)
-
-  # 4. Unit validation
-  audit$units <- .vigiar_auditar_units(dados, tabela, verbose)
-
-  # 5. Spatial coverage
-  audit$coverage <- .vigiar_auditar_coverage(dados, verbose)
-
-  # 6. Data checksums (reproducibility)
-  audit$checksums <- .vigiar_auditar_checksums(dados, verbose)
-
-  # 7. Overall assessment
-  audit$passed <- all(
-    audit$schema$ok,
-    audit$ibge$ok,
-    audit$temporal$ok,
-    audit$units$ok,
-    audit$coverage$ok
+  .vigiar_log(
+    if (audit$status == "pass") "INFO" else if (audit$status == "unknown") "WARN" else "ERROR",
+    sprintf("Audit completed with status '%s'.", audit$status),
+    table = tabela,
+    metadata = list(
+      status = audit$status,
+      severity = audit$severity,
+      details = audit$details
+    ),
+    event = "audit"
   )
 
   if (verbose) {
     cli::cli_rule()
-    if (audit$passed) {
-      cli::cli_alert_success("AUDITORIA APROVADA -- Todos os checks passaram")
+    if (audit$status == "pass") {
+      cli::cli_alert_success("AUDIT PASSED -- all required checks passed")
+    } else if (audit$status == "unknown") {
+      cli::cli_alert_warning(
+        "AUDIT UNVERIFIED -- one or more required properties are unknown"
+      )
     } else {
-      cli::cli_alert_danger("AUDITORIA REPROVADA -- Verificar sessoes com FAIL")
+      cli::cli_alert_danger("AUDIT FAILED -- inspect sections marked FAIL")
     }
   }
 
@@ -80,25 +156,30 @@ vigiar_auditar <- function(dados, tabela = NULL, verbose = TRUE) {
 #' @param ... Additional arguments (ignored).
 #' @export
 print.vigiar_audit <- function(x, ...) {
-  cli::cli_h1("Relatorio de Auditoria VIGIAR")
-  cli::cli_text("Tabela: {x$tabela}")
-  cli::cli_text("Data: {format(x$timestamp)}")
+  cli::cli_h1("VIGIAR audit report")
+  cli::cli_text("Table: {x$tabela}")
+  cli::cli_text("Date: {format(x$timestamp)}")
   cli::cli_text("R: {x$r_version}")
   cli::cli_text("vigiar: {x$vigiar_version}")
   cli::cli_rule()
 
   sections <- c("schema", "ibge", "temporal", "units", "coverage")
   labels <- c(
-    schema   = "Conformidade de Esquema",
-    ibge     = "Validacao de Codigos IBGE",
-    temporal = "Consistencia Temporal",
-    units    = "Validacao de Unidades",
-    coverage = "Cobertura Espacial"
+    schema   = "Schema conformity",
+    ibge     = "IBGE code validation",
+    temporal = "Temporal consistency",
+    units    = "Unit validation",
+    coverage = "Spatial coverage"
   )
 
   for (s in sections) {
     if (!is.null(x[[s]])) {
-      status <- if (isTRUE(x[[s]]$ok)) cli::col_green("PASS") else cli::col_red("FAIL")
+      status <- switch(x[[s]]$status %||% if (isTRUE(x[[s]]$ok)) "pass" else "fail",
+        pass = cli::col_green("PASS"),
+        fail = cli::col_red("FAIL"),
+        unknown = cli::col_yellow("UNKNOWN"),
+        not_applicable = cli::col_silver("N/A")
+      )
       cli::cli_text("{status} {labels[s]}")
       if (!is.null(x[[s]]$details)) {
         for (d in x[[s]]$details) {
@@ -109,10 +190,12 @@ print.vigiar_audit <- function(x, ...) {
   }
 
   cli::cli_rule()
-  if (x$passed) {
-    cli::cli_alert_success("Resultado final: APROVADO")
+  if (identical(x$status %||% if (x$passed) "pass" else "fail", "pass")) {
+    cli::cli_alert_success("Final result: PASSED")
+  } else if (identical(x$status, "unknown")) {
+    cli::cli_alert_warning("Final result: UNVERIFIED")
   } else {
-    cli::cli_alert_danger("Resultado final: REPROVADO")
+    cli::cli_alert_danger("Final result: FAILED")
   }
   invisible(x)
 }
@@ -128,7 +211,7 @@ print.vigiar_audit <- function(x, ...) {
 #' @export
 vigiar_auditar_tudo <- function(dados_list, verbose = TRUE) {
   if (!is.list(dados_list) || is.null(names(dados_list))) {
-    stop("'dados_list' deve ser uma lista nomeada de data frames.")
+    stop("'dados_list' must be a named list of data frames.")
   }
 
   results <- vector("list", length(dados_list))
@@ -136,7 +219,7 @@ vigiar_auditar_tudo <- function(dados_list, verbose = TRUE) {
 
   for (i in seq_along(dados_list)) {
     tab <- names(dados_list)[i]
-    if (verbose) cli::cli_text("Auditando: {tab} ({i}/{length(dados_list)})")
+    if (verbose) cli::cli_text("Auditing: {tab} ({i}/{length(dados_list)})")
     results[[tab]] <- tryCatch(
       vigiar_auditar(dados_list[[tab]], tabela = tab, verbose = FALSE),
       error = function(e) {
@@ -149,7 +232,7 @@ vigiar_auditar_tudo <- function(dados_list, verbose = TRUE) {
   if (verbose) {
     cli::cli_rule()
     cli::cli_alert_info(
-      "Auditoria concluida: {n_passed}/{length(results)} tabelas aprovadas"
+      "Audit completed: {n_passed}/{length(results)} tables passed"
     )
   }
 
@@ -164,8 +247,8 @@ vigiar_auditar_tudo <- function(dados_list, verbose = TRUE) {
 print.vigiar_audit_list <- function(x, ...) {
   n <- length(x)
   n_ok <- sum(vapply(x, function(a) isTRUE(a$passed), logical(1)))
-  cli::cli_h1("Auditoria Multi-Tabela")
-  cli::cli_text("{n_ok}/{n} tabelas aprovadas")
+  cli::cli_h1("Multi-table audit")
+  cli::cli_text("{n_ok}/{n} tables passed")
   cli::cli_rule()
   for (tab in names(x)) {
     a <- x[[tab]]
@@ -188,7 +271,7 @@ print.vigiar_audit_list <- function(x, ...) {
 vigiar_compliance_check <- function(dados, tabela = NULL,
                                      profiles = c("basico", "rigoroso", "rj"),
                                      verbose = TRUE) {
-  tabela <- tabela %||% attr(dados, "vigiar_tabela") %||% "desconhecida"
+  tabela <- tabela %||% attr(dados, "vigiar_tabela") %||% "unknown"
 
   all_profiles <- c("basico", "rigoroso", "rj", "corrupcao")
   if ("all" %in% profiles) profiles <- all_profiles
@@ -198,35 +281,55 @@ vigiar_compliance_check <- function(dados, tabela = NULL,
   names(results) <- profiles
 
   for (p in profiles) {
-    if (verbose) cli::cli_h2("Perfil: {p}")
+    if (verbose) cli::cli_h2("Profile: {p}")
     results[[p]] <- switch(p,
       basico = {
         # Basic: schema + IBGE + temporal
-        list(
+        checks <- list(
           schema   = .vigiar_auditar_schema(dados, tabela, verbose),
           ibge     = .vigiar_auditar_ibge(dados, verbose),
-          temporal = .vigiar_auditar_temporal(dados, verbose),
-          ok       = TRUE  # evaluated below
+          temporal = .vigiar_auditar_temporal(dados, verbose, tabela)
         )
+        .vigiar_aggregate_checks(checks)
       },
       rigoroso = {
         # Strict: everything + outlier detection
         base <- vigiar_auditar(dados, tabela, verbose = FALSE)
         base$outliers <- .vigiar_detectar_outliers(dados, verbose = verbose)
+        base$ok <- isTRUE(base$passed)
+        base$status <- if (base$ok) "pass" else "fail"
+        base$severity <- if (base$ok) "ok" else "error"
         base
       },
       rj = {
         # RJ-specific compliance
-        validar_rj <- function() vigiar_validar_rj(dados)
-        list(
-          rj_municipios = if (verbose) {
-            validar_rj()
+        validar_rj <- function() {
+          tryCatch(
+            vigiar_validar_rj(dados),
+            error = function(e) .vigiar_check_result(
+              "fail",
+              details = conditionMessage(e),
+              error = conditionMessage(e)
+            )
+          )
+        }
+        checks <- list(
+          rj_municipios = if (verbose) validar_rj() else
+            suppressWarnings(suppressMessages(validar_rj())),
+          rj_cobertura = .vigiar_auditar_cobertura_rj(dados, verbose = verbose),
+          truncation = if (isTRUE(attr(dados, "vigiar_possivel_truncamento"))) {
+            .vigiar_check_result(
+              "fail",
+              details = paste(
+                "Possible API truncation prevents a complete RJ compliance",
+                "claim; use a validated partitioned download."
+              )
+            )
           } else {
-            suppressWarnings(suppressMessages(validar_rj()))
-          },
-          rj_cobertura  = .vigiar_auditar_cobertura_rj(dados, verbose = verbose),
-          ok            = TRUE
+            .vigiar_check_result("pass", details = "No truncation evidence recorded.")
+          }
         )
+        .vigiar_aggregate_checks(checks)
       },
       corrupcao = {
         # Data integrity / corruption checks
@@ -234,26 +337,38 @@ vigiar_compliance_check <- function(dados, tabela = NULL,
       }
     )
 
-    # Evaluate ok status
-    if ("ok" %in% names(results[[p]])) {
-      sub_oks <- vapply(
-        results[[p]],
-        function(x) if (is.list(x) && "ok" %in% names(x)) x$ok else TRUE,
-        logical(1)
-      )
-      results[[p]]$ok <- all(sub_oks)
-    }
+    results[[p]] <- .vigiar_normalize_check(results[[p]], p)
   }
 
   all_ok <- all(vapply(results, function(x) isTRUE(x$ok), logical(1)))
+  overall_status <- if (any(vapply(
+    results, function(x) identical(x$status, "fail"), logical(1)
+  ))) {
+    "fail"
+  } else if (all_ok) {
+    "pass"
+  } else {
+    "unknown"
+  }
+  .vigiar_log(
+    if (overall_status == "pass") "INFO" else if (overall_status == "unknown") "WARN" else "ERROR",
+    sprintf("Compliance completed with status '%s'.", overall_status),
+    table = tabela,
+    metadata = list(
+      status = overall_status,
+      profiles = profiles,
+      profile_status = vapply(results, `[[`, "", "status")
+    ),
+    event = if (overall_status == "fail") "compliance_failure" else "compliance"
+  )
 
   if (verbose) {
     cli::cli_rule()
     if (all_ok) {
-      cli::cli_alert_success("COMPLIANCE: Todos os perfis aprovados")
+      cli::cli_alert_success("COMPLIANCE PASSED: all requested profiles passed")
     } else {
       fails <- names(results)[!vapply(results, function(x) isTRUE(x$ok), logical(1))]
-      cli::cli_alert_danger("COMPLIANCE FALHOU nos perfis: {paste(fails, collapse=', ')}")
+      cli::cli_alert_danger("COMPLIANCE FAILED for profiles: {paste(fails, collapse=', ')}")
     }
   }
 
@@ -266,10 +381,10 @@ vigiar_compliance_check <- function(dados, tabela = NULL,
 #' @param ... Additional arguments (ignored).
 #' @export
 print.vigiar_compliance <- function(x, ...) {
-  cli::cli_h1("Relatorio de Compliance VIGIAR")
+  cli::cli_h1("VIGIAR compliance report")
   for (p in names(x)) {
     status <- if (isTRUE(x[[p]]$ok)) cli::col_green("PASS") else cli::col_red("FAIL")
-    cli::cli_text("{status} Perfil: {p}")
+    cli::cli_text("{status} Profile: {p}")
   }
   invisible(x)
 }
@@ -284,45 +399,68 @@ print.vigiar_compliance <- function(x, ...) {
   na_total <- sum(is.na(dados))
   na_pct <- if (n_rows > 0) round(100 * na_total / (n_rows * n_cols), 2) else 0
 
-  issues <- character(0)
+  issues <- character()
+  warnings <- character()
+  schema_available <- !is.null(.vigiar_env$esquema) &&
+    tabela %in% names(.vigiar_env$esquema)
+  missing <- extra <- character()
 
-  if (n_rows == 0) issues <- c(issues, "Tabela vazia (0 linhas)")
-  if (n_dup > 0) issues <- c(issues, sprintf("%d linhas duplicadas (%.1f%%)",
-                                              n_dup, 100 * n_dup / n_rows))
-  if (na_pct > 20) issues <- c(issues, sprintf("Alta taxa de NAs: %.1f%%", na_pct))
+  if (n_rows == 0L) issues <- c(issues, "Table has zero rows.")
+  if (n_cols == 0L) issues <- c(issues, "Table has zero columns.")
+  if (n_dup > 0L) warnings <- c(warnings, sprintf(
+    "%d duplicate row(s) require table-grain review.", n_dup
+  ))
+  if (na_pct > 20) warnings <- c(warnings, sprintf(
+    "High missing-value rate: %.1f%%.", na_pct
+  ))
 
-  # Check against schema if we have one
-  schema_ok <- TRUE
-  if (!is.null(.vigiar_env$esquema) && tabela %in% names(.vigiar_env$esquema)) {
+  if (schema_available) {
     expected_cols <- names(.vigiar_env$esquema[[tabela]])
     missing <- setdiff(expected_cols, col_names)
     extra <- setdiff(col_names, expected_cols)
     if (length(missing) > 0) {
-      issues <- c(issues, sprintf("Colunas esperadas ausentes: %s",
+      issues <- c(issues, sprintf("Expected columns are absent: %s.",
                                   paste(missing, collapse = ", ")))
-      schema_ok <- FALSE
     }
     if (length(extra) > 0) {
-      issues <- c(issues, sprintf("Colunas extras inesperadas: %s",
-                                  paste(extra, collapse = ", ")))
-      schema_ok <- FALSE
+      warnings <- c(warnings, sprintf("Additional columns require review: %s.",
+                                      paste(extra, collapse = ", ")))
     }
+  } else {
+    warnings <- c(warnings, "Expected schema is unavailable; compatibility is unknown.")
   }
 
-  result <- list(
-    ok         = length(issues) == 0,
+  status <- if (length(issues) > 0L) {
+    "fail"
+  } else if (!schema_available || length(warnings) > 0L) {
+    "unknown"
+  } else {
+    "pass"
+  }
+  result <- c(.vigiar_check_result(
+    status,
+    details = c(issues, warnings)
+  ), list(
     n_rows     = n_rows,
     n_cols     = n_cols,
     n_dup      = n_dup,
     na_total   = na_total,
     na_pct     = na_pct,
-    details    = issues
-  )
+    schema_available = schema_available,
+    missing_columns = missing,
+    extra_columns = extra,
+    equality_status = if (!schema_available) "unknown" else if (
+      length(missing) == 0L && length(extra) == 0L
+    ) "pass" else "fail",
+    compatibility_status = if (!schema_available) "unknown" else if (
+      length(missing) == 0L
+    ) "pass" else "fail"
+  ))
 
-  if (verbose && length(issues) > 0) {
-    for (issue in issues) cli::cli_alert_warning(issue)
+  if (verbose && length(result$details) > 0) {
+    for (issue in result$details) cli::cli_alert_warning(issue)
   }
-  if (verbose && result$ok) cli::cli_alert_success("Schema: OK")
+  if (verbose && result$status == "pass") cli::cli_alert_success("Schema: OK")
 
   result
 }
@@ -335,24 +473,31 @@ print.vigiar_compliance <- function(x, ...) {
   )[1]
 
   if (is.na(col_muni)) {
-    if (verbose) cli::cli_alert_info("IBGE: Sem coluna de codigo municipal")
-    return(list(ok = TRUE, details = "Sem coluna de codigo IBGE"))
+    if (verbose) cli::cli_alert_warning("IBGE municipality column is absent.")
+    return(.vigiar_check_result(
+      "unknown",
+      details = "IBGE municipality existence and membership could not be verified."
+    ))
   }
 
-  codigos <- as.integer(dados[[col_muni]])
-  codigos <- codigos[!is.na(codigos)]
+  raw_codes <- dados[[col_muni]]
+  validation <- vigiar_validar_codigo_municipio(raw_codes)
+  raw_non_missing <- raw_codes[!is.na(raw_codes)]
 
-  if (length(codigos) == 0) {
-    return(list(ok = TRUE, details = "Nenhum codigo IBGE nos dados"))
+  if (length(raw_non_missing) == 0) {
+    return(.vigiar_check_result(
+      "unknown",
+      details = "All municipality code values are missing."
+    ))
   }
 
-  invalidos <- codigos[codigos < 110001 | codigos > 530010]
-  validos <- codigos[codigos >= 110001 & codigos <= 530010]
+  invalidos <- raw_codes[validation$status == "fail"]
+  validos <- validation$codigo_ibge_6[validation$status == "pass"]
 
   ok <- length(invalidos) == 0
   details <- sprintf(
-    "%d codigos IBGE, %d validos, %d fora do intervalo esperado",
-    length(codigos), length(validos), length(invalidos)
+    "%d IBGE codes, %d valid, %d outside the expected reference",
+    length(raw_non_missing), length(validos), length(invalidos)
   )
 
   if (verbose) {
@@ -363,30 +508,38 @@ print.vigiar_compliance <- function(x, ...) {
     }
   }
 
-  list(
-    ok        = ok,
-    n_total   = length(codigos),
+  c(.vigiar_check_result(
+    if (ok) "pass" else "fail",
+    details = details
+  ), list(
+    n_total   = length(raw_non_missing),
     n_validos = length(validos),
     n_invalidos = length(invalidos),
-    codigos_invalidos = invalidos,
-    details   = details
-  )
+    codigos_invalidos = invalidos
+  ))
 }
 
-.vigiar_auditar_temporal <- function(dados, verbose) {
+.vigiar_auditar_temporal <- function(dados, verbose, tabela = NULL) {
   issues <- character(0)
   current_year <- as.integer(format(Sys.Date(), "%Y"))
+  requires_year <- tabela %in% c(
+    "df_anual", "df_mensal", "df_dias", "df_dias_conama", "pop"
+  )
+  requires_month <- tabela %in% c("df_mensal", "df_dias", "df_dias_conama")
 
   if ("ano" %in% names(dados)) {
     anos <- as.integer(dados$ano)
     anos <- anos[!is.na(anos)]
     bad_anos <- sum(anos < 2000 | anos > current_year)
     if (bad_anos > 0) {
-      issues <- c(issues, sprintf("%d anos fora de 2000-%d", bad_anos, current_year))
+      issues <- c(issues, sprintf("%d years outside 2000-%d", bad_anos, current_year))
     }
     range_anos <- if (length(anos) > 0) paste(range(anos), collapse = "-") else "N/A"
   } else {
     range_anos <- "N/A"
+    if (requires_year) {
+      issues <- c(issues, "Required year column is absent.")
+    }
   }
 
   if ("mes" %in% names(dados)) {
@@ -394,25 +547,33 @@ print.vigiar_compliance <- function(x, ...) {
     meses <- meses[!is.na(meses)]
     bad_mes <- sum(meses < 1 | meses > 12)
     if (bad_mes > 0) {
-      issues <- c(issues, sprintf("%d meses fora de 1-12", bad_mes))
+      issues <- c(issues, sprintf("%d months outside 1-12", bad_mes))
     }
+  } else if (requires_month) {
+    issues <- c(issues, "Required month column is absent.")
   }
 
-  ok <- length(issues) == 0
+  status <- if (length(issues) > 0L) {
+    "fail"
+  } else if (!"ano" %in% names(dados) && !"mes" %in% names(dados)) {
+    "not_applicable"
+  } else {
+    "pass"
+  }
 
   if (verbose) {
-    if (ok) {
-      cli::cli_alert_success("Temporal: faixa {range_anos} -- OK")
+    if (status == "pass") {
+      cli::cli_alert_success("Temporal range: {range_anos} -- OK")
     } else {
       for (i in issues) cli::cli_alert_warning(i)
     }
   }
 
-  list(
-    ok         = ok,
+  c(.vigiar_check_result(status, details = issues), list(
     faixa_anos = range_anos,
-    details    = issues
-  )
+    expected_year = requires_year,
+    expected_month = requires_month
+  ))
 }
 
 .vigiar_auditar_units <- function(dados, tabela, verbose) {
@@ -427,7 +588,7 @@ print.vigiar_compliance <- function(x, ...) {
     vals <- as.numeric(dados[[col]])
     bad <- sum(!is.na(vals) & (vals < 0 | vals > 1000))
     if (bad > 0) {
-      issues <- c(issues, sprintf("PM2.5 (%s): %d valores implausiveis", col, bad))
+      issues <- c(issues, sprintf("PM2.5 (%s): %d implausible values", col, bad))
     }
   }
 
@@ -437,28 +598,33 @@ print.vigiar_compliance <- function(x, ...) {
     vals <- as.numeric(dados[[col]])
     bad <- sum(!is.na(vals) & vals < 0, na.rm = TRUE)
     if (bad > 0) {
-      issues <- c(issues, sprintf("Populacao (%s): %d valores negativos", col, bad))
+      issues <- c(issues, sprintf("Population (%s): %d negative values", col, bad))
     }
   }
 
-  ok <- length(issues) == 0
+  relevant <- length(pm25_cols) + length(pop_cols) > 0L
+  status <- if (length(issues) > 0L) {
+    "fail"
+  } else if (!relevant) {
+    "not_applicable"
+  } else {
+    "pass"
+  }
 
   if (verbose) {
-    if (ok) {
-      cli::cli_alert_success("Unidades: OK")
+    if (status == "pass") {
+      cli::cli_alert_success("Units: OK")
     } else {
       for (i in issues) cli::cli_alert_warning(i)
     }
   }
 
-  list(ok = ok, details = issues)
+  .vigiar_check_result(status, details = issues)
 }
 
-.vigiar_auditar_coverage <- function(dados, verbose) {
-  col_uf <- intersect(c("sigla_uf", "UF", "UF_SIGLA"), names(dados))[1]
-  col_muni <- intersect(
-    c("cod_municipio", "muni", "ID_MUNI", "codigo_ibge"), names(dados)
-  )[1]
+.vigiar_auditar_coverage <- function(dados, verbose, tabela = NULL) {
+  col_uf <- .vigiar_coluna_uf(dados)
+  col_muni <- .vigiar_coluna_municipio(dados)
 
   n_uf <- NA_integer_
   n_muni <- NA_integer_
@@ -468,18 +634,30 @@ print.vigiar_compliance <- function(x, ...) {
 
   if (verbose) {
     msg <- sprintf(
-      "Cobertura: %s UFs, %s municipios",
+      "Coverage: %s UFs, %s municipalities",
       if (is.na(n_uf)) "?" else as.character(n_uf),
       if (is.na(n_muni)) "?" else as.character(n_muni)
     )
     cli::cli_alert_info(msg)
   }
 
-  list(
-    ok      = TRUE,
+  requires_municipality <- tabela %in% c(
+    "df_anual", "df_mensal", "df_dias", "df_dias_conama", "pop", "df_muni"
+  )
+  status <- if (requires_municipality && is.na(col_muni)) {
+    "fail"
+  } else {
+    "unknown"
+  }
+  details <- if (status == "fail") {
+    "Municipality coverage is required but no municipality code column exists."
+  } else {
+    "No expected geographic domain was supplied; coverage remains unverified."
+  }
+  c(.vigiar_check_result(status, details = details), list(
     n_uf    = n_uf,
     n_muni  = n_muni
-  )
+  ))
 }
 
 .vigiar_auditar_cobertura_rj <- function(dados, verbose) {
@@ -488,14 +666,17 @@ print.vigiar_compliance <- function(x, ...) {
   )[1]
 
   if (is.na(col_muni)) {
-    if (verbose) cli::cli_alert_warning("Cobertura RJ: sem coluna de municipio")
-    return(list(ok = FALSE, details = "Sem coluna de municipio para checagem RJ"))
+    if (verbose) cli::cli_alert_warning("RJ coverage: municipality column is absent")
+    return(.vigiar_check_result(
+      "fail",
+      details = "Municipality code column is required for RJ coverage."
+    ))
   }
 
-  codigos <- unique(dados[[col_muni]])
+  codigos <- unique(.vigiar_normalizar_codigo_municipio(dados[[col_muni]]))
   codigos <- codigos[!is.na(codigos)]
 
-  rj_codes <- RJ_MUNICIPIOS$codigo_ibge
+  rj_codes <- RJ_MUNICIPIOS$codigo_ibge_6
   presentes <- intersect(codigos, rj_codes)
   faltantes <- setdiff(rj_codes, codigos)
 
@@ -503,32 +684,39 @@ print.vigiar_compliance <- function(x, ...) {
 
   if (verbose) {
     cli::cli_alert_info(
-      "Cobertura RJ: {length(presentes)}/92 municipios ({pct}%)"
+      "RJ coverage: {length(presentes)}/92 municipalities ({pct}%)"
     )
     if (length(faltantes) > 0) {
       cli::cli_alert_warning(
-        "{length(faltantes)} municipios RJ faltando"
+        "{length(faltantes)} RJ municipalities are absent"
       )
     }
   }
 
-  list(
-    ok                 = length(faltantes) == 0,
+  c(.vigiar_check_result(
+    if (length(faltantes) == 0L) "pass" else "fail",
+    details = if (length(faltantes) == 0L) {
+      "All 92 Rio de Janeiro municipalities are present."
+    } else {
+      sprintf("%d Rio de Janeiro municipalities are absent.", length(faltantes))
+    }
+  ), list(
     n_presentes        = length(presentes),
     n_faltantes        = length(faltantes),
     pct_cobertura      = pct,
     municipios_faltantes = faltantes
-  )
+  ))
 }
 
 .vigiar_auditar_integridade <- function(dados, tabela, verbose) {
   issues <- character(0)
+  anomalies <- list()
 
   # Check for all-NA columns
   all_na <- vapply(dados, function(x) all(is.na(x)), logical(1))
   if (any(all_na)) {
     na_cols <- names(dados)[all_na]
-    issues <- c(issues, sprintf("Colunas 100%% NA: %s", paste(na_cols, collapse = ", ")))
+    issues <- c(issues, sprintf("Columns are 100%% NA: %s", paste(na_cols, collapse = ", ")))
   }
 
   # Check for constant-value columns
@@ -538,8 +726,12 @@ print.vigiar_compliance <- function(x, ...) {
   }, logical(1))
   if (any(constant)) {
     const_cols <- names(dados)[constant]
-    issues <- c(issues, sprintf("Colunas com valor unico: %s",
-                                paste(const_cols, collapse = ", ")))
+    anomalies$constant <- const_cols
+    if (verbose) {
+      cli::cli_alert_info(
+        "Constant columns recorded as anomalies: {paste(const_cols, collapse=', ')}"
+      )
+    }
   }
 
   # Check for mixed types per column (raw list columns)
@@ -547,7 +739,7 @@ print.vigiar_compliance <- function(x, ...) {
     if (is.list(dados[[col]]) && !inherits(dados[[col]], "POSIXct")) {
       types <- unique(vapply(dados[[col]], typeof, ""))
       if (length(types) > 1) {
-        issues <- c(issues, sprintf("Coluna '%s' tem tipos mistos: %s",
+        issues <- c(issues, sprintf("Column '%s' has mixed types: %s",
                                     col, paste(types, collapse = ", ")))
       }
     }
@@ -558,7 +750,7 @@ print.vigiar_compliance <- function(x, ...) {
     expected_ncols <- length(.vigiar_env$esquema[[tabela]])
     if (ncol(dados) != expected_ncols) {
       issues <- c(issues,
-        sprintf("Numero de colunas: %d (esperado: %d)", ncol(dados), expected_ncols))
+        sprintf("Column count: %d (expected: %d)", ncol(dados), expected_ncols))
     }
   }
 
@@ -566,13 +758,15 @@ print.vigiar_compliance <- function(x, ...) {
 
   if (verbose) {
     if (ok) {
-      cli::cli_alert_success("Integridade: OK")
+      cli::cli_alert_success("Integrity: OK")
     } else {
       for (i in issues) cli::cli_alert_danger(i)
     }
   }
 
-  list(ok = ok, details = issues)
+  c(.vigiar_check_result(if (ok) "pass" else "fail", details = issues), list(
+    anomalies = anomalies
+  ))
 }
 
 #' Detect outliers in numeric columns
@@ -605,14 +799,14 @@ print.vigiar_compliance <- function(x, ...) {
       )
       if (verbose) {
         cli::cli_alert_warning(
-          "Outliers em '{col}': {n_low + n_high} valores ({round(outliers[[col]]$pct, 1)}%)"
+        "Outliers in '{col}': {n_low + n_high} values ({round(outliers[[col]]$pct, 1)}%)"
         )
       }
     }
   }
 
   if (verbose && length(outliers) == 0) {
-    cli::cli_alert_success("Outliers: nenhum detectado (metodo IQR)")
+    cli::cli_alert_success("Outliers: none detected (IQR method)")
   }
 
   outliers
@@ -641,30 +835,127 @@ print.vigiar_compliance <- function(x, ...) {
   )
 }
 
-#' Compute a deterministic checksum for a data frame
-#'
-#' Uses SHA256 on a canonical JSON representation. Same data always
-#' produces the same hash -- enabling cross-environment reproducibility.
-#'
-#' @param dados A data frame.
-#' @return A SHA256 hex string.
-#' @export
-vigiar_checksum <- function(dados) {
-  .vigiar_data_checksum(dados)
+.VIGIAR_CANONICALIZATION_VERSION <- "2"
+
+.vigiar_sha256_object <- function(x) {
+  raw_hash <- openssl::sha256(serialize(x, NULL, version = 3L))
+  paste(format(raw_hash), collapse = "")
 }
 
-.vigiar_data_checksum <- function(dados) {
-  # Convert to canonical JSON
-  json <- jsonlite::toJSON(
-    dados,
-    dataframe = "columns",
-    auto_unbox = TRUE,
-    digits = 10,
-    pretty = FALSE
+.vigiar_canonical_number <- function(x) {
+  out <- rep(NA_character_, length(x))
+  out[is.na(x) & !is.nan(x)] <- "<NA>"
+  out[is.nan(x)] <- "<NaN>"
+  out[is.infinite(x) & x > 0] <- "<Inf>"
+  out[is.infinite(x) & x < 0] <- "<-Inf>"
+  finite <- is.finite(x)
+  out[finite] <- sprintf("%.17g", as.numeric(x[finite]))
+  out
+}
+
+.vigiar_canonical_column <- function(x) {
+  if (inherits(x, "POSIXct")) {
+    return(list(family = "datetime_utc", values = .vigiar_canonical_number(as.numeric(x))))
+  }
+  if (inherits(x, "Date")) {
+    return(list(family = "date", values = .vigiar_canonical_number(as.numeric(x))))
+  }
+  if (is.factor(x) || is.character(x)) {
+    values <- enc2utf8(as.character(x))
+    values[is.na(x)] <- "<NA>"
+    return(list(family = "character", values = values))
+  }
+  if (is.integer(x) || is.numeric(x)) {
+    return(list(family = "number", values = .vigiar_canonical_number(x)))
+  }
+  if (is.logical(x)) {
+    values <- ifelse(is.na(x), "<NA>", ifelse(x, "TRUE", "FALSE"))
+    return(list(family = "logical", values = values))
+  }
+  if (is.raw(x)) {
+    return(list(family = "raw", values = paste(format(x), collapse = "")))
+  }
+  if (is.list(x)) {
+    values <- vapply(x, function(value) .vigiar_sha256_object(value), character(1))
+    return(list(family = "list", values = values))
+  }
+  values <- enc2utf8(as.character(x))
+  values[is.na(x)] <- "<NA>"
+  list(family = paste0("other:", typeof(x)), values = values)
+}
+
+.vigiar_canonical_table <- function(dados, mode = c("canonical", "ordered")) {
+  mode <- match.arg(mode)
+  dados <- as.data.frame(dados, stringsAsFactors = FALSE)
+  column_order <- seq_along(dados)
+  if (identical(mode, "canonical") && ncol(dados) > 0L) {
+    column_order <- order(names(dados), column_order)
+  }
+  dados <- dados[column_order]
+  columns <- lapply(dados, .vigiar_canonical_column)
+  families <- vapply(columns, `[[`, character(1), "family")
+  values <- lapply(columns, `[[`, "values")
+
+  if (identical(mode, "canonical") && nrow(dados) > 1L) {
+    row_hash <- vapply(seq_len(nrow(dados)), function(i) {
+      .vigiar_sha256_object(lapply(values, `[`, i))
+    }, character(1))
+    row_order <- order(row_hash)
+    values <- lapply(values, `[`, row_order)
+  }
+
+  list(
+    canonicalization_version = .VIGIAR_CANONICALIZATION_VERSION,
+    mode = mode,
+    n_rows = nrow(dados),
+    n_cols = ncol(dados),
+    column_names = enc2utf8(names(dados)),
+    column_families = families,
+    columns = values
   )
-  # Hash with SHA256
-  raw_hash <- openssl::sha256(charToRaw(json))
-  paste(format(raw_hash), collapse = "")
+}
+
+#' Compute a versioned deterministic checksum for a data frame
+#'
+#' The default `canonical` mode represents semantic table identity: row and
+#' column order are ignored, factors equal their character representation,
+#' equivalent integer/double values match, timestamps are normalized to UTC,
+#' and full double precision is retained. `ordered` mode preserves row and
+#' column order. Non-semantic data-frame attributes are excluded and are hashed
+#' separately in VIGIAR snapshots.
+#'
+#' @param dados A data frame.
+#' @param mode Checksum identity mode, either `canonical` or `ordered`.
+#' @return A SHA256 hex string.
+#' @export
+vigiar_checksum <- function(dados, mode = c("canonical", "ordered")) {
+  mode <- match.arg(mode)
+  .vigiar_data_checksum(dados, mode = mode)
+}
+
+.vigiar_data_checksum <- function(dados, mode = c("canonical", "ordered")) {
+  mode <- match.arg(mode)
+  .vigiar_sha256_object(.vigiar_canonical_table(dados, mode = mode))
+}
+
+.vigiar_schema_checksum <- function(dados) {
+  schema <- lapply(dados, function(x) {
+    list(class = class(x), typeof = typeof(x))
+  })
+  .vigiar_sha256_object(list(
+    names = names(dados),
+    schema = schema
+  ))
+}
+
+.vigiar_metadata_checksum <- function(dados, metadata = list()) {
+  attributes <- attributes(dados)
+  attributes[c("names", "row.names", "class")] <- NULL
+  .vigiar_sha256_object(list(
+    canonicalization_version = .VIGIAR_CANONICALIZATION_VERSION,
+    attributes = attributes,
+    metadata = metadata
+  ))
 }
 
 # -- Session info --------------------------------------------------------------
@@ -698,6 +989,6 @@ vigiar_exportar_auditoria <- function(audit, caminho) {
   json <- jsonlite::toJSON(audit, auto_unbox = TRUE, pretty = TRUE,
                             null = "null", force = TRUE)
   writeLines(json, caminho)
-  cli::cli_alert_success("Auditoria exportada: {caminho}")
+  cli::cli_alert_success("Audit exported: {caminho}")
   invisible(caminho)
 }

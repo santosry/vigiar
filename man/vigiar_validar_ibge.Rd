@@ -4,17 +4,28 @@
 \alias{vigiar_validar_ibge}
 \title{Validate IBGE municipality codes}
 \usage{
-vigiar_validar_ibge(dados, col_codigo = "cod_municipio")
+vigiar_validar_ibge(
+  dados,
+  col_codigo = "cod_municipio",
+  uf = NULL,
+  error = FALSE
+)
 }
 \arguments{
 \item{dados}{A data frame.}
 
 \item{col_codigo}{Name of the column containing IBGE codes.}
+
+\item{uf}{Optional UF code or abbreviation used to validate membership.}
+
+\item{error}{If \code{TRUE}, fail when a supplied code is invalid, unknown,
+nonexistent, or outside `uf`.}
 }
 \value{
-The data frame (unchanged), with a warning on invalid codes.
+The data frame with a `vigiar_ibge_validation` report attribute.
 }
 \description{
-Checks that municipality codes are 6- or 7-digit integers
-within the valid Brazilian range (110001-530010).
+Checks that municipality codes can be safely normalized to the package
+standard 6-digit IBGE municipality code. Seven-digit IBGE codes are accepted
+and normalized by removing the check digit.
 }

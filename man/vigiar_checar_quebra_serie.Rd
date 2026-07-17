@@ -4,7 +4,14 @@
 \alias{vigiar_checar_quebra_serie}
 \title{Detect series breaks}
 \usage{
-vigiar_checar_quebra_serie(diag, dados, col_muni, col_ano = "ano", col_pm25)
+vigiar_checar_quebra_serie(
+  diag,
+  dados,
+  col_muni,
+  col_ano = "ano",
+  col_pm25,
+  col_mes = NULL
+)
 }
 \arguments{
 \item{diag}{A vigiar_diagnostic object.}
@@ -16,6 +23,9 @@ vigiar_checar_quebra_serie(diag, dados, col_muni, col_ano = "ano", col_pm25)
 \item{col_ano}{Year column.}
 
 \item{col_pm25}{PM2.5 column.}
+
+\item{col_mes}{Optional month column. When available, changes are evaluated
+only between consecutive calendar months.}
 }
 \value{
 The modified diagnostic object.

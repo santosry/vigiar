@@ -1,295 +1,578 @@
+
 # vigiar
 
 <!-- badges: start -->
+
 [![R-CMD-check](https://github.com/santosry/vigiar/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/santosry/vigiar/actions/workflows/R-CMD-check.yaml)
 [![lint](https://github.com/santosry/vigiar/actions/workflows/lint.yaml/badge.svg)](https://github.com/santosry/vigiar/actions/workflows/lint.yaml)
 [![pkgdown](https://github.com/santosry/vigiar/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/santosry/vigiar/actions/workflows/pkgdown.yaml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![R >= 4.1.0](https://img.shields.io/badge/R-%3E%3D%204.1.0-blue.svg)](https://www.r-project.org/)
+[![test-coverage](https://github.com/santosry/vigiar/actions/workflows/test-coverage.yaml/badge.svg)](https://github.com/santosry/vigiar/actions/workflows/test-coverage.yaml)
+[![License:
+MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![R \>=
+4.1.0](https://img.shields.io/badge/R-%3E%3D%204.1.0-blue.svg)](https://www.r-project.org/)
 <!-- badges: end -->
 
-Pacote R para download, processamento, validação e diagnóstico dos dados do
-[VIGIAR](https://app.powerbi.com/view?r=eyJrIjoiNmRhODQwNzItNThlOS00ZmQ4LWJjZmItZDYxOTNhOTRmYmFhIiwidCI6IjlhNTU0YWQzLWI1MmItNDg2Mi1hMzZmLTg0ZDg5MWU1YzcwNSJ9)
-(Vigilância em Saúde Ambiental) do Ministério da Saúde. Foco no estado do
-Rio de Janeiro, com 92 municípios e 9 macrorregiões de saúde (SES-RJ).
+`vigiar` is an R package for downloading, processing, validating,
+auditing, and documenting public data from Brazil's VIGIAR environmental
+health surveillance dashboard. The first robust workflow targets PM2.5
+and the 92 municipalities of Rio de Janeiro state.
 
-**vigiar desconfia dos dados antes de seduzir o pesquisador com gráficos.**
+The package is deliberately conservative: it does not merely filter rows
+for RJ. It measures whether the RJ download is complete, identifies
+missing municipalities, warns about possible API truncation, and keeps
+reproducibility metadata on the returned data.
 
-## Instalação
+The generic `vigiar_baixar()` function does not restrict geography by
+default. RJ scope is explicit through `vigiar_baixar_rj()`.
 
-```r
-# Instalar do GitHub
-devtools::install_github("santosry/vigiar")
+## Installation
+
+``` r
+# install.packages("remotes")
+remotes::install_github("santosry/vigiar")
 ```
 
-Dependências: `httr2`, `jsonlite`, `tibble`, `dplyr`, `cli`, `openssl`.
+Core dependencies are `httr2`, `jsonlite`, `tibble`, `dplyr`, `cli`, and
+`openssl`. Vignettes use `knitr` and `rmarkdown`. The exploratory RJ
+plot uses `ggplot2` only when it is installed.
 
-## Exemplo rápido (20 linhas)
+## Choose the Right Workflow
 
-```r
+The public entry points intentionally serve different evidence needs:
+
+| Goal | Recommended function | Evidence produced |
+|----|----|----|
+| Download any VIGIAR table without an implicit geographic restriction | `vigiar_baixar()` | Response, parser, query, schema, and truncation metadata |
+| Download an RJ table and measure municipal coverage | `vigiar_baixar_rj()` | Official-code RJ filtering, 92-municipality coverage, and table-grain checks |
+| Download monthly RJ PM2.5 means | `vigiar_baixar_pm25_mensal_rj()` | Processed monthly values plus municipality-year-month completeness and quality evidence |
+| Download one municipality safely | `vigiar_baixar_municipio()` | Code-based filtering and municipality-specific provenance |
+| Partition a large RJ table | `vigiar_baixar_rj_completo()` | Per-partition retry, failure, deduplication, and truncation evidence |
+| Produce release-grade multi-table evidence | `vigiar_auditar_rj_online()` | CSV, JSON, and RDS audit artifacts with objective conclusions |
+
+Use the narrowest function that matches the research question. Do not
+use a generic successful response as evidence that an RJ
+municipality-time panel is complete.
+
+## Quick Start
+
+``` r
 library(vigiar)
-library(dplyr)
 
-# 1. Conectar
 vigiar_conectar()
 
-# 2. Baixar dados do RJ
-pm25 <- vigiar_baixar_rj("df_anual")
+pm25_rj <- vigiar_baixar_rj("df_anual", validar_cobertura = TRUE)
+cobertura <- vigiar_rj_cobertura(pm25_rj)
+print(cobertura)
 
-# 3. Processar e validar
-pm25 <- process_pm25(pm25, tipo = "anual")
-
-# 4. Diagnosticar qualidade
-diag <- vigiar_diagnosticar_serie(pm25)
+pm25_rj <- process_pm25(pm25_rj, tipo = "anual")
+diag <- vigiar_diagnosticar_serie(pm25_rj, escopo = "rj")
 vigiar_relatorio_diagnostico(diag)
 
-# 5. Agregar por ano
-tendencia <- vigiar_serie_temporal(pm25, nivel = "nacional")
-print(tendencia)
+pm25_monthly_rj <- vigiar_baixar_pm25_mensal_rj(
+  anos = 2024,
+  meses = 1:12
+)
+monthly_analysis <- vigiar_analisar_pm25_mensal_rj(pm25_monthly_rj)
+print(monthly_analysis)
 
-# 6. Auditoria completa
-audit <- vigiar_auditar(pm25, tabela = "df_anual")
-print(audit)
-
-# 7. Snapshot para reprodutibilidade
-snap <- vigiar_snapshot(dados = pm25, tabela = "df_anual")
-vigiar_salvar_snapshot(snap, "pm25_rj_2026.rds")
+snap <- vigiar_snapshot(dados = pm25_rj, tabela = "df_anual")
+vigiar_salvar_snapshot(snap, "pm25_rj_snapshot.rds")
 
 vigiar_desconectar()
 ```
 
-## Funcionalidades principais
+## Evidence Vocabulary
 
-### Download
+The package uses these terms deliberately:
 
-```r
-# Listar tabelas disponíveis
-vigiar_tabelas()
+- **downloaded**: the endpoint returned a response that the parser
+  accepted;
+- **filtered**: rows were restricted to a requested scope;
+- **covered**: expected spatial units appear at least once;
+- **complete**: every unit in an explicit expected spatial-temporal grid
+  appears;
+- **verified**: schema, expected domain, and response evidence were
+  checked;
+- **audited**: those checks and their outcomes were recorded in a
+  structured report;
+- **reproducible**: data, schema, metadata, software version, and
+  checksums were archived.
 
-# Ver schema de uma tabela
-vigiar_esquema("df_anual")
+These terms are not synonyms. A successful download can be partial, a
+92/92 spatial coverage result can have missing municipality-month cells,
+and a reproducible snapshot can preserve incomplete source data.
 
-# Baixar tabela com filtro RJ
-pm25 <- vigiar_baixar_rj("df_anual")
-# Usa estratégia particionada (ASC + DESC) para cobrir todo o range
+## Downloading Rio de Janeiro Municipality Data
 
-# Baixar várias tabelas
-tudo <- vigiar_baixar_principais()
+Use `vigiar_baixar_rj()` when the analysis scope is Rio de Janeiro. It
+downloads the requested VIGIAR table, filters against the internal
+registry of the 92 RJ municipalities, normalizes 6- and 7-digit IBGE
+municipality codes to the package standard, and attaches coverage
+metadata.
 
-# Download com cache local (reusa por 24h)
-vigiar_cache_dir("~/vigiar_cache")
-dados <- vigiar_baixar_com_cache("df_anual")
-```
+``` r
+library(vigiar)
 
-### Processamento e validação
+vigiar_conectar()
 
-```r
-# Padronizar nomes de colunas
-pm25 <- process_pm25(dados, tipo = "anual")
-# Converte muni→cod_municipio, UF→sigla_uf, Media_pm25→pm25_media_anual
+pm25_rj <- vigiar_baixar_rj("df_anual", validar_cobertura = TRUE)
 
-# Validar códigos IBGE
-vigiar_validar_ibge(pm25, col_codigo = "cod_municipio")
+cobertura <- vigiar_rj_cobertura(pm25_rj)
+print(cobertura)
 
-# Validar datas
-vigiar_validar_datas(pm25)
+ausentes <- vigiar_rj_municipios_ausentes(pm25_rj)
+print(ausentes)
 
-# Checar dados completos
-vigiar_checar_dados(pm25, tabela = "df_anual")
-```
+pm25_rj <- process_pm25(pm25_rj, tipo = "anual")
 
-### Diagnóstico (v0.7.0)
-
-```r
-# Diagnóstico completo de série temporal
-diag <- vigiar_diagnosticar_serie(pm25)
-
-# Severidade: ok | aviso | problema | crítico
-diag$severidade
-
-# Relatório detalhado
+diag <- vigiar_diagnosticar_serie(pm25_rj, escopo = "rj")
 vigiar_relatorio_diagnostico(diag)
 
-# Checks individuais
-vigiar_checar_ibge(diag, pm25, "cod_municipio")
-vigiar_checar_pm25(diag, pm25, "pm25_media_anual")
-vigiar_checar_duplicatas(diag, pm25, "cod_municipio", "ano")
-vigiar_checar_quebra_serie(diag, pm25, "cod_municipio", "ano", "pm25_media_anual")
-vigiar_checar_cobertura_temporal(diag, pm25, "ano")
-vigiar_checar_cobertura_espacial(diag, pm25, "cod_municipio", uf = "RJ")
+vigiar_desconectar()
 ```
 
-### Séries temporais e agregação
+When the research question requires all 92 municipalities, set
+`exigir_completo = TRUE` or `require_complete = TRUE`. The function
+stops with a clear error if any expected RJ municipality is absent or if
+possible API truncation prevents the package from guaranteeing
+completeness.
 
-```r
-# Agregar por ano
-anual <- vigiar_agregar_tempo(pm25, agregar_por = "ano",
-  variavel = "pm25_media_anual",
-  funcoes = list(media = mean, dp = sd, n = length))
-
-# Tendência descritiva
-tend <- vigiar_tendencia_descritiva(pm25, variavel = "pm25_media_anual")
-# Retorna: ano, media, variacao_anual (%), media_movel
-
-# Série temporal por UF
-uf_series <- vigiar_serie_temporal(pm25, nivel = "uf")
+``` r
+pm25_rj <- vigiar_baixar_rj(
+  "df_anual",
+  validar_cobertura = TRUE,
+  require_complete = TRUE
+)
 ```
 
-### Rio de Janeiro
+Some VIGIAR tables may naturally contain fewer than 92 municipalities
+for a given table, year, or month. A missing municipality can indicate
+limited source availability, a schema change, an inappropriate filter,
+API truncation, or a true absence from the source table. The package
+reports this honestly, but the researcher must decide whether the
+resulting data are epidemiologically fit for the intended analysis.
 
-```r
-# 92 municípios com macrorregiões de saúde
-rj <- vigiar_rj_municipios()
+Useful RJ metadata are stored as attributes:
 
-# 9 macrorregiões
-vigiar_rj_macrorregioes()
-
-# Agregar por macrorregião
-resumo <- vigiar_rj_resumo(pm25, agregacao = "macrorregiao")
-
-# Validar se dados contêm apenas RJ
-vigiar_validar_rj(pm25)
+``` r
+attr(pm25_rj, "vigiar_uf")
+attr(pm25_rj, "vigiar_rj_n_municipios")
+attr(pm25_rj, "vigiar_rj_n_esperado")
+attr(pm25_rj, "vigiar_rj_cobertura_pct")
+attr(pm25_rj, "vigiar_rj_municipios_ausentes")
+attr(pm25_rj, "vigiar_possivel_truncamento")
 ```
 
-### Auditoria e compliance
+## Monthly PM2.5 Means for Rio de Janeiro
 
-```r
-# Auditoria completa
+Use `vigiar_baixar_pm25_mensal_rj()` for an explicit monthly PM2.5
+workflow. It downloads `df_mensal`, normalizes municipality codes,
+processes the source value as `pm25_media`, creates a monthly `periodo`
+column, and preserves query, parser, schema, truncation, and
+completeness evidence.
+
+``` r
+pm25_monthly_rj <- vigiar_baixar_pm25_mensal_rj(
+  anos = 2024,
+  meses = 1:12,
+  validar_completude = TRUE
+)
+
+monthly_analysis <- vigiar_analisar_pm25_mensal_rj(pm25_monthly_rj)
+monthly_analysis$summary
+monthly_analysis$temporal_domain
+monthly_analysis$by_year
+monthly_analysis$by_year_month
+monthly_analysis$by_calendar_month
+monthly_analysis$by_municipality
+monthly_analysis$by_health_region
+monthly_analysis$quality
+monthly_analysis$quality_by_year_month
+```
+
+The returned monthly object has a stable analysis contract:
+
+| Component | Meaning |
+|----|----|
+| `codigo_ibge_6` | Canonical internal municipality identifier |
+| `ano`, `mes`, `periodo` | Integer year/month and first-day monthly `Date` |
+| `pm25_media` | Canonical monthly PM2.5 mean in `ug/m3` |
+| `attr(x, "vigiar_rj_completude")` | Expected municipality-year-month grid assessment |
+| `attr(x, "vigiar_monthly_analysis")` | Structured summaries, quality evidence, and conclusion |
+| `attr(x, "vigiar_partition_report")` | Per-partition status when partitioning was used |
+| parser, schema, checksum, query, and truncation attributes | Retrieval and provenance evidence preserved through processing |
+
+Inspect structured fields instead of parsing console messages:
+
+``` r
+monthly_analysis$conclusion
+monthly_analysis$overall_status
+monthly_analysis$parser_status
+monthly_analysis$schema_status
+monthly_analysis$truncation_status
+monthly_analysis$partition_status
+monthly_analysis$n_failed_partitions
+```
+
+Exploratory and strict downloads have different contracts:
+
+| Mode | Expected domain | Download strategy | Incomplete result |
+|----|----|----|----|
+| Exploratory | May be inferred from observed data | One scoped response unless `particionar = TRUE` | Returned with structured warning/evidence |
+| Strict | Must be declared with expected years/months or period endpoints | Server-side year-month partitions | Actionable error; no completeness claim |
+| Offline re-analysis | Comes from the archived completeness object | No network call | Recomputes summaries without changing source evidence |
+
+For scientific release checks, declare the expected temporal domain and
+require verified completeness. The strict path downloads server-side
+year-month partitions and stops if a partition fails, any
+municipality-month cell is missing, a duplicate key is found, PM2.5
+values are invalid, the parser or critical schema does not pass, or the
+API shows truncation evidence.
+
+``` r
+pm25_monthly_complete <- vigiar_baixar_pm25_mensal_rj(
+  anos_esperados = 2020:2024,
+  meses_esperados = 1:12,
+  require_complete = TRUE
+)
+```
+
+A `complete` result means that the declared municipality by year by
+month grid was observed with passing retrieval checks. It does not
+validate causal inference, GAM, DLNM, relative risk, predictive models,
+or the epidemiological fitness of the exposure measure.
+
+The dedicated offline-safe article can be opened with:
+
+``` r
+vignette("monthly-pm25-rj", package = "vigiar")
+```
+
+## Municipality Code Standard
+
+`vigiar` uses the 6-digit IBGE municipality code internally. The RJ
+registry also includes `codigo_ibge_7`, because some public sources use
+the official 7-digit code with a check digit.
+
+``` r
+vigiar_rj_municipios()
+```
+
+The internal normalizer accepts integer, numeric, and character inputs
+such as `330455`, `3304557`, `"330455"`, and `" 330455 "`. Values that
+cannot be safely normalized return `NA`.
+
+The internal RJ registry is locked against offline reference fixtures
+generated from official sources:
+
+- `inst/extdata/municipios_ibge_reference.csv` is a versioned national
+  IBGE municipality reference derived from the IBGE Localidades API;
+  exactly 92 rows belong to RJ.
+- `inst/extdata/municipios_ibge_reference_metadata.json` records its
+  checksum, retrieval date, source URL, and row counts.
+- `inst/extdata/rj_regioes_saude_sesrj_reference.csv` locks the 9 SES-RJ
+  health regions used by the package.
+- `inst/extdata/rj_official_sources.csv` records the official source
+  URLs and access date used for these fixtures.
+
+For municipality-specific work, prefer code-based downloads instead of
+filtering by municipality name. This avoids fragile joins caused by
+spelling, accents, or source-specific name variants.
+
+``` r
+campos <- vigiar_baixar_municipio("df_anual", codigo_ibge = 330100)
+
+attr(campos, "vigiar_codigo_ibge_6")
+attr(campos, "vigiar_codigo_ibge_7")
+attr(campos, "vigiar_municipio")
+attr(campos, "vigiar_regiao_saude")
+```
+
+## Coverage Diagnostics
+
+`vigiar_rj_cobertura()` returns a tibble with:
+
+- expected municipality count (`n_municipios_esperados = 92`);
+- observed municipality count;
+- coverage percentage;
+- absent municipality names;
+- incomplete SES-RJ health regions;
+- a completeness flag;
+- a possible truncation flag.
+
+Coverage can be calculated overall or by time unit:
+
+``` r
+vigiar_rj_cobertura(pm25_rj)
+vigiar_rj_cobertura(pm25_rj, por = "ano")
+vigiar_rj_cobertura(pm25_rj, por = "mes")
+vigiar_rj_cobertura(pm25_rj, por = "ano_mes")
+vigiar_rj_cobertura(pm25_rj, por = "regiao_saude")
+```
+
+`por = "macrorregiao"` and `macrorregiao_saude` remain compatibility
+aliases. The canonical scientific term for the package's nine SES-RJ
+groups is **health region**, represented by `regiao_saude`.
+
+For table-aware completeness, use `vigiar_rj_completude_tabela()`. It
+applies the expected grid for common VIGIAR tables: municipality x year
+for annual tables, municipality x year for `pop`, municipality x year x
+month for monthly PM2.5 tables, and municipality x year x month for
+daily-reference tables when `ano` and `mes` are available.
+
+``` r
+vigiar_rj_completude_tabela(pm25_rj, tabela = "df_anual")
+
+vigiar_rj_completude_tabela(
+  pm25_rj,
+  tabela = "df_anual",
+  anos_esperados = 2018:2023,
+  require_complete = TRUE
+)
+```
+
+Without `anos_esperados`, `meses_esperados`,
+`periodo_inicio`/`periodo_fim`, or an official domain, the function may
+infer the interval between observed endpoints. That result is
+`complete_within_inferred_domain`, not proof that the researcher's
+expected study period is complete.
+
+`vigiar_diagnosticar_serie(..., escopo = "rj")` uses these coverage
+checks and adds clear messages such as complete RJ coverage, partial RJ
+coverage, low coverage in a specific year, no valid RJ municipality
+code, or possible API truncation.
+
+## Reproducible Online RJ Audit
+
+Use `vigiar_auditar_rj_online()` before formal scientific use or before
+archiving a release. It downloads the requested RJ tables, computes
+checksum and schema hash, evaluates table-grain completeness, lists
+absent municipalities, records temporal gaps, verifies parser structure,
+flags possible Power BI truncation, and writes CSV, JSON, and RDS
+artifacts under `data-raw/rj-download-completeness-output/`.
+
+``` r
+vigiar_conectar()
+
+audit <- vigiar_auditar_rj_online(
+  tabelas = c("df_anual", "df_mensal", "df_dias", "pop"),
+  salvar = TRUE,
+  require_complete = FALSE
+)
+
+audit[, c(
+  "tabela",
+  "n_rows",
+  "checksum",
+  "completeness_grade",
+  "n_incomplete_groups",
+  "parser_status",
+  "possivel_truncamento",
+  "conclusion"
+)]
+
+vigiar_desconectar()
+```
+
+When `require_complete = TRUE`, the audit stops if any table is partial,
+truncated, has parser issues, lacks a municipality code, lacks a schema
+hash, or otherwise fails. It also requires an explicit expected temporal
+domain. This is intentionally stricter than checking that
+`nrow(dados) > 0`.
+
+``` r
+years <- 2018:2023
+
+strict_audit <- vigiar_auditar_rj_online(
+  tabelas = c("df_anual", "df_mensal", "df_dias", "pop"),
+  dominios_esperados = list(
+    df_anual = list(anos_esperados = years),
+    df_mensal = list(anos_esperados = years, meses_esperados = 1:12),
+    df_dias = list(anos_esperados = years, meses_esperados = 1:12),
+    pop = list(anos_esperados = years)
+  ),
+  salvar = TRUE,
+  require_complete = TRUE
+)
+```
+
+The objective conclusion can be `complete`,
+`complete_within_inferred_domain`, `complete_within_observed_domain`,
+`partial`, `truncated`, `schema_changed`, `schema_unverified`, or
+`failed`. Plain `complete` is reserved for an explicit expected domain,
+complete RJ panel, matching critical schema, and no truncation evidence
+or parser issues. It does not prove causal validity, exposure
+measurement validity, model adequacy, or epidemiological
+identifiability.
+
+Truncation evidence is recorded separately as `no_evidence`, `possible`,
+`probable`, `confirmed`, or `unknown`. The raw response is assessed
+before any client-side UF filter, so filtering cannot erase a
+response-limit signal. Parser evidence is recorded as `parser_status`,
+`parser_issue_count`, and `parser_issues`. Power BI may mix dictionary
+indices with inline text after a dictionary reaches its cap; valid
+inline values are preserved, while actual row-width, mask, or
+dictionary-index violations prevent a `complete` result.
+
+## Processing
+
+``` r
+pm25 <- vigiar_baixar_rj("df_anual") |>
+  process_pm25(tipo = "anual")
+
+pm25_monthly <- vigiar_baixar_pm25_mensal_rj(
+  anos = 2024,
+  meses = 1:12
+)
+
+population <- vigiar_baixar_rj("pop") |>
+  process_populacao_exposta()
+
+health <- vigiar_baixar_rj("tb_muni") |>
+  process_indicadores_saude(agregacao = "municipio")
+```
+
+Processed tibbles keep package metadata and S3 classes such as
+`vigiar_pm25`, `vigiar_health`, and `vigiar_population`.
+
+## Snapshots, Cache, and Audit
+
+``` r
+vigiar_cache_dir("~/.cache/vigiar")
+pm25 <- vigiar_baixar_rj("df_anual", usar_cache = TRUE)
+
+snapshot <- vigiar_snapshot(dados = pm25, tabela = "df_anual")
+vigiar_verificar_snapshot(snapshot)
+
 audit <- vigiar_auditar(pm25, tabela = "df_anual")
-print(audit)
-# Schema, IBGE, temporal, unidades, cobertura, checksums
-
-# Múltiplos perfis de compliance
-comp <- vigiar_compliance_check(pm25, tabela = "df_anual",
-  profiles = c("basico", "rigoroso", "rj", "corrupcao"))
-
-# Checksum determinístico (SHA256)
-vigiar_checksum(pm25)
-
-# Exportar auditoria em JSON
-vigiar_exportar_auditoria(audit, "auditoria_pm25.json")
+vigiar_exportar_auditoria(audit, "audit-pm25-rj.json")
 ```
 
-### Benchmark
+Snapshots preserve RJ metadata, including coverage and truncation
+attributes. Canonicalization version 2 stores separate data, schema, and
+metadata checksums. `vigiar_checksum(mode = "canonical")` ignores
+row/column order and equivalent factor/character or integer/double
+representations while preserving full numeric precision;
+`mode = "ordered"` retains table order as part of identity.
 
-```r
-# Comparar estratégias de download
-bench <- vigiar_benchmark("df_anual",
-  strategies = c("direct", "year_asc_desc", "minimal_columns"),
-  repeticoes = 3)
+Schema locks can be used to detect dashboard changes before an analysis
+is reused. `vigiar_esquema_verificar_critico()` checks the locked
+critical columns used by the RJ PM2.5, municipality, coordinate, and
+population workflows.
 
-# Benchmark multi-tabela
-vigiar_benchmark_tabelas(c("df_anual", "df_mensal", "pop"))
-
-# Health check completo
-vigiar_health_check()
+``` r
+vigiar_esquema_lock("vigiar_schema_lock.json")
+vigiar_esquema_verificar("vigiar_schema_lock.json", error = TRUE)
+vigiar_esquema_verificar_critico(error = TRUE)
 ```
 
-### Logging
+The manual validation script `data-raw/check-rj-download-completeness.R`
+writes timestamped release reports for `df_muni`, `df_anual`,
+`df_mensal`, `df_dias`, and `df_dias_conama`, including checksums,
+table-grain coverage tables, and missing-municipality, missing-year, and
+missing-month reports under `data-raw/rj-download-completeness-output/`.
+Set `VIGIAR_VALIDATION_RELEASE` before running the script to bind the
+output to a formal release. Generated reports are intended to be
+archived with a release or local validation record, not committed as
+package data.
 
-```r
-# Visualizar log de operações
-vigiar_log()
+For strict runs, set `VIGIAR_EXPECTED_YEARS` or both
+`VIGIAR_EXPECTED_PERIOD_START` and `VIGIAR_EXPECTED_PERIOD_END`. The
+script refuses `VIGIAR_REQUIRE_COMPLETE=true` without an explicit
+temporal domain.
 
-# Resumo do log
-vigiar_resumo_log()
+The optional online test is also an audit, not only a smoke test. With
+`VIGIAR_RUN_ONLINE_TESTS=true`, it downloads `df_anual`, `df_mensal`,
+`df_dias`, and `pop`; writes a manifest with timestamp, row count,
+checksum, schema and verification states, missing municipalities,
+missing years, and missing months; and validates the expected table
+grain for each table. Set `VIGIAR_ONLINE_REPORT_DIR` to choose the
+output directory and set `VIGIAR_REQUIRE_ONLINE_COMPLETENESS=true` for
+formal release checks that must fail when table-grain completeness or
+truncation is detected. The scheduled `online-canary` workflow archives
+these artifacts independently of pull-request checks. Offline coverage
+is a separate CI gate at 70%, with a Cobertura XML report and RDS
+evidence artifact.
 
-# Histórico de downloads
-vigiar_historico_downloads()
+## API Lifecycle
 
-# Exportar log
-vigiar_exportar_log("log_operacoes.json")
+`vigiar_api_status()` classifies every exported symbol as `stable`,
+`experimental`, or `deprecated`. Internal dot-prefixed helpers are not
+exported. The language and compatibility policy is documented in
+[`LANGUAGE_POLICY.md`](LANGUAGE_POLICY.md).
+
+## Documentation Map
+
+- `vignette("vigiar")` introduces connection, RJ downloads, and
+  processing.
+- `vignette("monthly-pm25-rj")` documents the monthly PM2.5 contract,
+  strict mode, output structure, and offline re-analysis.
+- `vignette("rj-download-completo")` covers official RJ coverage,
+  expected grids, truncation, and reproducible online audits.
+- `vignette("fluxo-download-processamento")` covers the generic
+  download, processing, and snapshot flow.
+- `vignette("uso-responsavel-dados")` states the scientific and
+  epidemiologic interpretation limits.
+- `AUDIT_REPORT.md` records the current technical and scientific audit
+  evidence.
+
+## Exploratory Plot
+
+``` r
+pm25 <- vigiar_baixar_rj("df_anual", processar = TRUE, tipo = "anual")
+
+vigiar_plot_pm25_rj(pm25, por = "ano")
+vigiar_plot_pm25_rj(pm25, por = "macrorregiao") # compatibility alias
 ```
 
-### Snapshots e reprodutibilidade
+This plot is exploratory. It does not download, process, or repair data
+silently.
 
-```r
-# Criar snapshot com checksum
-snap <- vigiar_snapshot(dados = pm25, tabela = "df_anual")
+## Tables
 
-# Verificar integridade
-vigiar_verificar_snapshot(snap)  # TRUE/FALSE
+| Table                | Main content                             |
+|----------------------|------------------------------------------|
+| `df_anual`           | Annual PM2.5 by municipality             |
+| `df_mensal`          | Monthly PM2.5 by municipality            |
+| `df_dias`            | Days above the WHO daily PM2.5 reference |
+| `df_dias_conama`     | Days above the CONAMA PM2.5 reference    |
+| `pop`                | Population exposure                      |
+| `df_muni`            | Municipality registry                    |
+| `tb_brasil`          | Brazil-level health indicators           |
+| `tb_uf`              | UF-level health indicators               |
+| `tb_muni`            | Municipality-level health indicators     |
+| `tb_fracao`          | Attributable fraction estimates          |
+| `tb_quartis`         | Indicator quartiles                      |
+| `df_indoor`          | Indoor solid-fuel exposure               |
+| `df_indoor_desfecho` | Indoor exposure health outcomes          |
+| `medidas`            | Calculated dashboard measures            |
 
-# Salvar e carregar
-vigiar_salvar_snapshot(snap, "snapshot.rds")
-snap2 <- vigiar_carregar_snapshot("snapshot.rds")
+Run `vigiar_info()` for the live table catalogue after connecting.
 
-# Comparar duas versões
-diffs <- vigiar_comparar_snapshots(snap, snap2)
+## Scientific Cautions
 
-# Congelar schema para detectar mudanças
-vigiar_esquema_lock("schema_lock.json")
-vigiar_esquema_verificar("schema_lock.json")
-```
+- VIGIAR data are public, aggregated surveillance data.
+- PM2.5 may be estimated or modelled, not measured at every ground
+  location.
+- A dataset can be available and still be incomplete for RJ.
+- Spatial coverage must be checked before municipality or health-region
+  claims.
+- The Power BI API may truncate large responses.
+- Tables without municipality codes cannot prove 92/92 RJ coverage.
+- Short time series and missing months limit trend interpretation.
+- Ecological associations do not establish individual-level causality.
+- This package prepares and audits data. It does not implement or
+  validate causal inference, GAM, DLNM, relative-risk, or
+  machine-learning models.
 
-### Exportação
+## Citation
 
-```r
-vigiar_exportar_csv(pm25, "pm25_rj.csv")
-vigiar_exportar_rds(pm25, "pm25_rj.rds")  # Preserva metadata
-vigiar_exportar_parquet(pm25, "pm25_rj.parquet")  # Requer arrow
-```
+> Santos, R. (2026). vigiar: VIGIAR Environmental Health Data for Rio de
+> Janeiro. R package version 0.7.1.9000.
+> <https://github.com/santosry/vigiar>
 
-### Dicionário
+## License
 
-```r
-# Dicionário completo
-dict <- vigiar_dicionario()
-
-# Variáveis de um domínio
-vigiar_variaveis("pm25")
-vigiar_variaveis("indicadores_saude")
-
-# Descrever uma variável
-vigiar_descrever_variavel("pm25", "pm25_media_anual")
-
-# Abrir página de convenções
-vigiar_convencoes()
-```
-
-## Tabelas disponíveis
-
-| Tabela | Descrição | Categoria |
-|--------|-----------|-----------|
-| `df_anual` | Médias anuais PM2.5 | Qualidade do Ar |
-| `df_mensal` | Médias mensais PM2.5 | Qualidade do Ar |
-| `df_dias` | Dias críticos (OMS) | Qualidade do Ar |
-| `df_dias_conama` | Dias críticos (CONAMA) | Qualidade do Ar |
-| `pop` | População exposta | População |
-| `df_muni` | Cadastro de municípios | Cadastro |
-| `tb_brasil` | Indicadores Brasil | Saúde |
-| `tb_uf` | Indicadores por UF | Saúde |
-| `tb_muni` | Indicadores por município | Saúde |
-| `tb_fracao` | Fração atribuível | Saúde |
-| `tb_quartis` | Quartis | Saúde |
-| `df_indoor` | Exposição indoor | Indoor |
-| `df_indoor_desfecho` | Desfechos indoor | Indoor |
-| `medidas` | Medidas calculadas | Medidas |
-
-Use `vigiar_info()` para catálogo completo com descrições e categorias.
-
-## Limitações
-
-- **API Power BI**: limita respostas a ~30K linhas. Use `vigiar_baixar_rj()` para
-  tabelas grandes (download ASC + DESC particionado).
-- **Schema instável**: o dashboard pode mudar sem aviso. Use `vigiar_esquema_lock()`
-  para congelar e `vigiar_status()` para verificar.
-- **Cobertura**: nem todos os 92 municípios do RJ têm dados em todos os anos.
-- **Dados secundários**: o pacote baixa dados públicos, não os gera. Validação é
-  obrigatória antes de qualquer análise.
-- **Inferência causal**: baixar dados não é modelar. O pacote prepara dados;
-  modelos (GAM, DLNM) devem ser feitos externamente.
-- **Dependência externa**: o pacote depende do portal Power BI do Ministério da Saúde.
-  Se o portal sair do ar, o download falha.
-
-## Citação
-
-Para citar o pacote em trabalhos acadêmicos:
-
-> Santos, R. (2026). vigiar: Download Data from the VIGIAR Environmental Health
-> Surveillance Dashboard. R package version 0.7.1.9000.
-> https://github.com/santosry/vigiar
-
-## Licença
-
-MIT. Os dados baixados pertencem ao Ministério da Saúde / VIGIAR.
+MIT. Downloaded public data remain under the responsibility and terms of
+the Brazilian Ministry of Health / VIGIAR source.

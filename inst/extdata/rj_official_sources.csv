@@ -1,0 +1,4 @@
+source_id,source_name,source_url,accessed_at,scope
+ibge_localidades,IBGE API Localidades,https://servicodados.ibge.gov.br/api/v1/localidades/municipios,2026-07-11,Versioned national municipality names and official 7-digit IBGE codes; RJ subset has 92 municipalities
+sesrj_regionalizacao,SES-RJ Assessoria de Regionalizacao,https://www.saude.rj.gov.br/assessoria-de-regionalizacao/sobre-a-regionalizacao/2017/04/regionalizacao,2026-07-11,RJ count of 92 municipalities and 9 health regions
+sesrj_processo_regionalizacao,SES-RJ Processo de Regionalizacao,https://www.saude.rj.gov.br/assessoria-de-regionalizacao/sobre-a-regionalizacao/2017/04/o-processo-de-regionalizacao-no-estado-do-rio-de-janeiro,2026-07-11,Historical confirmation of the 9 RJ health regions

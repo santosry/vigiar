@@ -1,0 +1,309 @@
+---
+title: "Verifiable Rio de Janeiro Downloads"
+author: "Ryan Santos"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Verifiable Rio de Janeiro Downloads}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Why Completeness Matters
+
+For Rio de Janeiro, the package expects 92 municipalities. A table filtered to
+RJ is not automatically complete. Completeness must be measured against the
+internal registry and, when time columns exist, by year or by year-month.
+
+The executable examples below use simulated data so this vignette builds
+offline.
+
+A response can be downloaded and filtered without being complete. Overall
+92/92 coverage also does not prove that every municipality is present in every
+expected year or month. `vigiar` reports spatial coverage, temporal-domain
+status, panel completeness, schema status, and response truncation separately.
+
+```{r}
+library(vigiar)
+
+rj <- vigiar_rj_municipios()
+code_col <- if ("codigo_ibge_6" %in% names(rj)) "codigo_ibge_6" else "codigo_ibge"
+
+coverage_fun <- function(dados, por = "geral") {
+  if (exists("vigiar_rj_cobertura", mode = "function")) {
+    return(vigiar_rj_cobertura(dados, por = por))
+  }
+
+  if (por == "ano" && "ano" %in% names(dados)) {
+    years <- sort(unique(dados$ano))
+    return(do.call(rbind, lapply(years, function(y) {
+      out <- coverage_fun(dados[dados$ano == y, ], por = "geral")
+      out$nivel <- "ano"
+      out$ano <- y
+      out
+    })))
+  }
+
+  present <- unique(dados$cod_municipio)
+  present <- present[present %in% rj[[code_col]]]
+  data.frame(
+    nivel = por,
+    ano = NA_integer_,
+    mes = NA_integer_,
+    n_municipios_presentes = length(present),
+    n_municipios_esperados = nrow(rj),
+    cobertura_pct = round(100 * length(present) / nrow(rj), 1),
+    n_ausentes = nrow(rj) - length(present),
+    completo = length(present) == nrow(rj),
+    stringsAsFactors = FALSE
+  )
+}
+
+missing_fun <- function(dados) {
+  if (exists("vigiar_rj_municipios_ausentes", mode = "function")) {
+    return(vigiar_rj_municipios_ausentes(dados))
+  }
+  present <- unique(dados$cod_municipio)
+  rj[!rj[[code_col]] %in% present, ]
+}
+
+head(rj)
+```
+
+## Simulated Complete Coverage
+
+```{r}
+pm25_complete <- data.frame(
+  cod_municipio = rj[[code_col]],
+  ano = 2022L,
+  pm25_media_anual = 12,
+  stringsAsFactors = FALSE
+)
+
+coverage_fun(pm25_complete)
+```
+
+## Simulated Partial Coverage
+
+```{r}
+pm25_partial <- pm25_complete[1:10, ]
+
+cov_partial <- coverage_fun(pm25_partial)
+cov_partial
+
+missing_fun(pm25_partial)
+```
+
+## Coverage by Year
+
+```{r}
+pm25_years <- rbind(
+  transform(pm25_complete, ano = 2020L),
+  transform(pm25_partial, ano = 2021L)
+)
+
+coverage_fun(pm25_years, por = "ano")
+```
+
+## Table-Aware Completeness
+
+`vigiar_rj_completude_tabela()` applies the expected municipal grid for common
+VIGIAR tables. For `df_anual`, the expected grid is municipality by year. For
+`pop`, the expected grid is also municipality by year. For `df_mensal`,
+`df_dias`, and `df_dias_conama`, the expected grid is municipality by year by
+month when `ano` and `mes` are available.
+
+```{r}
+if (exists("vigiar_rj_completude_tabela", mode = "function")) {
+  vigiar_rj_completude_tabela(
+    pm25_years,
+    tabela = "df_anual",
+    anos_esperados = 2020:2022
+  )
+}
+```
+
+```{r}
+pm25_months <- merge(
+  pm25_complete,
+  data.frame(mes = 1:2),
+  by = NULL
+)
+pm25_months$pm25_media <- 12 + pm25_months$mes / 10
+
+if (exists("vigiar_rj_completude_tabela", mode = "function")) {
+  vigiar_rj_completude_tabela(
+    pm25_months,
+    tabela = "df_mensal",
+    anos_esperados = 2022L,
+    meses_esperados = 1:3
+  )
+}
+```
+
+## Explicit Monthly PM2.5 Workflow
+
+`vigiar_baixar_pm25_mensal_rj()` is the dedicated entry point for monthly PM2.5
+means. It uses `df_mensal`, returns the canonical value column `pm25_media`, and
+assesses the expected municipality by year by month grid. The analysis helper is
+offline-capable and can also be used with simulated or archived data.
+
+See `vignette("monthly-pm25-rj", package = "vigiar")` for the complete monthly
+output contract, strict versus exploratory behavior, partition evidence,
+period-specific quality fields, and a worked offline missing-month example.
+
+```{r}
+monthly_completeness <- vigiar_rj_completude_tabela(
+  pm25_months,
+  tabela = "df_mensal",
+  anos_esperados = 2022L,
+  meses_esperados = 1:2
+)
+monthly_analysis <- vigiar_analisar_pm25_mensal_rj(
+  pm25_months,
+  completude = monthly_completeness
+)
+
+monthly_analysis$summary
+monthly_analysis$temporal_domain
+monthly_analysis$by_year_month
+monthly_analysis$quality
+monthly_analysis$quality_by_year_month
+```
+
+The online download below is deliberately not evaluated while building the
+vignette.
+
+```{r, eval = FALSE}
+monthly_pm25 <- vigiar_baixar_pm25_mensal_rj(
+  anos = 2024,
+  meses = 1:12,
+  validar_completude = TRUE
+)
+
+monthly_analysis <- vigiar_analisar_pm25_mensal_rj(monthly_pm25)
+print(monthly_analysis)
+
+monthly_pm25_strict <- vigiar_baixar_pm25_mensal_rj(
+  anos_esperados = 2020:2024,
+  meses_esperados = 1:12,
+  require_complete = TRUE
+)
+```
+
+Strict monthly completeness requires every declared municipality-month cell,
+passing parser and critical-schema evidence, no failed partition, no duplicate
+key, valid PM2.5 values, and no API truncation signal. This is retrieval and data
+quality evidence; it does not validate causal inference, GAM, DLNM, relative
+risk, predictive models, or epidemiological conclusions.
+
+When `require_complete = TRUE`, incomplete coverage or possible truncation is an
+error, not just a warning.
+
+```{r, eval = FALSE}
+vigiar_rj_completude_tabela(
+  pm25_years,
+  tabela = "df_anual",
+  anos_esperados = 2020:2022,
+  require_complete = TRUE
+)
+```
+
+## Municipality-Specific Download
+
+Use `vigiar_baixar_municipio()` when the target is one municipality. It filters
+by normalized IBGE code, not by municipality name.
+
+```{r, eval = FALSE}
+campos <- vigiar_baixar_municipio("df_anual", codigo_ibge = 330100)
+
+attr(campos, "vigiar_codigo_ibge_6")
+attr(campos, "vigiar_codigo_ibge_7")
+attr(campos, "vigiar_municipio")
+```
+
+## Online Download Example
+
+The following code is intentionally not evaluated during vignette builds.
+
+```{r, eval = FALSE}
+vigiar_conectar()
+
+pm25_rj <- vigiar_baixar_rj("df_anual", validar_cobertura = TRUE)
+vigiar_rj_cobertura(pm25_rj)
+
+pm25_rj_complete <- vigiar_baixar_rj(
+  "df_anual",
+  validar_cobertura = TRUE,
+  require_complete = TRUE
+)
+
+vigiar_desconectar()
+```
+
+## Reproducible Online Audit
+
+For a reproducible scientific audit, use `vigiar_auditar_rj_online()`. The
+function writes `manifest.csv`, `manifest.json`, `audit.rds`, and per-table
+coverage CSV files. These outputs include the table name, execution time,
+package version, commit SHA when available, checksum, schema hash, row and
+column counts, general coverage, table-grain completeness, missing
+municipalities, incomplete health regions, parser status, truncation evidence,
+and an objective conclusion.
+
+```{r, eval = FALSE}
+vigiar_conectar()
+
+audit <- vigiar_auditar_rj_online(
+  tabelas = c("df_anual", "df_mensal", "df_dias", "pop"),
+  dominios_esperados = list(
+    df_anual = list(anos_esperados = 2018:2023),
+    df_mensal = list(anos_esperados = 2018:2023, meses_esperados = 1:12),
+    df_dias = list(anos_esperados = 2018:2023, meses_esperados = 1:12),
+    pop = list(anos_esperados = 2018:2023)
+  ),
+  salvar = TRUE,
+  dir = "data-raw/rj-download-completeness-output",
+  require_complete = TRUE
+)
+
+vigiar_desconectar()
+```
+
+The `require_complete = TRUE` mode turns partial coverage, parser issues,
+possible truncation, missing municipality codes, missing schema hashes, and
+failed downloads into a clear error. It requires an explicit expected temporal
+domain. Use it for release validation, not for exploratory checks.
+
+The audit records `parser_status`, `parser_issue_count`, and `parser_issues`.
+Power BI can use dictionary indices for early string values and inline strings
+after a dictionary cap. The parser preserves both valid forms, but structural
+mask, width, or index violations block strict completeness.
+
+## Possible Truncation
+
+Large Power BI responses can be truncated. The package records
+`vigiar_truncation_status` as `no_evidence`, `possible`, `probable`,
+`confirmed`, or `unknown`, together with evidence. The raw response is assessed
+before local filtering. Do not claim 92/92 completeness from a response with
+truncation evidence without a validated partitioned download.
+
+```{r}
+attr(pm25_partial, "vigiar_possivel_truncamento") <- TRUE
+coverage_fun(pm25_partial)
+```
+
+## Scientific Interpretation
+
+Coverage tells you whether the expected municipalities appear in the downloaded
+table. It does not prove that PM2.5 is measured at the ground, that the data are
+fit for causal inference, or that the time series is sufficient for modelling.
+The package does not implement GAM, DLNM, relative-risk, machine-learning, or
+causal inference models. Treat coverage as a necessary diagnostic, not as a
+scientific conclusion.

@@ -20,7 +20,7 @@
 #' @export
 process_vigiar <- function(dados, tabela = NULL, ...) {
   tabela <- tabela %||% attr(dados, "vigiar_tabela") %||%
-    stop("Informe o nome da tabela ou use dados com atributo 'vigiar_tabela'.")
+    stop("Provide a table name or data with a 'vigiar_tabela' attribute.")
 
   switch(tabela,
     df_anual             = process_pm25(dados, tipo = "anual", ...),
@@ -56,6 +56,7 @@ process_vigiar <- function(dados, tabela = NULL, ...) {
 #' @export
 process_pm25 <- function(dados, tipo = c("anual", "mensal", "dias", "dias_conama"), ...) {
   tipo <- match.arg(tipo)
+  source_attributes <- .vigiar_data_attributes(dados)
   dados <- tibble::as_tibble(dados)
 
   # -- Standardise column names ---------------------------------------------
@@ -93,7 +94,7 @@ process_pm25 <- function(dados, tipo = c("anual", "mensal", "dias", "dias_conama
 
   # -- Type conversion -----------------------------------------------------
   if ("cod_municipio" %in% names(dados)) {
-    dados$cod_municipio <- as.integer(dados$cod_municipio)
+    dados$cod_municipio <- .vigiar_normalizar_codigo_municipio(dados$cod_municipio)
   }
   if ("ano" %in% names(dados)) {
     dados$ano <- as.integer(dados$ano)
@@ -119,7 +120,7 @@ process_pm25 <- function(dados, tipo = c("anual", "mensal", "dias", "dias_conama
   # -- Build return object -------------------------------------------------
   metadados <- list(
     tipo         = tipo,
-    fonte        = "VIGIAR -- Ministerio da Saude",
+    fonte        = "VIGIAR -- Brazilian Ministry of Health",
     tabela_raw   = switch(tipo,
       anual       = "df_anual",
       mensal      = "df_mensal",
@@ -130,12 +131,13 @@ process_pm25 <- function(dados, tipo = c("anual", "mensal", "dias", "dias_conama
     processador  = "process_pm25"
   )
 
-  new_vigiar_tbl(
+  out <- new_vigiar_tbl(
     dados,
     subclass  = c("vigiar_pm25", "vigiar_air_quality"),
     tabela    = metadados$tabela_raw,
     metadados = metadados
   )
+  .vigiar_restore_data_attributes(out, source_attributes, overwrite = FALSE)
 }
 
 # -- Population processor ------------------------------------------------------
@@ -147,6 +149,7 @@ process_pm25 <- function(dados, tipo = c("anual", "mensal", "dias", "dias_conama
 #' @return A \code{vigiar_population} tibble.
 #' @export
 process_populacao_exposta <- function(dados, ...) {
+  source_attributes <- .vigiar_data_attributes(dados)
   dados <- tibble::as_tibble(dados)
 
   rename_map <- list(
@@ -163,7 +166,7 @@ process_populacao_exposta <- function(dados, ...) {
   }
 
   if ("cod_municipio" %in% names(dados)) {
-    dados$cod_municipio <- as.integer(dados$cod_municipio)
+    dados$cod_municipio <- .vigiar_normalizar_codigo_municipio(dados$cod_municipio)
   }
   if ("ano" %in% names(dados)) {
     dados$ano <- as.integer(dados$ano)
@@ -175,16 +178,17 @@ process_populacao_exposta <- function(dados, ...) {
   dados <- vigiar_validar_ibge(dados, col_codigo = "cod_municipio")
   dados <- vigiar_validar_datas(dados)
 
-  new_vigiar_tbl(
+  out <- new_vigiar_tbl(
     dados,
     subclass  = c("vigiar_population"),
     tabela    = "pop",
     metadados = list(
-      fonte       = "VIGIAR -- Ministerio da Saude",
+      fonte       = "VIGIAR -- Brazilian Ministry of Health",
       tabela_raw  = "pop",
       processador = "process_populacao_exposta"
     )
   )
+  .vigiar_restore_data_attributes(out, source_attributes, overwrite = FALSE)
 }
 
 # -- Health indicators processor -----------------------------------------------
@@ -204,6 +208,7 @@ process_indicadores_saude <- function(dados,
                                                      "municipio", "quartis"),
                                        ...) {
   agregacao <- match.arg(agregacao)
+  source_attributes <- .vigiar_data_attributes(dados)
   dados <- tibble::as_tibble(dados)
 
   rename_map <- list(
@@ -237,6 +242,7 @@ process_indicadores_saude <- function(dados,
   }
 
   if ("cod_municipio" %in% names(dados)) {
+    dados$cod_municipio <- .vigiar_normalizar_codigo_municipio(dados$cod_municipio)
     dados <- vigiar_validar_ibge(dados, col_codigo = "cod_municipio")
   }
 
@@ -248,17 +254,18 @@ process_indicadores_saude <- function(dados,
     quartis   = "tb_quartis"
   )
 
-  new_vigiar_tbl(
+  out <- new_vigiar_tbl(
     dados,
     subclass  = c("vigiar_health"),
     tabela    = tabela_raw,
     metadados = list(
-      fonte       = "VIGIAR -- Ministerio da Saude",
+      fonte       = "VIGIAR -- Brazilian Ministry of Health",
       tabela_raw  = tabela_raw,
       agregacao   = agregacao,
       processador = "process_indicadores_saude"
     )
   )
+  .vigiar_restore_data_attributes(out, source_attributes, overwrite = FALSE)
 }
 
 # -- Attributable fraction processor -------------------------------------------
@@ -270,6 +277,7 @@ process_indicadores_saude <- function(dados,
 #' @return A \code{vigiar_attributable_fraction} tibble.
 #' @export
 process_fracao_atribuivel <- function(dados, ...) {
+  source_attributes <- .vigiar_data_attributes(dados)
   dados <- tibble::as_tibble(dados)
 
   rename_map <- list(
@@ -294,16 +302,17 @@ process_fracao_atribuivel <- function(dados, ...) {
     if (col %in% names(dados)) dados[[col]] <- as.numeric(dados[[col]])
   }
 
-  new_vigiar_tbl(
+  out <- new_vigiar_tbl(
     dados,
     subclass  = c("vigiar_attributable_fraction", "vigiar_health"),
     tabela    = "tb_fracao",
     metadados = list(
-      fonte       = "VIGIAR -- Ministerio da Saude",
+      fonte       = "VIGIAR -- Brazilian Ministry of Health",
       tabela_raw  = "tb_fracao",
       processador = "process_fracao_atribuivel"
     )
   )
+  .vigiar_restore_data_attributes(out, source_attributes, overwrite = FALSE)
 }
 
 # -- Indoor exposure processor -------------------------------------------------
@@ -318,6 +327,7 @@ process_fracao_atribuivel <- function(dados, ...) {
 #' @export
 process_exposicao_indoor <- function(dados, tipo = c("exposicao", "desfecho"), ...) {
   tipo <- match.arg(tipo)
+  source_attributes <- .vigiar_data_attributes(dados)
   dados <- tibble::as_tibble(dados)
 
   rename_map <- list(
@@ -360,17 +370,18 @@ process_exposicao_indoor <- function(dados, tipo = c("exposicao", "desfecho"), .
 
   tabela_raw <- if (tipo == "desfecho") "df_indoor_desfecho" else "df_indoor"
 
-  new_vigiar_tbl(
+  out <- new_vigiar_tbl(
     dados,
     subclass  = c("vigiar_indoor", "vigiar_health"),
     tabela    = tabela_raw,
     metadados = list(
-      fonte       = "VIGIAR -- Ministerio da Saude",
+      fonte       = "VIGIAR -- Brazilian Ministry of Health",
       tabela_raw  = tabela_raw,
       tipo        = tipo,
       processador = "process_exposicao_indoor"
     )
   )
+  .vigiar_restore_data_attributes(out, source_attributes, overwrite = FALSE)
 }
 
 # -- Municipality registry processor -------------------------------------------
@@ -382,6 +393,7 @@ process_exposicao_indoor <- function(dados, tipo = c("exposicao", "desfecho"), .
 #' @return A \code{vigiar_municipios} tibble.
 #' @export
 process_municipios <- function(dados, ...) {
+  source_attributes <- .vigiar_data_attributes(dados)
   dados <- tibble::as_tibble(dados)
 
   rename_map <- list(
@@ -405,7 +417,7 @@ process_municipios <- function(dados, ...) {
   }
 
   if ("cod_municipio" %in% names(dados)) {
-    dados$cod_municipio <- as.integer(dados$cod_municipio)
+    dados$cod_municipio <- .vigiar_normalizar_codigo_municipio(dados$cod_municipio)
   }
   if ("cod_uf" %in% names(dados)) {
     dados$cod_uf <- as.integer(dados$cod_uf)
@@ -419,16 +431,17 @@ process_municipios <- function(dados, ...) {
 
   dados <- vigiar_validar_ibge(dados, col_codigo = "cod_municipio")
 
-  new_vigiar_tbl(
+  out <- new_vigiar_tbl(
     dados,
     subclass  = c("vigiar_municipios"),
     tabela    = "df_muni",
     metadados = list(
-      fonte       = "VIGIAR -- Ministerio da Saude",
+      fonte       = "VIGIAR -- Brazilian Ministry of Health",
       tabela_raw  = "df_muni",
       processador = "process_municipios"
     )
   )
+  .vigiar_restore_data_attributes(out, source_attributes, overwrite = FALSE)
 }
 
 # -- Generic UF processor ------------------------------------------------------
@@ -442,19 +455,21 @@ process_municipios <- function(dados, ...) {
 #' @return A \code{vigiar_tbl}.
 #' @export
 process_ufs <- function(dados, contexto = "uf") {
+  source_attributes <- .vigiar_data_attributes(dados)
   dados <- tibble::as_tibble(dados)
 
   if ("UF" %in% names(dados)) {
     names(dados)[names(dados) == "UF"] <- "sigla_uf"
   }
 
-  new_vigiar_tbl(
+  out <- new_vigiar_tbl(
     dados,
     subclass  = c("vigiar_uf"),
     tabela    = contexto,
     metadados = list(
-      fonte       = "VIGIAR -- Ministerio da Saude",
+      fonte       = "VIGIAR -- Brazilian Ministry of Health",
       processador = "process_ufs"
     )
   )
+  .vigiar_restore_data_attributes(out, source_attributes, overwrite = FALSE)
 }

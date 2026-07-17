@@ -151,14 +151,21 @@ uuid_v4 <- function() {
 
 .vigiar_retry <- function(expr, max_tries = 3L, initial_delay = 1,
                            max_delay = 30, backoff = 2, context = "") {
+  retry_expr <- substitute(expr)
+  retry_env <- parent.frame()
   delay <- initial_delay
   last_error <- NULL
 
   for (attempt in seq_len(max_tries)) {
     result <- tryCatch(
-      expr,
+      eval(retry_expr, envir = retry_env),
       httr2_http_403 = function(e) {
         # Session expired -- do not retry
+        .vigiar_log(
+          "ERROR", paste("Retry aborted after HTTP 403:", conditionMessage(e)),
+          metadata = list(context = context, attempt = attempt),
+          event = "retry_aborted"
+        )
         stop(e)
       },
       httr2_http_429 = function(e) {
@@ -183,9 +190,19 @@ uuid_v4 <- function() {
     if (!is.null(result)) return(result)
 
     if (attempt < max_tries) {
+      .vigiar_log(
+        "WARN", paste("Transient operation failure:", conditionMessage(last_error)),
+        metadata = list(
+          context = context,
+          attempt = attempt,
+          max_tries = max_tries,
+          retry_delay_seconds = delay
+        ),
+        event = "retry"
+      )
       if (nzchar(context)) {
         message(sprintf(
-          "[%s] Tentativa %d/%d falhou. Retentando em %.0fs...",
+          "[%s] Attempt %d/%d failed. Retrying in %.0fs...",
           context, attempt, max_tries, delay
         ))
       }
@@ -194,9 +211,15 @@ uuid_v4 <- function() {
     }
   }
 
-  stop(sprintf(
-    "[%s] Todas as %d tentativas falharam. Ultimo erro: %s",
+  final_message <- sprintf(
+    "[%s] All %d attempts failed. Last error: %s",
     context, max_tries,
-    conditionMessage(last_error) %||% "desconhecido"
-  ))
+    conditionMessage(last_error) %||% "unknown"
+  )
+  .vigiar_log(
+    "ERROR", final_message,
+    metadata = list(context = context, attempts = max_tries),
+    event = "retry_exhausted"
+  )
+  stop(final_message)
 }

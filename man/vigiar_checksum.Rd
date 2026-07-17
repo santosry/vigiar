@@ -2,17 +2,23 @@
 % Please edit documentation in R/compliance.R
 \name{vigiar_checksum}
 \alias{vigiar_checksum}
-\title{Compute a deterministic checksum for a data frame}
+\title{Compute a versioned deterministic checksum for a data frame}
 \usage{
-vigiar_checksum(dados)
+vigiar_checksum(dados, mode = c("canonical", "ordered"))
 }
 \arguments{
 \item{dados}{A data frame.}
+
+\item{mode}{Checksum identity mode, either `canonical` or `ordered`.}
 }
 \value{
 A SHA256 hex string.
 }
 \description{
-Uses SHA256 on a canonical JSON representation. Same data always
-produces the same hash -- enabling cross-environment reproducibility.
+The default `canonical` mode represents semantic table identity: row and
+column order are ignored, factors equal their character representation,
+equivalent integer/double values match, timestamps are normalized to UTC,
+and full double precision is retained. `ordered` mode preserves row and
+column order. Non-semantic data-frame attributes are excluded and are hashed
+separately in VIGIAR snapshots.
 }

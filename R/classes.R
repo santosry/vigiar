@@ -22,21 +22,44 @@ new_vigiar_tbl <- function(x, subclass = character(0), tabela = NULL,
   x
 }
 
+.vigiar_data_attributes <- function(x) {
+  attrs <- attributes(x)
+  attrs[setdiff(names(attrs), c("names", "row.names", "class"))]
+}
+
+.vigiar_restore_data_attributes <- function(x, attrs, overwrite = TRUE) {
+  if (length(attrs) == 0L) {
+    return(x)
+  }
+  for (name in names(attrs)) {
+    if (isTRUE(overwrite) || is.null(attr(x, name, exact = TRUE))) {
+      attr(x, name) <- attrs[[name]]
+    }
+  }
+  x
+}
+
+.vigiar_as_tibble_preserve <- function(x) {
+  attrs <- .vigiar_data_attributes(x)
+  out <- tibble::as_tibble(x)
+  .vigiar_restore_data_attributes(out, attrs)
+}
+
 # -- Print method --------------------------------------------------------------
 
 #' @export
 print.vigiar_tbl <- function(x, ...) {
-  tabela <- attr(x, "vigiar_tabela") %||% "desconhecida"
+  tabela <- attr(x, "vigiar_tabela") %||% "unknown"
   processado <- attr(x, "vigiar_processado_em")
   n_rows <- nrow(x)
   n_cols <- ncol(x)
 
   cat(sprintf(
-    "# VIGIAR tibble: %s  |  %d linhas x %d colunas\n",
+    "# VIGIAR tibble: %s  |  %d rows x %d columns\n",
     tabela, n_rows, n_cols
   ))
   if (!is.null(processado)) {
-    cat(sprintf("# Processado em: %s\n", format(processado)))
+  cat(sprintf("# Processed at: %s\n", format(processado)))
   }
   cat("\n")
   NextMethod()
@@ -46,17 +69,17 @@ print.vigiar_tbl <- function(x, ...) {
 
 #' @export
 summary.vigiar_tbl <- function(object, ...) {
-  tabela <- attr(object, "vigiar_tabela") %||% "desconhecida"
-  cat(sprintf("Resumo: %s\n", tabela))
+  tabela <- attr(object, "vigiar_tabela") %||% "unknown"
+  cat(sprintf("Summary: %s\n", tabela))
   cat(strrep("-", 50), "\n")
-  cat(sprintf("Linhas:  %d\n", nrow(object)))
-  cat(sprintf("Colunas: %d\n", ncol(object)))
+  cat(sprintf("Rows:    %d\n", nrow(object)))
+  cat(sprintf("Columns: %d\n", ncol(object)))
   cat(sprintf("Classes: %s\n", paste(class(object), collapse = ", ")))
 
   # Missing values
   na_counts <- vapply(object, function(col) sum(is.na(col)), integer(1))
   if (any(na_counts > 0)) {
-    cat("\nValores ausentes:\n")
+    cat("\nMissing values:\n")
     for (nm in names(na_counts[na_counts > 0])) {
       cat(sprintf("  %-30s %d (%.1f%%)\n",
                   nm, na_counts[[nm]],
@@ -82,16 +105,16 @@ validate.vigiar_tbl <- function(x, ...) {
 
   # Check for required metadata
   if (is.null(attr(x, "vigiar_tabela"))) {
-    issues$missing_table_attr <- "Atributo 'vigiar_tabela' ausente"
+    issues$missing_table_attr <- "Missing 'vigiar_tabela' attribute"
   }
 
   # Check for empty data
   if (nrow(x) == 0) {
-    issues$empty <- "Tabela vazia (0 linhas)"
+    issues$empty <- "Empty table (0 rows)"
   }
 
   if (length(issues) > 0) {
-    warning("Problemas de validacao encontrados: ",
+    warning("Validation issues found: ",
             paste(names(issues), collapse = ", "))
   }
 

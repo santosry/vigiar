@@ -13,11 +13,11 @@
 #' @export
 vigiar_exportar_csv <- function(dados, caminho, overwrite = FALSE, ...) {
   if (file.exists(caminho) && !overwrite) {
-    stop("Arquivo ja existe: ", caminho, ". Use overwrite = TRUE.")
+    stop("File already exists: ", caminho, ". Use overwrite = TRUE.")
   }
   dir.create(dirname(caminho), showWarnings = FALSE, recursive = TRUE)
   utils::write.csv(dados, caminho, row.names = FALSE, fileEncoding = "UTF-8", ...)
-  message("Dados exportados: ", caminho)
+  message("Data exported: ", caminho)
   invisible(caminho)
 }
 
@@ -32,11 +32,11 @@ vigiar_exportar_csv <- function(dados, caminho, overwrite = FALSE, ...) {
 #' @export
 vigiar_exportar_rds <- function(dados, caminho, overwrite = FALSE) {
   if (file.exists(caminho) && !overwrite) {
-    stop("Arquivo ja existe: ", caminho, ". Use overwrite = TRUE.")
+    stop("File already exists: ", caminho, ". Use overwrite = TRUE.")
   }
   dir.create(dirname(caminho), showWarnings = FALSE, recursive = TRUE)
   saveRDS(dados, caminho)
-  message("Dados exportados: ", caminho)
+  message("Data exported: ", caminho)
   invisible(caminho)
 }
 
@@ -57,10 +57,10 @@ vigiar_exportar_parquet <- function(dados, caminho, overwrite = FALSE) {
     )
   }
   if (file.exists(caminho) && !overwrite) {
-    stop("Arquivo ja existe: ", caminho, ". Use overwrite = TRUE.")
+    stop("File already exists: ", caminho, ". Use overwrite = TRUE.")
   }
   dir.create(dirname(caminho), showWarnings = FALSE, recursive = TRUE)
   arrow::write_parquet(dados, caminho)
-  message("Dados exportados: ", caminho)
+  message("Data exported: ", caminho)
   invisible(caminho)
 }

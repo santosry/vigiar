@@ -23,7 +23,7 @@ vigiar_dicionario <- function() {
     utils::read.csv(path, stringsAsFactors = FALSE, encoding = "UTF-8"),
     error = function(e) {
       # Fallback: return empty dict with a message
-      warning("Dicionario de variaveis nao encontrado. Execute data-raw/dictionary.R")
+      warning("Variable dictionary not found. Run data-raw/dictionary.R")
       data.frame(
         table_id = character(0), table_name = character(0),
         original_name = character(0), standard_name = character(0),
@@ -82,25 +82,25 @@ vigiar_descrever_variavel <- function(dominio, variavel) {
 
   if (nrow(row) == 0) {
     stop(sprintf(
-      "Variavel '%s' nao encontrada no dominio '%s'.", variavel, dominio
+      "Variable '%s' was not found in domain '%s'.", variavel, dominio
     ))
   }
 
-  cat(sprintf("\nVariavel: %s\n", variavel))
+  cat(sprintf("\nVariable: %s\n", variavel))
   cat(strrep("-", 60), "\n")
-  cat(sprintf("Dominio:         %s\n", dominio))
-  cat(sprintf("Nome original:   %s\n", row$original_name[1]))
-  cat(sprintf("Tipo (raw):      %s\n", row$type_raw[1]))
-  cat(sprintf("Tipo (processado): %s\n", row$type_processed[1]))
-  cat(sprintf("Descricao:       %s\n", row$description[1]))
+  cat(sprintf("Domain:          %s\n", dominio))
+  cat(sprintf("Original name:   %s\n", row$original_name[1]))
+  cat(sprintf("Raw type:        %s\n", row$type_raw[1]))
+  cat(sprintf("Processed type:  %s\n", row$type_processed[1]))
+  cat(sprintf("Description:     %s\n", row$description[1]))
   if (nzchar(row$unit[1])) {
-    cat(sprintf("Unidade:         %s\n", row$unit[1]))
+    cat(sprintf("Unit:            %s\n", row$unit[1]))
   }
   if (nzchar(row$allowed_values[1])) {
-    cat(sprintf("Valores aceitos: %s\n", row$allowed_values[1]))
+    cat(sprintf("Allowed values:  %s\n", row$allowed_values[1]))
   }
   if (nzchar(row$notes[1])) {
-    cat(sprintf("Observacoes:     %s\n", row$notes[1]))
+    cat(sprintf("Notes:           %s\n", row$notes[1]))
   }
   cat("\n")
 

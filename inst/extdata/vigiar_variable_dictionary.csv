@@ -23,7 +23,7 @@ df_dias,Dias críticos OMS,Qualidade do Ar,n_dias_conama,n_dias_criticos_conama,
 df_dias_conama,Dias críticos CONAMA,Qualidade do Ar,ID_MUNI,cod_municipio,integer,integer,Código IBGE do município,,110001–530010,,355030,as.integer,110001–530010,
 pop,População,População,muni,cod_municipio,integer,integer,Código IBGE do município,,110001–530010,,355030,as.integer,110001–530010,
 pop,População,População,ano,ano,integer,integer,Ano de referência,,2000–2026,,2022,as.integer,2000–current_year,
-pop,População,População,pop,populacao,numeric,numeric,População residente,habitantes,>0,,12345678,as.numeric,>0,
+pop,População,População,pop,populacao,integer,numeric,População residente,habitantes,>0,,12345678,as.numeric,>0,
 pop,População,População,categoria,categoria_exposicao,character,character,Categoria de exposição a PM2.5,,,"> 35 µg/m³",,,
 pop,População,População,UF,sigla_uf,character,character,Sigla da UF,,AC–TO,,SP,,,
 tb_brasil,Indicadores de saúde Brasil,Indicadores de Saúde,Indicador,indicador,character,character,Nome do indicador epidemiológico,,,"Fração atribuível (%)",,,Ver glossário de indicadores

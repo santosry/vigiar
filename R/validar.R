@@ -39,25 +39,37 @@ vigiar_padronizar_colunas <- function(dados, tabela) {
 
 #' Validate IBGE municipality codes
 #'
-#' Checks that municipality codes are 6- or 7-digit integers
-#' within the valid Brazilian range (110001-530010).
+#' Checks that municipality codes can be safely normalized to the package
+#' standard 6-digit IBGE municipality code. Seven-digit IBGE codes are accepted
+#' and normalized by removing the check digit.
 #'
 #' @param dados A data frame.
 #' @param col_codigo Name of the column containing IBGE codes.
-#' @return The data frame (unchanged), with a warning on invalid codes.
+#' @param uf Optional UF code or abbreviation used to validate membership.
+#' @param error If \code{TRUE}, fail when a supplied code is invalid, unknown,
+#'   nonexistent, or outside `uf`.
+#' @return The data frame with a `vigiar_ibge_validation` report attribute.
 #' @export
-vigiar_validar_ibge <- function(dados, col_codigo = "cod_municipio") {
+vigiar_validar_ibge <- function(dados, col_codigo = "cod_municipio", uf = NULL,
+                                 error = FALSE) {
   if (!col_codigo %in% names(dados)) return(dados)
 
-  codigos <- dados[[col_codigo]]
-  codigos <- as.integer(codigos)
-
-  n_invalid <- sum(is.na(codigos) | codigos < 110001 | codigos > 530010)
-  if (n_invalid > 0) {
-    warning(sprintf(
-      "%d codigo(s) IBGE fora do intervalo esperado (110001-530010)",
-      n_invalid
-    ))
+  report <- vigiar_validar_codigo_municipio(dados[[col_codigo]], uf = uf)
+  attr(dados, "vigiar_ibge_validation") <- report
+  n_fail <- sum(report$status == "fail")
+  n_unknown <- sum(report$status == "unknown")
+  if (n_fail > 0L || n_unknown > 0L) {
+    msg <- sprintf(
+      paste0(
+        "IBGE municipality code validation failed or is unverified: ",
+        "%d failed, %d unknown."
+      ),
+      n_fail, n_unknown
+    )
+    if (isTRUE(error)) {
+      stop(msg, call. = FALSE)
+    }
+    warning(msg, call. = FALSE)
   }
 
   dados
@@ -79,7 +91,7 @@ vigiar_validar_datas <- function(dados) {
     n_bad <- sum(is.na(anos) | anos < 2000 | anos > current_year)
     if (n_bad > 0) {
       warning(sprintf(
-        "%d valor(es) de ano fora do intervalo 2000-%d", n_bad, current_year
+        "%d year value(s) are outside 2000-%d", n_bad, current_year
       ))
     }
   }
@@ -89,7 +101,7 @@ vigiar_validar_datas <- function(dados) {
     n_bad <- sum(is.na(meses) | meses < 1 | meses > 12)
     if (n_bad > 0) {
       warning(sprintf(
-        "%d valor(es) de mes fora do intervalo 1-12", n_bad
+        "%d month value(s) are outside 1-12", n_bad
       ))
     }
   }
@@ -113,7 +125,7 @@ vigiar_validar_unidades <- function(dados, col_pm25 = "pm25_media") {
   n_implausible <- sum(!is.na(valores) & (valores < 0 | valores > 1000))
   if (n_implausible > 0) {
     warning(sprintf(
-      "%d valor(es) de PM2.5 fora do intervalo plausivel (0-1000 ug/m3)",
+      "%d PM2.5 value(s) are outside the plausible range (0-1000 ug/m3)",
       n_implausible
     ))
   }

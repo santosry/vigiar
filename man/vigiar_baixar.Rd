@@ -10,8 +10,9 @@ vigiar_baixar(
   ordenar_por = NULL,
   limite = NULL,
   timeout = 120,
-  uf = "RJ",
-  direcao = c("asc", "desc")
+  uf = NULL,
+  direcao = c("asc", "desc"),
+  filtros = NULL
 )
 }
 \arguments{
@@ -25,9 +26,14 @@ vigiar_baixar(
 
 \item{timeout}{Timeout in seconds for the HTTP request.}
 
-\item{uf}{UF filter. Filters data client-side. Use `NULL` for no filter. Default `"RJ"`.}
+\item{uf}{Optional UF filter applied client-side. The generic downloader does
+not restrict geography by default; use \code{vigiar_baixar_rj()} for an
+explicitly audited Rio de Janeiro download.}
 
 \item{direcao}{Sort direction: `"asc"` (ascending) or `"desc"` (descending).}
+
+\item{filtros}{Optional named list of server-side equality filters. This is
+primarily used internally for audited RJ downloads.}
 }
 \value{
 A [tibble::tibble()] with the downloaded data.

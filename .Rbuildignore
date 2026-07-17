@@ -1,6 +1,7 @@
 ^vigiar.*\.Rproj$
 ^\.Rproj\.user$
 ^README\.Rmd$
+^README\.html$
 ^\.git$
 ^\.github$
 ^data-raw$
@@ -12,12 +13,13 @@
 ^CONTRIBUTING\.md$
 ^CODE_OF_CONDUCT\.md$
 ^SECURITY\.md$
+^LANGUAGE_POLICY\.md$
+^AUDIT_REPORT\.md$
 ^LICENSE\.md$
 ^\.lintr$
-^testar_vigiar\.R$
-^teste_vigiar_rj\.R$
 ^\.\.Rcheck$
 ^renv\.lock$
 ^renv/
 ^\.Rhistory$
 ^docs$
+^coverage$

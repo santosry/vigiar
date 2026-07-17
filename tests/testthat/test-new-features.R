@@ -4,14 +4,14 @@
 library(testthat)
 library(vigiar)
 
-# ── Benchmark ─────────────────────────────────────────────────────────────────
+# -- Benchmark -----------------------------------------------------------------
 
 test_that("vigiar_benchmark errors without session", {
-  expect_error(vigiar_benchmark("df_anual"), "Nenhuma sessao")
+  expect_error(vigiar_benchmark("df_anual"), "No active session")
 })
 
 test_that("vigiar_benchmark_tabelas errors without session", {
-  expect_error(vigiar_benchmark_tabelas(), "Nenhuma sessao")
+  expect_error(vigiar_benchmark_tabelas(), "No active session")
 })
 
 test_that("vigiar_health_check errors gracefully without connection", {
@@ -23,7 +23,7 @@ test_that("vigiar_health_check errors gracefully without connection", {
   expect_s3_class(result, "error")
 })
 
-# ── Compliance & Audit ────────────────────────────────────────────────────────
+# -- Compliance & Audit --------------------------------------------------------
 
 test_that("vigiar_auditar runs on a simple data frame", {
   dados <- data.frame(
@@ -90,13 +90,13 @@ test_that("vigiar_auditar_tudo runs on named list", {
 test_that("print.vigiar_audit works", {
   dados <- data.frame(cod_municipio = 355030L, ano = 2022L)
   audit <- vigiar_auditar(dados, tabela = "test", verbose = FALSE)
-  expect_message(print(audit), "Auditoria")
+  expect_message(print(audit), "audit report")
 })
 
 test_that("print.vigiar_audit_list works", {
   df1 <- data.frame(cod_municipio = 355030L, ano = 2022L)
   result <- vigiar_auditar_tudo(list(t1 = df1), verbose = FALSE)
-  expect_message(print(result), "Multi-Tabela")
+  expect_message(print(result), "Multi-table audit")
 })
 
 test_that("vigiar_compliance_check runs all profiles", {
@@ -117,7 +117,7 @@ test_that("print.vigiar_compliance works", {
   dados <- data.frame(cod_municipio = 355030L, ano = 2022L)
   result <- vigiar_compliance_check(dados, tabela = "test", profiles = "basico",
                                      verbose = FALSE)
-  expect_message(print(result), "Compliance")
+  expect_message(print(result), "compliance report")
 })
 
 test_that("vigiar_checksum returns consistent hash", {
@@ -138,7 +138,7 @@ test_that("vigiar_exportar_auditoria writes JSON", {
   expect_true(file.exists(tmp))
 })
 
-# ── Logging ───────────────────────────────────────────────────────────────────
+# -- Logging -------------------------------------------------------------------
 
 test_that("vigiar_log returns empty tibble initially", {
   # Clear log first
@@ -156,6 +156,7 @@ test_that(".vigiar_log adds entries", {
   expect_equal(nrow(df), 2)
   expect_true(df$level[1] == "INFO")
   expect_true(df$level[2] == "ERROR")
+  expect_true(all(df$event == "operation"))
 })
 
 test_that("vigiar_limpar_log clears entries", {
@@ -188,7 +189,7 @@ test_that("vigiar_resumo_log works", {
   .vigiar_env$log <- list()
   .vigiar_log("INFO", "msg1")
   .vigiar_log("WARN", "msg2")
-  expect_message(vigiar_resumo_log(), "Resumo do Log")
+  expect_message(vigiar_resumo_log(), "Log summary")
 })
 
 test_that("vigiar_historico_downloads returns empty initially", {
@@ -210,10 +211,10 @@ test_that("vigiar_resumo_downloads works", {
   .vigiar_env$download_history <- list()
   .vigiar_registrar_download("t1", 100L, 5L, 1.0, "url")
   .vigiar_registrar_download("t2", 200L, 3L, 2.0, "url")
-  expect_message(vigiar_resumo_downloads(), "Downloads")
+  expect_message(vigiar_resumo_downloads(), "Download summary")
 })
 
-# ── Snapshot ──────────────────────────────────────────────────────────────────
+# -- Snapshot ------------------------------------------------------------------
 
 test_that("vigiar_snapshot creates object from data frame", {
   dados <- data.frame(x = 1:3, y = letters[1:3])
@@ -225,7 +226,7 @@ test_that("vigiar_snapshot creates object from data frame", {
 })
 
 test_that("vigiar_snapshot errors without data", {
-  expect_error(vigiar_snapshot(), "Forneca")
+  expect_error(vigiar_snapshot(), "Provide either")
 })
 
 test_that("vigiar_verificar_snapshot confirms integrity", {
@@ -276,7 +277,7 @@ test_that("vigiar_comparar_snapshots detects column changes", {
   expect_true("cols_added" %in% names(diffs) || "cols_removed" %in% names(diffs))
 })
 
-# ── Cache ─────────────────────────────────────────────────────────────────────
+# -- Cache ---------------------------------------------------------------------
 
 test_that("vigiar_cache_dir sets and gets directory", {
   old_cache <- .vigiar_env$cache_dir
@@ -323,18 +324,18 @@ test_that("vigiar_limpar_cache handles empty cache", {
 })
 
 test_that("vigiar_baixar_com_cache errors without session", {
-  expect_error(vigiar_baixar_com_cache("df_anual"), "Nenhuma sessao")
+  expect_error(vigiar_baixar_com_cache("df_anual"), "No active session")
 })
 
-# ── Schema Lock ───────────────────────────────────────────────────────────────
+# -- Schema Lock ---------------------------------------------------------------
 
 test_that("vigiar_esquema_lock errors without session", {
-  expect_error(vigiar_esquema_lock(), "Nenhuma sessao")
+  expect_error(vigiar_esquema_lock(), "No active session")
 })
 
 test_that("vigiar_esquema_carregar_lock errors on missing file", {
   tmp <- file.path(tempdir(), "nonexistent_lock.json")
-  expect_error(vigiar_esquema_carregar_lock(tmp), "nao encontrado")
+  expect_error(vigiar_esquema_carregar_lock(tmp), "not found")
 })
 
 test_that("vigiar_esquema_carregar_lock loads valid lock", {
@@ -358,10 +359,10 @@ test_that("vigiar_esquema_carregar_lock loads valid lock", {
 })
 
 test_that("vigiar_esquema_verificar errors without session", {
-  expect_error(vigiar_esquema_verificar(), "Nenhuma sessao")
+  expect_error(vigiar_esquema_verificar(), "No active session")
 })
 
-# ── Export edge cases ─────────────────────────────────────────────────────────
+# -- Export edge cases ---------------------------------------------------------
 
 test_that("vigiar_exportar_log refuses to overwrite", {
   .vigiar_env$log <- list()
@@ -369,7 +370,7 @@ test_that("vigiar_exportar_log refuses to overwrite", {
   tmp <- file.path(tempdir(), "log_ow.csv")
   on.exit(unlink(tmp))
   vigiar_exportar_log(tmp)
-  expect_error(vigiar_exportar_log(tmp), "ja existe")
+  expect_error(vigiar_exportar_log(tmp), "already exists")
 })
 
 test_that("vigiar_salvar_snapshot refuses to overwrite", {
@@ -378,7 +379,7 @@ test_that("vigiar_salvar_snapshot refuses to overwrite", {
   tmp <- file.path(tempdir(), "snap_ow.rds")
   on.exit(unlink(tmp))
   vigiar_salvar_snapshot(snap, tmp)
-  expect_error(vigiar_salvar_snapshot(snap, tmp), "ja existe")
+  expect_error(vigiar_salvar_snapshot(snap, tmp), "already exists")
 })
 
 test_that("vigiar_salvar_snapshot adds .rds extension", {
@@ -399,7 +400,7 @@ test_that("vigiar_checksum is deterministic across calls", {
   expect_equal(h1, h2)
 })
 
-# ── Edge cases: empty data ────────────────────────────────────────────────────
+# -- Edge cases: empty data ----------------------------------------------------
 
 test_that("vigiar_auditar handles empty data frame", {
   dados <- data.frame(
@@ -426,13 +427,15 @@ test_that("vigiar_snapshot handles many columns", {
   expect_equal(snap$n_cols, n)
 })
 
-# ── Profile-specific compliance ───────────────────────────────────────────────
+# -- Profile-specific compliance -----------------------------------------------
 
-test_that("vigiar_compliance_check profile 'basico' works", {
+test_that("basic compliance remains unverified without an expected schema", {
   dados <- data.frame(cod_municipio = 355030L, ano = 2022L)
   result <- vigiar_compliance_check(dados, tabela = "test", profiles = "basico",
                                      verbose = FALSE)
-  expect_true(isTRUE(result$basico$ok))
+  expect_false(isTRUE(result$basico$ok))
+  expect_identical(result$basico$status, "unknown")
+  expect_identical(result$basico$schema$status, "unknown")
 })
 
 test_that("vigiar_compliance_check 'all' runs everything", {
@@ -453,7 +456,7 @@ test_that("vigiar_compliance_check invalid profile errors", {
   )
 })
 
-# ── Log metadata round-trip ───────────────────────────────────────────────────
+# -- Log metadata round-trip ---------------------------------------------------
 
 test_that(".vigiar_log metadata is preserved in log", {
   .vigiar_env$log <- list()

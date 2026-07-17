@@ -1,0 +1,274 @@
+---
+title: "Monthly PM2.5 for Rio de Janeiro"
+author: "Ryan Santos"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Monthly PM2.5 for Rio de Janeiro}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+## Purpose
+
+`vigiar_baixar_pm25_mensal_rj()` is the dedicated entry point for monthly PM2.5
+means from the VIGIAR `df_mensal` table. It does more than return rows. It:
+
+- restricts data to the official registry of 92 RJ municipalities;
+- normalizes municipality identifiers to six-digit IBGE codes;
+- preserves official seven-digit codes for interoperability;
+- processes the source value into `pm25_media` in `ug/m3`;
+- creates a first-day monthly `periodo` date;
+- measures municipality by year by month completeness;
+- preserves parser, schema, query, checksum, partition, and truncation evidence;
+- can stop instead of returning data when completeness cannot be demonstrated.
+
+Successful retrieval, 92/92 overall coverage, and a complete monthly panel are
+different claims. A table can contain every RJ municipality at least once and
+still omit one municipality in one month.
+
+## Download Modes
+
+Use exploratory mode while discovering a table or checking source availability:
+
+```{r, eval = FALSE}
+vigiar_conectar()
+
+monthly <- vigiar_baixar_pm25_mensal_rj(
+  anos = 2024,
+  meses = 1:12,
+  validar_completude = TRUE
+)
+
+vigiar_desconectar()
+```
+
+Use strict mode when a scientific workflow requires a declared complete panel:
+
+```{r, eval = FALSE}
+vigiar_conectar()
+
+monthly <- vigiar_baixar_pm25_mensal_rj(
+  anos_esperados = 2020:2024,
+  meses_esperados = 1:12,
+  require_complete = TRUE
+)
+
+vigiar_desconectar()
+```
+
+Strict mode requires an explicit expected temporal domain. It downloads
+server-side year-month partitions and fails if any partition fails, any expected
+municipality-month cell is absent, the key is duplicated, PM2.5 values are
+impossible, the parser or critical schema does not pass, or truncation evidence
+is present. Observed data are never allowed to define their own strict boundary.
+
+## Offline Complete Example
+
+The following data are simulated. No network request is made while building
+this article.
+
+```{r}
+library(vigiar)
+
+rj <- vigiar_rj_municipios()
+periods <- expand.grid(
+  ano = 2024L,
+  mes = 1:3,
+  KEEP.OUT.ATTRS = FALSE,
+  stringsAsFactors = FALSE
+)
+
+monthly <- merge(
+  rj[c("codigo_ibge_6", "codigo_ibge_7", "municipio", "regiao_saude")],
+  periods,
+  by = NULL
+)
+monthly$cod_municipio <- monthly$codigo_ibge_6
+monthly$pm25_media <- 8 +
+  (as.integer(monthly$codigo_ibge_6) %% 17) / 10 +
+  monthly$mes / 10
+monthly$periodo <- as.Date(sprintf(
+  "%04d-%02d-01", monthly$ano, monthly$mes
+))
+
+attr(monthly, "vigiar_parser_status") <- "pass"
+attr(monthly, "vigiar_schema_status") <- "pass"
+attr(monthly, "vigiar_truncation_status") <- "no_evidence"
+```
+
+Define the expected grid explicitly:
+
+```{r}
+completeness <- vigiar_rj_completude_tabela(
+  monthly,
+  tabela = "df_mensal",
+  anos_esperados = 2024L,
+  meses_esperados = 1:3
+)
+
+completeness[, c(
+  "ano", "mes", "n_municipios_presentes",
+  "n_municipios_esperados", "n_ausentes", "completo"
+)]
+```
+
+Run the descriptive audit without downloading again:
+
+```{r}
+analysis <- vigiar_analisar_pm25_mensal_rj(
+  monthly,
+  completude = completeness,
+  schema_status = "pass"
+)
+
+analysis
+analysis$summary
+analysis$temporal_domain
+analysis$by_year_month
+analysis$quality
+analysis$quality_by_year_month
+```
+
+## Output Contract
+
+The monthly tibble uses these canonical fields:
+
+| Field | Contract |
+|---|---|
+| `codigo_ibge_6` | Six-digit internal municipality code |
+| `codigo_ibge_7` | Official seven-digit interoperability code when available |
+| `municipio` | Official municipality name from the internal RJ registry |
+| `regiao_saude` | Canonical SES-RJ health region |
+| `ano`, `mes` | Integer temporal identifiers |
+| `periodo` | First day of the month as `Date` |
+| `pm25_media` | Monthly PM2.5 mean in `ug/m3` |
+
+Important attributes include:
+
+| Attribute | Evidence |
+|---|---|
+| `vigiar_rj_completude` | Expected municipality-year-month grid |
+| `vigiar_monthly_analysis` | Descriptive summaries, quality, and conclusion |
+| `vigiar_partition_report` | Attempt, retry, row count, and status per partition |
+| `vigiar_parser_status` | Structural Power BI response assessment |
+| `vigiar_schema_status` | Critical-schema compatibility |
+| `vigiar_truncation_status` | `no_evidence`, `possible`, `probable`, `confirmed`, or `unknown` |
+| `vigiar_schema_hash` | Download-time schema identity when available |
+| `vigiar_download_timestamp` | Retrieval timestamp |
+
+The analysis object exposes structured fields. Code should inspect
+`overall_status`, `conclusion`, and the evidence tables instead of parsing its
+printed text.
+
+## Detecting One Missing Municipality-Month
+
+Remove Campos dos Goytacazes from February while retaining it in the other
+months:
+
+```{r}
+partial <- monthly[
+  !(monthly$codigo_ibge_6 == "330100" & monthly$mes == 2L),
+  ,
+  drop = FALSE
+]
+attr(partial, "vigiar_parser_status") <- "pass"
+attr(partial, "vigiar_schema_status") <- "pass"
+attr(partial, "vigiar_truncation_status") <- "no_evidence"
+
+partial_completeness <- vigiar_rj_completude_tabela(
+  partial,
+  tabela = "df_mensal",
+  anos_esperados = 2024L,
+  meses_esperados = 1:3
+)
+partial_analysis <- vigiar_analisar_pm25_mensal_rj(
+  partial,
+  completude = partial_completeness,
+  schema_status = "pass"
+)
+
+partial_completeness[, c(
+  "ano", "mes", "n_municipios_presentes", "n_ausentes", "completo"
+)]
+partial_analysis$missing_municipalities[
+  partial_analysis$missing_municipalities$codigo_ibge_6 == "330100",
+]
+partial_analysis$conclusion
+```
+
+Overall municipal coverage may still be 92/92 because Campos appears in January
+and March. The table-grain conclusion is nevertheless `partial`, which is the
+scientifically relevant result for a monthly panel.
+
+## Quality Evidence
+
+`vigiar_analisar_pm25_mensal_rj()` reports:
+
+- missing PM2.5 values;
+- negative values;
+- suspicious zeros;
+- values above the configurable plausibility threshold;
+- invalid municipality codes;
+- invalid year or month values;
+- duplicated municipality-year-month keys;
+- long missing blocks and abrupt changes between consecutive months;
+- missing municipalities for each expected period;
+- failed download partitions;
+- parser, schema, and truncation states.
+
+Values above `limite_plausibilidade` are flagged for unit and source review. The
+function does not silently remove, replace, winsorize, or impute observations.
+
+## Reproducible Release Evidence
+
+For a multi-table release audit, use `vigiar_auditar_rj_online()` with explicit
+expected domains. The audit writes CSV, JSON, and RDS evidence containing the
+package version, commit SHA, timestamp, dimensions, canonical checksum, schema
+hash, coverage, incomplete periods, missing municipalities, parser status,
+truncation status, and objective conclusion.
+
+```{r, eval = FALSE}
+years <- 2010:2024
+
+audit <- vigiar_auditar_rj_online(
+  tabelas = c("df_anual", "df_mensal", "df_dias", "pop"),
+  dominios_esperados = list(
+    df_anual = list(anos_esperados = years),
+    df_mensal = list(anos_esperados = years, meses_esperados = 1:12),
+    df_dias = list(anos_esperados = years, meses_esperados = 1:12),
+    pop = list(anos_esperados = years)
+  ),
+  salvar = TRUE,
+  require_complete = TRUE
+)
+```
+
+The manual release runner is `data-raw/check-rj-download-completeness.R`.
+Generated evidence is written under
+`data-raw/rj-download-completeness-output/` and should be archived with the
+corresponding release rather than installed as package data.
+
+## Scientific Interpretation
+
+Strict completeness is evidence that the declared municipality-time grid was
+retrieved with passing structural checks at one timestamp. It does not prove:
+
+- that PM2.5 represents ground-monitor measurements in every municipality;
+- absence of exposure measurement error;
+- individual-level exposure or risk;
+- causal validity;
+- adequacy of GAM, DLNM, relative-risk, predictive, or machine-learning models;
+- future availability or schema stability of the external Power BI source.
+
+Use these outputs as retrieval and data-quality evidence. Epidemiologic fitness
+still depends on the study design, exposure definition, outcome quality,
+confounding control, uncertainty analysis, and ecological interpretation.

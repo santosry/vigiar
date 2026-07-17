@@ -5,21 +5,76 @@
 # enabling full audit trails and reproducibility.
 # Inspired by microdatasus download logging patterns.
 
+.vigiar_sanitize_url <- function(x) {
+  x <- as.character(x)
+  x <- sub("^(https?://)[^/@[:space:]]+@", "\\1[REDACTED]@", x,
+           perl = TRUE, ignore.case = TRUE)
+  sub("\\?.*$", "?[REDACTED]", x, perl = TRUE)
+}
+
+.vigiar_sanitize_text <- function(x) {
+  x <- as.character(x)
+  url_matches <- gregexpr("https?://[^[:space:]]+", x, perl = TRUE,
+                          ignore.case = TRUE)
+  urls <- regmatches(x, url_matches)
+  urls <- lapply(urls, .vigiar_sanitize_url)
+  regmatches(x, url_matches) <- urls
+  x <- gsub(
+    "(?i)(token|cookie|authorization|resourcekey|password|secret)=([^&[:space:]]+)",
+    "\\1=[REDACTED]", x, perl = TRUE
+  )
+  gsub("(?i)Bearer[[:space:]]+[^,;[:space:]]+", "Bearer [REDACTED]", x,
+       perl = TRUE)
+}
+
+.vigiar_sanitize_log_value <- function(x, key = NULL) {
+  sensitive <- !is.null(key) && grepl(
+    "token|cookie|authorization|password|secret|resource.?key",
+    key,
+    ignore.case = TRUE
+  )
+  if (sensitive) {
+    return("[REDACTED]")
+  }
+  if (is.list(x)) {
+    keys <- names(x) %||% rep(NA_character_, length(x))
+    out <- lapply(seq_along(x), function(i) {
+      .vigiar_sanitize_log_value(x[[i]], keys[[i]])
+    })
+    names(out) <- names(x)
+    return(out)
+  }
+  if (is.character(x)) {
+    if (!is.null(key) && grepl("url|uri|endpoint", key, ignore.case = TRUE)) {
+      return(.vigiar_sanitize_url(x))
+    }
+    return(.vigiar_sanitize_text(x))
+  }
+  x
+}
+
 #' Structured log entry
 #'
 #' @param level Log level: \code{"INFO"}, \code{"WARN"}, \code{"ERROR"}, \code{"DEBUG"}.
 #' @param message Log message.
 #' @param table Table name (optional).
 #' @param metadata Named list of additional metadata.
+#' @param event Stable machine-readable event name. When omitted, the event is
+#'   recorded as `operation` for backwards compatibility.
 #' @return Invisibly, the log entry (as a list).
 #' @keywords internal
-.vigiar_log <- function(level, message, table = NULL, metadata = NULL) {
+.vigiar_log <- function(level, message, table = NULL, metadata = NULL,
+                        event = "operation") {
+  message <- .vigiar_sanitize_text(message)
+  metadata <- .vigiar_sanitize_log_value(metadata %||% list())
+  event <- .vigiar_sanitize_text(event %||% "operation")
   entry <- list(
     timestamp = format(Sys.time(), "%Y-%m-%dT%H:%M:%OS3"),
     level     = level,
+    event     = event,
     message   = message,
     table     = table %||% NA_character_,
-    metadata  = metadata %||% list()
+    metadata  = metadata
   )
 
   # Store in package env
@@ -46,15 +101,16 @@
 #' Returns a tibble with all logged operations since package load
 #' or last \code{vigiar_limpar_log()}.
 #'
-#' @return A tibble with columns: timestamp, level, message,
+#' @return A tibble with columns: timestamp, level, event, message,
 #'   table, metadata_json.
 #' @export
 vigiar_log <- function() {
   if (is.null(.vigiar_env$log) || length(.vigiar_env$log) == 0) {
-    cli::cli_alert_info("Log vazio. Execute uma operacao primeiro.")
+    cli::cli_alert_info("Log is empty. Run an operation first.")
     return(tibble::tibble(
       timestamp = character(0),
       level     = character(0),
+      event     = character(0),
       message   = character(0),
       table     = character(0),
       metadata  = character(0)
@@ -67,6 +123,8 @@ vigiar_log <- function() {
   df <- tibble::tibble(
     timestamp = vapply(entries, `[[`, "", "timestamp", USE.NAMES = FALSE),
     level     = vapply(entries, `[[`, "", "level", USE.NAMES = FALSE),
+    event     = vapply(entries, function(e) e$event %||% "operation", "",
+                       USE.NAMES = FALSE),
     message   = vapply(entries, `[[`, "", "message", USE.NAMES = FALSE),
     table     = vapply(entries, function(e) {
       t <- e$table %||% NA_character_
@@ -87,7 +145,7 @@ vigiar_log <- function() {
 vigiar_limpar_log <- function() {
   n <- length(.vigiar_env$log %||% list())
   .vigiar_env$log <- list()
-  cli::cli_alert_info("Log limpo ({n} entradas removidas).")
+  cli::cli_alert_info("Log cleared ({n} entries removed).")
   invisible(NULL)
 }
 
@@ -99,7 +157,7 @@ vigiar_limpar_log <- function() {
 #' @export
 vigiar_exportar_log <- function(caminho, overwrite = FALSE) {
   if (file.exists(caminho) && !overwrite) {
-    stop("Arquivo ja existe: ", caminho, ". Use overwrite = TRUE.")
+    stop("File already exists: ", caminho, ". Use overwrite = TRUE.")
   }
 
   log_df <- vigiar_log()
@@ -111,7 +169,7 @@ vigiar_exportar_log <- function(caminho, overwrite = FALSE) {
     utils::write.csv(log_df, caminho, row.names = FALSE, fileEncoding = "UTF-8")
   }
 
-  cli::cli_alert_success("Log exportado: {caminho} ({nrow(log_df)} entradas)")
+  cli::cli_alert_success("Log exported: {caminho} ({nrow(log_df)} entries)")
   invisible(caminho)
 }
 
@@ -125,16 +183,16 @@ vigiar_resumo_log <- function() {
   log_df <- vigiar_log()
 
   if (nrow(log_df) == 0) {
-    cli::cli_alert_info("Log vazio.")
+    cli::cli_alert_info("Log is empty.")
     return(invisible(list()))
   }
 
-  cli::cli_h1("Resumo do Log")
-  cli::cli_text("Periodo: {min(log_df$timestamp)} a {max(log_df$timestamp)}")
-  cli::cli_text("Total de entradas: {nrow(log_df)}")
+  cli::cli_h1("Log summary")
+  cli::cli_text("Period: {min(log_df$timestamp)} to {max(log_df$timestamp)}")
+  cli::cli_text("Total entries: {nrow(log_df)}")
 
   # By level
-  cli::cli_h2("Por nivel")
+  cli::cli_h2("By level")
   level_counts <- table(log_df$level)
   for (lev in names(level_counts)) {
     color <- switch(lev,
@@ -148,7 +206,7 @@ vigiar_resumo_log <- function() {
   }
 
   # By table
-  cli::cli_h2("Por tabela")
+  cli::cli_h2("By table")
   table_counts <- sort(table(log_df$table[!is.na(log_df$table)]), decreasing = TRUE)
   if (length(table_counts) > 0) {
     for (i in seq_len(min(length(table_counts), 10))) {
@@ -174,7 +232,7 @@ vigiar_resumo_log <- function() {
     n_rows    = n_rows,
     n_cols    = n_cols,
     elapsed   = elapsed,
-    url       = url,
+    url       = .vigiar_sanitize_url(url),
     checksum  = NULL  # filled later if data is available
   )
 
@@ -183,10 +241,19 @@ vigiar_resumo_log <- function() {
   }
   .vigiar_env$download_history[[length(.vigiar_env$download_history) + 1L]] <- entry
 
-  .vigiar_log("INFO", sprintf("Download: %s (%d linhas x %d colunas, %.1fs)",
-                               tabela, n_rows, n_cols, elapsed),
-               table = tabela,
-               metadata = list(n_rows = n_rows, n_cols = n_cols, elapsed = elapsed))
+  .vigiar_log(
+    "INFO",
+    sprintf("Download succeeded: %s (%d rows x %d columns, %.1fs)",
+            tabela, n_rows, n_cols, elapsed),
+    table = tabela,
+    metadata = list(
+      returned_rows = n_rows,
+      returned_columns = n_cols,
+      elapsed_seconds = elapsed,
+      endpoint = url
+    ),
+    event = "download_success"
+  )
 
   invisible(entry)
 }
@@ -198,7 +265,7 @@ vigiar_resumo_log <- function() {
 vigiar_historico_downloads <- function() {
   if (is.null(.vigiar_env$download_history) ||
       length(.vigiar_env$download_history) == 0) {
-    cli::cli_alert_info("Nenhum download registrado nesta sessao.")
+    cli::cli_alert_info("No download was recorded in this session.")
     return(tibble::tibble(
       timestamp = character(0),
       tabela    = character(0),
@@ -227,12 +294,12 @@ vigiar_resumo_downloads <- function() {
   hist <- vigiar_historico_downloads()
   if (nrow(hist) == 0) return(invisible())
 
-  cli::cli_h1("Resumo de Downloads")
-  cli::cli_text("Total de downloads: {nrow(hist)}")
-  cli::cli_text("Tempo total: {round(sum(hist$elapsed, na.rm=TRUE), 1)}s")
-  cli::cli_text("Total de linhas: {sum(hist$n_rows, na.rm=TRUE)}")
+  cli::cli_h1("Download summary")
+  cli::cli_text("Total downloads: {nrow(hist)}")
+  cli::cli_text("Total time: {round(sum(hist$elapsed, na.rm=TRUE), 1)}s")
+  cli::cli_text("Total rows: {sum(hist$n_rows, na.rm=TRUE)}")
 
-  cli::cli_h2("Por tabela")
+  cli::cli_h2("By table")
   by_table <- dplyr::count(hist, tabela, sort = TRUE)
   for (i in seq_len(min(nrow(by_table), 10))) {
     cli::cli_text("  {by_table$tabela[i]}: {by_table$n[i]} downloads")

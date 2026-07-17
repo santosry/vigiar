@@ -1,3 +1,102 @@
+# vigiar 0.7.1.9000
+
+## Rio de Janeiro completeness hardening
+
+* Added `vigiar_baixar_pm25_mensal_rj()` as an explicit monthly PM2.5 entry
+  point. It downloads `df_mensal`, returns `pm25_media` and a monthly `periodo`,
+  and validates municipality by year by month completeness.
+* Added `vigiar_analisar_pm25_mensal_rj()` with structured summaries by month,
+  municipality, and SES-RJ health region plus missing-cell, duplicate-key,
+  impossible-value, parser, schema, and truncation evidence.
+* Added the offline-safe `monthly-pm25-rj` article and expanded README and help
+  contracts for choosing the correct downloader, distinguishing exploratory
+  from strict monthly retrieval, interpreting every monthly analysis component,
+  and archiving release-grade evidence.
+* `vigiar_baixar_rj_completo()` now performs real server-side year, month, or
+  municipality partitioning with retry and a per-partition evidence report.
+  Strict mode rejects failed partitions and never labels a single unverified
+  response as complete.
+* PM2.5 processing and RJ filtering now preserve scientific provenance
+  attributes. Abrupt-change diagnostics order monthly series chronologically and
+  compare only consecutive calendar periods.
+* The release validation script now remains safely connected when invoked with
+  `source()`, archives processed monthly data and analysis tables, and always
+  disconnects on exit. Online-audit printing also supports selected columns.
+* Fixed a false compliance pass for data containing all 92 RJ municipalities
+  plus an external municipality. Audit checks now share explicit `ok`, `status`,
+  `severity`, and `details` contracts; `unknown` never becomes a pass.
+* `vigiar_baixar()` is now geographically generic (`uf = NULL`). RJ scope is
+  explicit in `vigiar_baixar_rj()`, which filters against the official registry
+  rather than a numeric range.
+* Municipality-code validation now separates format, official existence,
+  seven-digit check-code correspondence, and UF membership using a versioned
+  national IBGE reference. Six digits are the internal standard; seven digits
+  are retained for interoperability.
+* The RJ fixture is checked against official IBGE and SES-RJ references,
+  including 92 unique municipalities, nine SES-RJ health regions, and sentinels
+  for Campos dos Goytacazes (`330100`/`3301009`), Italva, and Volta Redonda.
+* `vigiar_rj_completude_tabela()` detects entirely absent internal and boundary
+  periods. Expected domains can be supplied through years, months, or period
+  endpoints; observed, inferred, user-specified, official, and not-applicable
+  domains are not conflated.
+* Spatial coverage, temporal-domain status, panel completeness, schema status,
+  response completeness, truncation evidence, verification, and overall status
+  are reported independently. S3 classes now expose programmatic coverage and
+  completeness summaries.
+* `vigiar_auditar_rj_online()` writes CSV, JSON, and RDS evidence with package
+  version, commit SHA, canonical checksum, schema hash, rows, columns, coverage,
+  missing municipalities, health-region gaps, temporal gaps, and conservative
+  conclusions including `complete_within_inferred_domain` and
+  `schema_unverified`. Plain `complete` requires an explicit expected domain.
+* Truncation is represented as `no_evidence`, `possible`, `probable`,
+  `confirmed`, or `unknown` with supporting evidence. Raw responses are assessed
+  before client-side filters. Strict completeness converts any truncation signal
+  into an actionable error.
+* The DSR parser now validates response envelopes, descriptors, repeat/null
+  masks, dictionaries, compacted rows, and row width. Adversarial and randomized
+  repeat-mask tests protect malformed and partial-response behavior. It also
+  supports Power BI's valid hybrid dictionary encoding, where strings after the
+  dictionary cap are emitted inline. Parser status and issues survive filtering
+  and processing, are written to online audit artifacts, and block strict
+  completeness when structural verification does not pass.
+* The live `pop` schema lock now records its source population column as integer,
+  matching the audited dashboard schema while processing still standardizes the
+  analysis column to numeric.
+* Canonical checksum version 2 defines semantic table identity without losing
+  double precision. Snapshots store separate data, schema, and metadata hashes;
+  caches include query parameters, schema, package version, and algorithm
+  versions in their keys and validate provenance on read.
+* Structured logs now record connection, download, retry, schema change,
+  truncation, cache, snapshot, audit, and compliance events while redacting
+  cookies, tokens, resource keys, authorization values, and URL queries.
+* Benchmarks now use warm-up and repeated measurements with median, p25, p75,
+  min, max, success/failure counts, checksums, and environment details. The old
+  `year_asc_desc` name is deprecated in favor of the honest
+  `two_ended_sample`; neither strategy claims complete retrieval.
+* CI now uses least-privilege read permissions, enforces a real 70% coverage
+  gate with persisted evidence, and runs a separate scheduled online canary that
+  archives RJ audit artifacts without blocking pull requests.
+* Software metadata and citation files are synchronized at version 0.7.1.9000.
+  User-facing prose and messages use technical English; historical Portuguese
+  API identifiers remain for compatibility and are governed by
+  `vigiar_api_status()` and `LANGUAGE_POLICY.md`.
+* Scientific documentation distinguishes downloaded, filtered, covered,
+  complete, verified, audited, and reproducible data. The package does not
+  validate causal inference, GAM, DLNM, relative risk, machine learning,
+  predictive models, or epidemiologic conclusions.
+
+## Migration notes
+
+* Code that relied on the old implicit RJ default must use
+  `vigiar_baixar_rj()` or pass `uf = "RJ"` explicitly.
+* New code should use `regiao_saude`; `macrorregiao_saude` and
+  `vigiar_rj_macrorregioes()` remain compatibility aliases.
+* Stored checksums created with an earlier algorithm should be regenerated and
+  archived with `canonicalization_version = 2`.
+* Strict online audits must provide `dominios_esperados` for temporal tables.
+* Benchmark consumers must migrate from Portuguese timing columns and
+  `year_asc_desc` to the structured English metrics and `two_ended_sample`.
+
 # vigiar 0.7.0
 
 ## New: Benchmark & Performance
