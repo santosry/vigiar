@@ -22,6 +22,29 @@ new_vigiar_tbl <- function(x, subclass = character(0), tabela = NULL,
   x
 }
 
+.vigiar_data_attributes <- function(x) {
+  attrs <- attributes(x)
+  attrs[setdiff(names(attrs), c("names", "row.names", "class"))]
+}
+
+.vigiar_restore_data_attributes <- function(x, attrs, overwrite = TRUE) {
+  if (length(attrs) == 0L) {
+    return(x)
+  }
+  for (name in names(attrs)) {
+    if (isTRUE(overwrite) || is.null(attr(x, name, exact = TRUE))) {
+      attr(x, name) <- attrs[[name]]
+    }
+  }
+  x
+}
+
+.vigiar_as_tibble_preserve <- function(x) {
+  attrs <- .vigiar_data_attributes(x)
+  out <- tibble::as_tibble(x)
+  .vigiar_restore_data_attributes(out, attrs)
+}
+
 # -- Print method --------------------------------------------------------------
 
 #' @export

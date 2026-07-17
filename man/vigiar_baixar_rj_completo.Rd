@@ -12,9 +12,13 @@ vigiar_baixar_rj_completo(
   municipios = NULL,
   timeout = 120,
   delay = 0.5,
+  tentativas = 2L,
   validar_cobertura = TRUE,
   exigir_completo = FALSE,
   require_complete = exigir_completo,
+  processar = FALSE,
+  tipo = NULL,
+  snapshot = FALSE,
   ...
 )
 }
@@ -33,6 +37,9 @@ vigiar_baixar_rj_completo(
 
 \item{delay}{Delay between partitions.}
 
+\item{tentativas}{Maximum partition-level attempts. The HTTP layer also
+retains its own transient-error retry policy.}
+
 \item{validar_cobertura}{If \code{TRUE}, validate final RJ coverage.}
 
 \item{exigir_completo}{If \code{TRUE}, error unless all expected RJ
@@ -40,14 +47,21 @@ municipalities are present in the final result.}
 
 \item{require_complete}{English alias for \code{exigir_completo}.}
 
+\item{processar}{Process the combined table.}
+
+\item{tipo}{Optional processor type.}
+
+\item{snapshot}{Attach a reproducible snapshot to the combined result.}
+
 \item{...}{Additional arguments passed to \code{vigiar_baixar_rj()}.}
 }
 \value{
-A tibble from \code{vigiar_baixar_rj()} when \code{por = "auto"}.
+A tibble with partition, parser, truncation, schema, and completeness
+  metadata.
 }
 \description{
-This is a preparatory interface for partitioned RJ downloads. The current
-public Power BI query builder does not yet expose reliable server-side
-filters by year, month, or municipality, so non-auto partitioning stops with
-an explicit message instead of pretending that the result is complete.
+Uses validated Power BI server-side filters to download smaller partitions,
+records every partition outcome, combines successful responses, removes
+exact duplicates, and verifies the final RJ panel. Failed partitions and
+any truncation evidence remain explicit.
 }

@@ -68,47 +68,92 @@ if (require_complete && is.null(expected_domains)) {
   )
 }
 
-vigiar_conectar()
-on.exit(vigiar_desconectar(), add = TRUE)
+run_validation <- function() {
+  vigiar_conectar()
+  on.exit(vigiar_desconectar(), add = TRUE)
 
-audit <- vigiar_auditar_rj_online(
-  tabelas = tables,
-  salvar = TRUE,
-  dir = file.path("data-raw", "rj-download-completeness-output"),
-  require_complete = require_complete,
-  timeout = 240,
-  dominios_esperados = expected_domains
-)
+  audit <- vigiar_auditar_rj_online(
+    tabelas = tables,
+    salvar = TRUE,
+    dir = file.path("data-raw", "rj-download-completeness-output"),
+    require_complete = require_complete,
+    timeout = 240,
+    dominios_esperados = expected_domains
+  )
 
-print(audit[, c(
-  "tabela",
-  "n_rows",
-  "n_cols",
-  "checksum",
-  "schema_hash",
-  "completeness_grade",
-  "n_municipios_presentes",
-  "n_municipios_esperados",
-  "n_incomplete_groups",
-  "truncation_status",
-  "schema_status",
-  "verification_status",
-  "overall_status",
-  "possivel_truncamento",
-  "conclusion"
-)])
+  print(audit[, c(
+    "tabela",
+    "n_rows",
+    "n_cols",
+    "checksum",
+    "schema_hash",
+    "completeness_grade",
+    "n_municipios_presentes",
+    "n_municipios_esperados",
+    "n_incomplete_groups",
+    "truncation_status",
+    "schema_status",
+    "verification_status",
+    "overall_status",
+    "possivel_truncamento",
+    "conclusion"
+  )])
 
-for (i in seq_len(nrow(audit))) {
-  cat("\nAbsent municipalities for ", audit$tabela[[i]], ":\n", sep = "")
-  missing <- audit$municipios_ausentes[[i]]
-  if (nrow(missing) == 0) {
-    cat("none\n")
-  } else {
-    print(missing)
+  for (i in seq_len(nrow(audit))) {
+    cat("\nAbsent municipalities for ", audit$tabela[[i]], ":\n", sep = "")
+    missing <- audit$municipios_ausentes[[i]]
+    if (nrow(missing) == 0) {
+      cat("none\n")
+    } else {
+      print(missing)
+    }
   }
+
+  if ("df_mensal" %in% tables) {
+    monthly <- vigiar_baixar_pm25_mensal_rj(
+      anos = expected_years,
+      meses = expected_months,
+      anos_esperados = expected_years,
+      meses_esperados = expected_months,
+      periodo_inicio = if (nzchar(expected_start)) expected_start else NULL,
+      periodo_fim = if (nzchar(expected_end)) expected_end else NULL,
+      validar_completude = TRUE,
+      require_complete = require_complete,
+      particionar = require_complete,
+      timeout = 240
+    )
+    monthly_analysis <- attr(monthly, "vigiar_monthly_analysis")
+    out_dir <- attr(audit, "vigiar_audit_dir")
+
+    saveRDS(monthly, file.path(out_dir, "df_mensal-data.rds"))
+    saveRDS(monthly_analysis, file.path(out_dir, "df_mensal-analysis.rds"))
+    utils::write.csv(
+      monthly_analysis$by_year_month,
+      file.path(out_dir, "df_mensal-summary-by-year-month.csv"),
+      row.names = FALSE
+    )
+    utils::write.csv(
+      monthly_analysis$quality,
+      file.path(out_dir, "df_mensal-quality.csv"),
+      row.names = FALSE
+    )
+    utils::write.csv(
+      monthly_analysis$quality_by_year_month,
+      file.path(out_dir, "df_mensal-quality-by-year-month.csv"),
+      row.names = FALSE
+    )
+    utils::write.csv(
+      monthly_analysis$missing_municipalities,
+      file.path(out_dir, "df_mensal-missing-municipalities.csv"),
+      row.names = FALSE
+    )
+  }
+
+  message(
+    "\nValidation run archived under: ",
+    attr(audit, "vigiar_audit_dir")
+  )
+  invisible(audit)
 }
 
-message(
-  "\nValidation run archived under: ",
-  attr(audit, "vigiar_audit_dir")
-)
+audit <- run_validation()

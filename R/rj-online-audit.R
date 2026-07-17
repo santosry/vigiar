@@ -90,10 +90,11 @@ vigiar_auditar_rj_online <- function(
 #' @export
 print.vigiar_online_audit <- function(x, ...) {
   cat("<vigiar_online_audit>\n")
-  display <- x[c(
+  display_columns <- intersect(c(
     "tabela", "n_rows", "n_municipios_presentes", "n_incomplete_groups",
     "parser_status", "truncation_status", "schema_status", "conclusion"
-  )]
+  ), names(x))
+  display <- x[display_columns]
   class(display) <- setdiff(class(display), "vigiar_online_audit")
   print(display, ...)
   invisible(x)

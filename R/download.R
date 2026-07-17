@@ -170,11 +170,7 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
     paste0("truncation_", truncation_status)
   }
   attr(dados, "vigiar_download_timestamp") <- Sys.time()
-  out <- tibble::as_tibble(dados)
-  for (name in response_attribute_names) {
-    attr(out, name) <- attr(dados, name)
-  }
-  out
+  .vigiar_as_tibble_preserve(dados)
 }
 
 #' Download multiple tables

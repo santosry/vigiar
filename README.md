@@ -53,6 +53,13 @@ pm25_rj <- process_pm25(pm25_rj, tipo = "anual")
 diag <- vigiar_diagnosticar_serie(pm25_rj, escopo = "rj")
 vigiar_relatorio_diagnostico(diag)
 
+pm25_monthly_rj <- vigiar_baixar_pm25_mensal_rj(
+  anos = 2024,
+  meses = 1:12
+)
+monthly_analysis <- vigiar_analisar_pm25_mensal_rj(pm25_monthly_rj)
+print(monthly_analysis)
+
 snap <- vigiar_snapshot(dados = pm25_rj, tabela = "df_anual")
 vigiar_salvar_snapshot(snap, "pm25_rj_snapshot.rds")
 
@@ -140,6 +147,53 @@ attr(pm25_rj, "vigiar_rj_cobertura_pct")
 attr(pm25_rj, "vigiar_rj_municipios_ausentes")
 attr(pm25_rj, "vigiar_possivel_truncamento")
 ```
+
+## Monthly PM2.5 Means for Rio de Janeiro
+
+Use `vigiar_baixar_pm25_mensal_rj()` for an explicit monthly PM2.5
+workflow. It downloads `df_mensal`, normalizes municipality codes,
+processes the source value as `pm25_media`, creates a monthly `periodo`
+column, and preserves query, parser, schema, truncation, and
+completeness evidence.
+
+``` r
+pm25_monthly_rj <- vigiar_baixar_pm25_mensal_rj(
+  anos = 2024,
+  meses = 1:12,
+  validar_completude = TRUE
+)
+
+monthly_analysis <- vigiar_analisar_pm25_mensal_rj(pm25_monthly_rj)
+monthly_analysis$summary
+monthly_analysis$temporal_domain
+monthly_analysis$by_year
+monthly_analysis$by_year_month
+monthly_analysis$by_calendar_month
+monthly_analysis$by_municipality
+monthly_analysis$by_health_region
+monthly_analysis$quality
+monthly_analysis$quality_by_year_month
+```
+
+For scientific release checks, declare the expected temporal domain and
+require verified completeness. The strict path downloads server-side
+year-month partitions and stops if a partition fails, any
+municipality-month cell is missing, a duplicate key is found, PM2.5
+values are invalid, the parser or critical schema does not pass, or the
+API shows truncation evidence.
+
+``` r
+pm25_monthly_complete <- vigiar_baixar_pm25_mensal_rj(
+  anos_esperados = 2020:2024,
+  meses_esperados = 1:12,
+  require_complete = TRUE
+)
+```
+
+A `complete` result means that the declared municipality by year by
+month grid was observed with passing retrieval checks. It does not
+validate causal inference, GAM, DLNM, relative risk, predictive models,
+or the epidemiological fitness of the exposure measure.
 
 ## Municipality Code Standard
 
@@ -312,6 +366,11 @@ dictionary-index violations prevent a `complete` result.
 ``` r
 pm25 <- vigiar_baixar_rj("df_anual") |>
   process_pm25(tipo = "anual")
+
+pm25_monthly <- vigiar_baixar_pm25_mensal_rj(
+  anos = 2024,
+  meses = 1:12
+)
 
 population <- vigiar_baixar_rj("pop") |>
   process_populacao_exposta()

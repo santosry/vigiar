@@ -1,6 +1,7 @@
 # Public API lifecycle registry
 
 .VIGIAR_EXPERIMENTAL_API <- c(
+  "vigiar_analisar_pm25_mensal_rj",
   "vigiar_auditar_rj_online",
   "vigiar_baixar_rj_completo",
   "vigiar_benchmark",

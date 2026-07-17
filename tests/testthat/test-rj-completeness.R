@@ -715,6 +715,18 @@ test_that("RJ online audit saves complete artifacts with preserved metadata", {
   })
 })
 
+test_that("RJ online audit print method accepts selected columns", {
+  audit <- tibble::tibble(
+    tabela = "df_anual",
+    n_rows = 92L,
+    conclusion = "complete"
+  )
+  class(audit) <- c("vigiar_online_audit", class(audit))
+
+  expect_output(print(audit), "df_anual")
+  expect_output(print(audit[c("tabela", "conclusion")]), "complete")
+})
+
 test_that("RJ online audit detects partial coverage and absent Campos", {
   partial <- .make_rj_data(.rj_codes6(10), years = 2022L)
   no_campos <- .make_rj_data(setdiff(.rj_codes6(), 330100L), years = 2022L)

@@ -12,6 +12,12 @@ domain, panel completeness, schema compatibility, parser integrity, response
 truncation, verification, and overall audit status as separate evidence. An
 unknown or unverifiable state is not promoted to a pass.
 
+The monthly PM2.5 follow-up started from commit
+`008a28960efc85d3e4a1d796e0d7d35fdb19cebe` on the same branch. It adds an
+explicit `df_mensal` entry point, verified server-side year-month partitioning,
+period-specific descriptive quality evidence, and provenance preservation in
+all public processors.
+
 The strict live audit on 2026-07-12 used an explicit January 2010 through
 December 2024 expected domain. `df_anual`, `df_mensal`, `df_dias`, and `pop`
 all returned all 92 RJ municipalities in every expected table-grain group. The
@@ -127,6 +133,14 @@ software metadata files.
   and verifies the returned municipality codes against the 92-row registry.
 - `vigiar_baixar_municipio()` builds a real municipality server-side filter
   when the schema supports one and records whether local subsetting was needed.
+- `vigiar_baixar_pm25_mensal_rj()` is the explicit monthly PM2.5 entry point. It
+  returns `pm25_media`, a monthly `periodo`, normalized municipality codes, and
+  the evidence needed to distinguish a successful response from a complete
+  municipality-year-month panel.
+- `vigiar_baixar_rj_completo()` now executes validated server-side year, month,
+  or municipality partitions with retry and a per-partition report. Strict mode
+  rejects every failed partition rather than relabelling one response as a
+  complete download.
 - Numeric and character UF codes are normalized correctly.
 - Duplicate filters are combined by intersection; conflicting filters fail
   before the request.
@@ -164,8 +178,9 @@ software metadata files.
   later inline strings can coexist after the Power BI dictionary cap.
 - Real structural issues are retained in `vigiar_parser_status`,
   `vigiar_parser_issue_count`, and `vigiar_parser_issues`.
-- Parser evidence survives client-side filtering, processing, caching, and
-  audit serialization. Structural issues block strict completeness.
+- Parser evidence survives client-side filtering, every public processing
+  function, caching, and audit serialization. Structural issues block strict
+  completeness.
 
 ### Truncation, cache, snapshots, and provenance
 
@@ -371,6 +386,16 @@ schema hash, canonical data checksum, dimensions, expected domain, missing
 municipalities, health-region gaps, parser evidence, and truncation evidence.
 Release validation artifacts should be attached to the corresponding release.
 
+### Monthly PM2.5 descriptive audit
+
+The monthly analysis reports the observed temporal domain, summaries by year,
+year-month, calendar month, municipality, and SES-RJ health region, plus
+period-specific duplicate, missing, negative, zero, extreme, invalid-code, and
+invalid-date evidence. Missing municipalities are materialized for every
+incomplete expected period. The embedded series diagnostic evaluates long
+missing blocks and abrupt changes only across consecutive calendar periods.
+These outputs are descriptive data checks, not statistical models.
+
 ### Audit and compliance semantics
 
 Checks use conservative categorical contracts. The precedence is fail over
@@ -385,12 +410,12 @@ Local platform: Windows 11 x64, R 4.6.0, UTF-8 session.
 | Check | Result |
 |---|---|
 | `devtools::document()` | Passed; generated Rd synchronized |
-| `devtools::test()` with online disabled | 743 passed, 1 expected online skip, 0 failed, 0 warnings |
-| Strict online test | 58 passed, 0 skipped, 0 failed, 0 warnings |
-| Coverage gate | 75.23%, required 70.00%, passed |
+| `devtools::test()` with online disabled | 839 passed, 1 expected online skip, 0 failed, 0 warnings |
+| Strict online test | 70 passed, 0 skipped, 0 failed, 0 warnings |
+| Coverage gate | 76.22%, required 70.00%, passed |
 | `pkgdown::build_site()` | Passed, including all reference pages, six offline articles, and this report |
 | `devtools::check(error_on = "never", args = character())` | 0 errors, 0 warnings, 0 notes |
-| `lintr::lint_package()` | Exited successfully; 288 diagnostics remain, mostly cross-file usage and inherited style rules |
+| `lintr::lint_package()` | Exited successfully; 181 non-blocking inherited diagnostics remain |
 | Metadata consistency | 13 assertions passed |
 | Parser adversarial/property tests | Passed, including hybrid dictionary and malformed-response cases |
 | GitHub matrix | Configured for Windows release, macOS release, Ubuntu release, devel, and oldrel; current branch result must be read from PR checks |
@@ -404,6 +429,21 @@ Strict online evidence for commit
 | `df_mensal` | 16,560 | 180 | 0 | 92/92 | pass | pass | no_evidence | complete |
 | `df_dias` | 16,560 | 180 | 0 | 92/92 | pass | pass | no_evidence | complete |
 | `pop` | 4,140 | 15 | 0 | 92/92 | pass | pass | no_evidence | complete |
+
+A repeated strict canary on 2026-07-17 returned the same row counts and
+canonical checksums for all four tables, again with 92/92 municipalities, zero
+incomplete groups, passing parser and schema evidence, no truncation evidence,
+and `complete` conclusions. This supports short-term retrieval stability but is
+not a guarantee about future source behavior.
+
+The 2026-07-14 monthly release-script canary independently downloaded January
+2024 through `vigiar_baixar_pm25_mensal_rj(require_complete = TRUE)`. It returned
+92 rows and 92 unique municipalities, with PM2.5 values from 7.31 to 13.75
+ug/m3, `parser_status = pass`, `schema_status = pass`,
+`truncation_status = no_evidence`, `verification_status = verified_complete`,
+`conclusion = complete`, and `quality_status = pass`. The script archived the
+processed data, structured analysis, per-period summary, quality tables, missing
+municipalities, CSV/JSON manifest, and RDS audit object.
 
 The local artifact directory is ignored by Git by design. The scheduled online
 workflow archives the equivalent CSV, JSON, and RDS evidence as a workflow

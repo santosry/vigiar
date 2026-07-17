@@ -332,6 +332,44 @@ test_that("process_municipios renames columns", {
   expect_true("latitude" %in% names(result))
 })
 
+test_that("all public processors preserve download provenance", {
+  mark_provenance <- function(data) {
+    attr(data, "vigiar_parser_status") <- "pass"
+    attr(data, "vigiar_query_strategy") <- "server_side_test"
+    attr(data, "vigiar_schema_hash") <- "schema-test"
+    data
+  }
+  cases <- list(
+    pm25 = function() process_pm25(mark_provenance(data.frame(
+      muni = 330100L, UF = "RJ", ano = 2022L, Media_pm25 = 12
+    )), tipo = "anual"),
+    population = function() process_populacao_exposta(mark_provenance(data.frame(
+      muni = 330100L, ano = 2022L, pop = 1000, UF = "RJ"
+    ))),
+    health = function() process_indicadores_saude(mark_provenance(data.frame(
+      Indicador = "test", n = 1000, est = 1, low = 0, high = 2, ano = 2022L
+    )), agregacao = "brasil"),
+    attributable = function() process_fracao_atribuivel(mark_provenance(data.frame(
+      Indicador = "test", n = 1000, est = 1, low = 0, high = 2, ano = 2022L
+    ))),
+    indoor = function() process_exposicao_indoor(mark_provenance(data.frame(
+      Code = 33L, Ano = 2022L, comb_sol = 0.1, pop_exposta = 100
+    ))),
+    municipalities = function() process_municipios(mark_provenance(data.frame(
+      UF_COD = 33L, UF_SIGLA = "RJ", MUN_COD = 330100L,
+      LAT = -21.75, LON = -41.32
+    ))),
+    states = function() process_ufs(mark_provenance(data.frame(UF = "RJ")))
+  )
+
+  for (processor in cases) {
+    result <- processor()
+    expect_identical(attr(result, "vigiar_parser_status"), "pass")
+    expect_identical(attr(result, "vigiar_query_strategy"), "server_side_test")
+    expect_identical(attr(result, "vigiar_schema_hash"), "schema-test")
+  }
+})
+
 # -- Validation functions ------------------------------------------------------
 
 test_that("vigiar_validar_ibge warns on invalid codes", {

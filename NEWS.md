@@ -2,6 +2,22 @@
 
 ## Rio de Janeiro completeness hardening
 
+* Added `vigiar_baixar_pm25_mensal_rj()` as an explicit monthly PM2.5 entry
+  point. It downloads `df_mensal`, returns `pm25_media` and a monthly `periodo`,
+  and validates municipality by year by month completeness.
+* Added `vigiar_analisar_pm25_mensal_rj()` with structured summaries by month,
+  municipality, and SES-RJ health region plus missing-cell, duplicate-key,
+  impossible-value, parser, schema, and truncation evidence.
+* `vigiar_baixar_rj_completo()` now performs real server-side year, month, or
+  municipality partitioning with retry and a per-partition evidence report.
+  Strict mode rejects failed partitions and never labels a single unverified
+  response as complete.
+* PM2.5 processing and RJ filtering now preserve scientific provenance
+  attributes. Abrupt-change diagnostics order monthly series chronologically and
+  compare only consecutive calendar periods.
+* The release validation script now remains safely connected when invoked with
+  `source()`, archives processed monthly data and analysis tables, and always
+  disconnects on exit. Online-audit printing also supports selected columns.
 * Fixed a false compliance pass for data containing all 92 RJ municipalities
   plus an external municipality. Audit checks now share explicit `ok`, `status`,
   `severity`, and `details` contracts; `unknown` never becomes a pass.

@@ -15,10 +15,12 @@ test_that("scientifically sensitive and compatibility APIs are not mislabeled", 
   lookup <- setNames(status$status, status$symbol)
 
   expect_identical(lookup[["vigiar_auditar_rj_online"]], "experimental")
+  expect_identical(lookup[["vigiar_analisar_pm25_mensal_rj"]], "experimental")
   expect_identical(lookup[["vigiar_baixar_rj_completo"]], "experimental")
   expect_identical(lookup[["vigiar_health_check"]], "experimental")
   expect_identical(lookup[["vigiar_rj_macrorregioes"]], "deprecated")
   expect_identical(lookup[["vigiar_baixar"]], "stable")
+  expect_identical(lookup[["vigiar_baixar_pm25_mensal_rj"]], "stable")
   expect_identical(lookup[["vigiar_rj_cobertura"]], "stable")
 })
 

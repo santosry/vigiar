@@ -114,7 +114,9 @@ vigiar_diagnosticar_serie <- function(dados,
   diag <- vigiar_checar_duplicatas(diag, dados, col_muni, col_ano, col_mes)
 
   # ---- 7. Series break detection ----
-  diag <- vigiar_checar_quebra_serie(diag, dados, col_muni, col_ano, col_pm25)
+  diag <- vigiar_checar_quebra_serie(
+    diag, dados, col_muni, col_ano, col_pm25, col_mes = col_mes
+  )
 
   # ---- 8. Classify alerts ----
   diag <- vigiar_classificar_alertas(diag)
@@ -645,14 +647,19 @@ vigiar_checar_duplicatas <- function(diag, dados, col_muni,
 #' @param col_muni Municipality code column.
 #' @param col_ano Year column.
 #' @param col_pm25 PM2.5 column.
+#' @param col_mes Optional month column. When available, changes are evaluated
+#'   only between consecutive calendar months.
 #' @return The modified diagnostic object.
 #' @export
-vigiar_checar_quebra_serie <- function(diag, dados, col_muni,
-                                        col_ano = "ano", col_pm25) {
+vigiar_checar_quebra_serie <- function(
+  diag, dados, col_muni, col_ano = "ano", col_pm25, col_mes = NULL
+) {
   if (!all(c(col_muni, col_ano, col_pm25) %in% names(dados))) return(diag)
 
-  # Group by municipality, sort by year, detect large year-over-year changes
-  dados_ordenados <- dados[order(dados[[col_muni]], dados[[col_ano]]), ]
+  has_month <- !is.null(col_mes) && col_mes %in% names(dados)
+  order_columns <- c(col_muni, col_ano, if (has_month) col_mes)
+  order_index <- do.call(order, unname(dados[order_columns]))
+  dados_ordenados <- dados[order_index, , drop = FALSE]
   municipios <- unique(dados_ordenados[[col_muni]])
 
   n_quebras <- 0
@@ -663,15 +670,37 @@ vigiar_checar_quebra_serie <- function(diag, dados, col_muni,
     if (length(idx) < 3) next
     vals <- as.numeric(dados_ordenados[[col_pm25]][idx])
     anos <- as.integer(dados_ordenados[[col_ano]][idx])
+    meses <- if (has_month) {
+      as.integer(dados_ordenados[[col_mes]][idx])
+    } else {
+      rep(NA_integer_, length(idx))
+    }
+    period_index <- if (has_month) anos * 12L + meses else anos
 
     for (i in seq_along(vals)[-1]) {
-      if (is.na(vals[i]) || is.na(vals[i-1])) next
-      change <- abs(vals[i] - vals[i-1])
-      pct_change <- change / max(abs(vals[i-1]), 0.01)
-      if (pct_change > 2 && change > 10) {  # >200% change AND >10 ug/m3
+      if (is.na(vals[i]) || is.na(vals[i - 1L])) next
+      if (
+        is.na(period_index[i]) || is.na(period_index[i - 1L]) ||
+          period_index[i] - period_index[i - 1L] != 1L
+      ) next
+      change <- abs(vals[i] - vals[i - 1L])
+      pct_change <- change / max(abs(vals[i - 1L]), 0.01)
+      if (pct_change > 2 && change > 10) {
         n_quebras <- n_quebras + 1
-        muni_quebras <- c(muni_quebras,
-          sprintf("%s (%d->%d: %.1f->%.1f)", m, anos[i-1], anos[i], vals[i-1], vals[i]))
+        before <- if (has_month) {
+          sprintf("%04d-%02d", anos[i - 1L], meses[i - 1L])
+        } else {
+          as.character(anos[i - 1L])
+        }
+        after <- if (has_month) {
+          sprintf("%04d-%02d", anos[i], meses[i])
+        } else {
+          as.character(anos[i])
+        }
+        muni_quebras <- c(muni_quebras, sprintf(
+          "%s (%s->%s: %.1f->%.1f)",
+          m, before, after, vals[i - 1L], vals[i]
+        ))
       }
     }
   }
@@ -680,7 +709,10 @@ vigiar_checar_quebra_serie <- function(diag, dados, col_muni,
 
   if (n_quebras > 0) {
     diag <- .vigiar_add_issue(diag, "problema",
-      sprintf("%d abrupt series changes detected (>200%% between consecutive years).", n_quebras))
+      sprintf(
+        "%d abrupt series changes detected (>200%% and >10 ug/m3 between consecutive %s).",
+        n_quebras, if (has_month) "months" else "years"
+      ))
     if (length(muni_quebras) <= 5) {
       for (q in muni_quebras) {
         diag$mensagens <- c(diag$mensagens, sprintf("  Break: %s", q))

@@ -55,6 +55,7 @@ reference:
   - vigiar_baixar_principais
   - vigiar_baixar_rj
   - vigiar_baixar_rj_completo
+  - vigiar_baixar_pm25_mensal_rj
   - vigiar_baixar_municipio
 - title: Processing
   contents:
@@ -86,6 +87,7 @@ reference:
   - vigiar_checar_quebra_serie
   - vigiar_classificar_alertas
   - vigiar_relatorio_diagnostico
+  - vigiar_analisar_pm25_mensal_rj
 - title: Dictionary
   contents:
   - vigiar_dicionario

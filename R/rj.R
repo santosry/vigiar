@@ -374,7 +374,7 @@ vigiar_baixar_rj <- function(
         if (isTRUE(complete_required)) {
           cache_truncation <- attr(out, "vigiar_truncation_status") %||% "unknown"
           if (cache_truncation != "no_evidence" ||
-              isTRUE(attr(out, "vigiar_possivel_truncamento"))) {
+                isTRUE(attr(out, "vigiar_possivel_truncamento"))) {
             stop(
               "The cached RJ response has truncation evidence; complete data cannot be guaranteed.",
               call. = FALSE
@@ -395,6 +395,20 @@ vigiar_baixar_rj <- function(
               ),
               call. = FALSE
             )
+          }
+          if (tabela %in% c(
+            "df_anual", "df_mensal", "df_dias", "df_dias_conama", "pop"
+          )) {
+            cache_completeness <- suppressWarnings(
+              attr(out, "vigiar_rj_completude") %||%
+                vigiar_rj_completude_tabela(out, tabela = tabela)
+            )
+            if (any(cache_completeness$completo %in% FALSE)) {
+              stop(
+                "The cached RJ table has incomplete municipality-time groups.",
+                call. = FALSE
+              )
+            }
           }
         }
         attr(out, "vigiar_cache_status") <- "hit"
@@ -483,6 +497,27 @@ vigiar_baixar_rj <- function(
     )
   }
 
+  table_completeness <- NULL
+  if (tabela %in% c(
+    "df_anual", "df_mensal", "df_dias", "df_dias_conama", "pop"
+  )) {
+    table_completeness <- suppressWarnings(vigiar_rj_completude_tabela(
+      dados_rj,
+      tabela = tabela,
+      require_complete = FALSE
+    ))
+    if (isTRUE(complete_required) &&
+          any(table_completeness$completo %in% FALSE)) {
+      stop(
+        sprintf(
+          "RJ table coverage is incomplete for '%s': %d municipality-time group(s) failed.",
+          tabela, sum(table_completeness$completo %in% FALSE)
+        ),
+        call. = FALSE
+      )
+    }
+  }
+
   if (isTRUE(processar)) {
     dados_rj <- .vigiar_processar_tabela_rj(dados_rj, tabela = tabela, tipo = tipo)
   }
@@ -502,6 +537,9 @@ vigiar_baixar_rj <- function(
     attr(dados, "vigiar_truncation_assessment") %||% list()
   attr(dados_rj, "vigiar_parser_status") <- parser_status
   attr(dados_rj, "vigiar_parser_issues") <- parser_issues
+  if (!is.null(table_completeness)) {
+    attr(dados_rj, "vigiar_rj_completude") <- table_completeness
+  }
 
   if (isTRUE(snapshot)) {
     attr(dados_rj, "vigiar_snapshot") <- vigiar_snapshot(dados = dados_rj, tabela = tabela)
@@ -524,7 +562,7 @@ vigiar_baixar_rj <- function(
     cli::cli_alert_success("RJ cache saved: {tabela}")
   }
 
-  out <- tibble::as_tibble(dados_rj)
+  out <- .vigiar_as_tibble_preserve(dados_rj)
   attr(out, "vigiar_parser_status") <- parser_status
   attr(out, "vigiar_parser_issues") <- parser_issues
   out
@@ -606,14 +644,14 @@ vigiar_baixar_municipio <- function(
   }
 
   if (isTRUE(require_complete) &&
-      isTRUE(attr(dados_rj, "vigiar_possivel_truncamento"))) {
+        isTRUE(attr(dados_rj, "vigiar_possivel_truncamento"))) {
     stop(
       "Possible API truncation was detected; complete municipality data cannot be guaranteed.",
       call. = FALSE
     )
   }
   if (isTRUE(require_complete) &&
-      !identical(attr(dados_rj, "vigiar_parser_status"), "pass")) {
+        !identical(attr(dados_rj, "vigiar_parser_status"), "pass")) {
     stop(
       "Power BI response parsing was not structurally verified; complete municipality data cannot be guaranteed.",
       call. = FALSE
@@ -664,10 +702,10 @@ vigiar_baixar_municipio <- function(
 
 #' Download Rio de Janeiro VIGIAR data using smaller partitions
 #'
-#' This is a preparatory interface for partitioned RJ downloads. The current
-#' public Power BI query builder does not yet expose reliable server-side
-#' filters by year, month, or municipality, so non-auto partitioning stops with
-#' an explicit message instead of pretending that the result is complete.
+#' Uses validated Power BI server-side filters to download smaller partitions,
+#' records every partition outcome, combines successful responses, removes
+#' exact duplicates, and verifies the final RJ panel. Failed partitions and
+#' any truncation evidence remain explicit.
 #'
 #' @param tabela Table name.
 #' @param por Partitioning strategy.
@@ -676,12 +714,18 @@ vigiar_baixar_municipio <- function(
 #' @param municipios Optional municipality codes to download.
 #' @param timeout Timeout in seconds.
 #' @param delay Delay between partitions.
+#' @param tentativas Maximum partition-level attempts. The HTTP layer also
+#'   retains its own transient-error retry policy.
 #' @param validar_cobertura If \code{TRUE}, validate final RJ coverage.
 #' @param exigir_completo If \code{TRUE}, error unless all expected RJ
 #'   municipalities are present in the final result.
 #' @param require_complete English alias for \code{exigir_completo}.
+#' @param processar Process the combined table.
+#' @param tipo Optional processor type.
+#' @param snapshot Attach a reproducible snapshot to the combined result.
 #' @param ... Additional arguments passed to \code{vigiar_baixar_rj()}.
-#' @return A tibble from \code{vigiar_baixar_rj()} when \code{por = "auto"}.
+#' @return A tibble with partition, parser, truncation, schema, and completeness
+#'   metadata.
 #' @export
 vigiar_baixar_rj_completo <- function(
   tabela,
@@ -691,40 +735,246 @@ vigiar_baixar_rj_completo <- function(
   municipios = NULL,
   timeout = 120,
   delay = 0.5,
+  tentativas = 2L,
   validar_cobertura = TRUE,
   exigir_completo = FALSE,
   require_complete = exigir_completo,
+  processar = FALSE,
+  tipo = NULL,
+  snapshot = FALSE,
   ...
 ) {
   por <- match.arg(por)
-  if (por != "auto") {
-    stop(
-      "Partitioned RJ downloads are not available yet because the current ",
-      "Power BI query builder has no validated server-side filters by year, ",
-      "month, or municipality. Use vigiar_baixar_rj() and inspect the ",
-      "vigiar_possivel_truncamento attribute.",
-      call. = FALSE
-    )
+  complete_required <- isTRUE(exigir_completo) || isTRUE(require_complete)
+  if (length(delay) != 1L || !is.finite(delay) || delay < 0) {
+    stop("'delay' must be one non-negative finite number.", call. = FALSE)
+  }
+  tentativas <- suppressWarnings(as.integer(tentativas))
+  if (length(tentativas) != 1L || is.na(tentativas) || tentativas < 1L) {
+    stop("'tentativas' must be one positive integer.", call. = FALSE)
   }
 
-  dados <- vigiar_baixar_rj(
+  if (por == "auto") {
+    por <- if (!is.null(municipios)) {
+      "municipio"
+    } else if (!is.null(meses)) {
+      "mes"
+    } else if (!is.null(anos)) {
+      "ano"
+    } else {
+      "auto"
+    }
+  }
+
+  if (por == "auto") {
+    if (isTRUE(complete_required) && tabela %in% c(
+      "df_anual", "df_mensal", "df_dias", "df_dias_conama", "pop"
+    )) {
+      stop(
+        "require_complete = TRUE needs an explicit partition domain in 'anos' ",
+        "or 'municipios'; a single observed response cannot define completeness.",
+        call. = FALSE
+      )
+    }
+    dados <- vigiar_baixar_rj(
+      tabela = tabela,
+      timeout = timeout,
+      validar_cobertura = validar_cobertura,
+      exigir_completo = exigir_completo,
+      require_complete = require_complete,
+      processar = processar,
+      tipo = tipo,
+      snapshot = snapshot,
+      ...
+    )
+    attr(dados, "vigiar_query_strategy") <- "single_request_unverified_domain"
+    return(dados)
+  }
+
+  plan <- .vigiar_rj_partition_plan(
     tabela = tabela,
-    timeout = timeout,
-    validar_cobertura = validar_cobertura,
-    exigir_completo = exigir_completo,
-    require_complete = require_complete,
-    ...
+    por = por,
+    anos = anos,
+    meses = meses,
+    municipios = municipios
   )
+  dots <- list(...)
+  user_filters <- dots$filtros
+  dots$filtros <- NULL
+  results <- vector("list", length(plan))
+  reports <- vector("list", length(plan))
 
-  if (isTRUE(attr(dados, "vigiar_possivel_truncamento"))) {
-    warning(
-      "Possible truncation remains after the auto download. A validated ",
-      "server-side partition strategy is required before claiming completeness.",
+  for (i in seq_along(plan)) {
+    spec <- plan[[i]]
+    partition_filters <- .vigiar_combinar_filtros(
+      user_filters, spec$filtros
+    )
+    value <- NULL
+    error_message <- NA_character_
+    attempts_used <- 0L
+    for (attempt in seq_len(tentativas)) {
+      attempts_used <- attempt
+      args <- c(list(
+        tabela = tabela,
+        timeout = timeout,
+        validar_cobertura = FALSE,
+        exigir_completo = FALSE,
+        require_complete = FALSE,
+        processar = processar,
+        tipo = tipo,
+        usar_cache = FALSE,
+        snapshot = FALSE,
+        filtros = partition_filters
+      ), dots)
+      value <- tryCatch(
+        do.call(vigiar_baixar_rj, args),
+        error = function(e) {
+          error_message <<- conditionMessage(e)
+          NULL
+        }
+      )
+      if (!is.null(value)) {
+        error_message <- NA_character_
+        break
+      }
+      if (attempt < tentativas && delay > 0) {
+        Sys.sleep(delay)
+      }
+    }
+    results[[i]] <- value
+    reports[[i]] <- tibble::tibble(
+      partition = spec$label,
+      ano = spec$ano,
+      mes = spec$mes,
+      codigo_ibge_6 = spec$codigo_ibge_6,
+      status = if (is.null(value)) "failed" else "success",
+      attempts = attempts_used,
+      n_rows = if (is.null(value)) 0L else nrow(value),
+      checksum = if (is.null(value)) NA_character_ else
+        as.character(vigiar_checksum(value)),
+      parser_status = if (is.null(value)) NA_character_ else
+        attr(value, "vigiar_parser_status") %||% "unknown",
+      truncation_status = if (is.null(value)) NA_character_ else
+        attr(value, "vigiar_truncation_status") %||% "unknown",
+      error = error_message
+    )
+    if (i < length(plan) && delay > 0) {
+      Sys.sleep(delay)
+    }
+  }
+
+  report <- dplyr::bind_rows(reports)
+  failed <- report$status == "failed"
+  if (all(failed)) {
+    stop(
+      "All RJ download partitions failed: ",
+      paste(unique(stats::na.omit(report$error)), collapse = "; "),
       call. = FALSE
     )
   }
+  successful <- results[!vapply(results, is.null, logical(1))]
+  first <- successful[[1]]
+  combined <- dplyr::bind_rows(lapply(successful, as.data.frame))
+  combined <- combined[!duplicated(combined), , drop = FALSE]
+  combined <- tibble::as_tibble(combined)
+  combined <- .vigiar_restore_data_attributes(
+    combined, .vigiar_data_attributes(first)
+  )
+  custom_classes <- setdiff(
+    class(first), c("tbl_df", "tbl", "data.frame")
+  )
+  class(combined) <- unique(c(custom_classes, class(combined)))
 
-  dados
+  parser_statuses <- report$parser_status[!failed]
+  parser_status <- if (all(parser_statuses == "pass")) {
+    "pass"
+  } else if (any(parser_statuses == "issues")) {
+    "issues"
+  } else {
+    "unknown"
+  }
+  truncation_status <- .vigiar_worst_truncation(
+    report$truncation_status[!failed]
+  )
+  attr(combined, "vigiar_parser_status") <- parser_status
+  attr(combined, "vigiar_truncation_status") <- truncation_status
+  attr(combined, "vigiar_possivel_truncamento") <-
+    truncation_status != "no_evidence"
+  attr(combined, "vigiar_response_rows") <- sum(report$n_rows[!failed])
+  attr(combined, "vigiar_returned_rows") <- nrow(combined)
+  attr(combined, "vigiar_query_strategy") <- paste0(
+    "server_side_partitioned_by_", por
+  )
+  attr(combined, "vigiar_partition_report") <- report
+  attr(combined, "vigiar_failed_partitions") <- report[failed, , drop = FALSE]
+  attr(combined, "vigiar_download_timestamp") <- Sys.time()
+
+  coverage <- vigiar_rj_cobertura(combined, por = "geral")
+  if (isTRUE(validar_cobertura)) {
+    .vigiar_emitir_cobertura_rj(coverage)
+  }
+  expected_months <- if (tabela %in% c(
+    "df_mensal", "df_dias", "df_dias_conama"
+  )) meses %||% 1:12 else NULL
+  completeness <- suppressWarnings(vigiar_rj_completude_tabela(
+    combined,
+    tabela = tabela,
+    anos_esperados = anos,
+    meses_esperados = expected_months
+  ))
+  attr(combined, "vigiar_rj_completude") <- completeness
+  attr(combined, "vigiar_rj_cobertura") <- coverage
+  schema <- .vigiar_rj_schema_assessment(tabela)
+  attr(combined, "vigiar_schema_status") <- schema$status
+
+  if (isTRUE(complete_required)) {
+    reasons <- character()
+    if (any(failed)) {
+      reasons <- c(reasons, sprintf("%d partition(s) failed", sum(failed)))
+    }
+    if (!identical(parser_status, "pass")) {
+      reasons <- c(reasons, paste0("parser status is ", parser_status))
+    }
+    if (!identical(truncation_status, "no_evidence")) {
+      reasons <- c(reasons, paste0("truncation status is ", truncation_status))
+    }
+    if (!identical(schema$status, "pass")) {
+      reasons <- c(reasons, paste0("critical schema status is ", schema$status))
+    }
+    if (any(completeness$completo %in% FALSE)) {
+      reasons <- c(reasons, sprintf(
+        "%d expected panel group(s) are incomplete",
+        sum(completeness$completo %in% FALSE)
+      ))
+    }
+    if (!identical(unique(completeness$overall_status)[[1]], "pass")) {
+      reasons <- c(reasons, paste0(
+        "completeness status is ", unique(completeness$overall_status)[[1]]
+      ))
+    }
+    if (length(reasons) > 0L) {
+      stop(
+        "Partitioned RJ download is not verified complete: ",
+        paste(unique(reasons), collapse = "; "), ".",
+        call. = FALSE
+      )
+    }
+  }
+
+  attr(combined, "vigiar_verification_status") <- if (
+    !any(failed) && identical(parser_status, "pass") &&
+      identical(truncation_status, "no_evidence") &&
+      identical(schema$status, "pass") &&
+      all(completeness$completo %in% TRUE) &&
+      identical(unique(completeness$overall_status)[[1]], "pass")
+  ) "verified_complete" else "partitioned_unverified"
+
+  if (isTRUE(snapshot)) {
+    attr(combined, "vigiar_snapshot") <- vigiar_snapshot(
+      combined, tabela = tabela
+    )
+  }
+  combined
 }
 
 #' Measure Rio de Janeiro municipality coverage
@@ -1256,7 +1506,8 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
 }
 
 .vigiar_filtrar_rj <- function(dados, validar = TRUE) {
-  dados <- tibble::as_tibble(dados)
+  source_attributes <- .vigiar_data_attributes(dados)
+  dados <- .vigiar_as_tibble_preserve(dados)
   col_muni <- .vigiar_coluna_municipio(dados)
   col_uf <- .vigiar_coluna_uf(dados)
 
@@ -1288,7 +1539,8 @@ vigiar_plot_pm25_rj <- function(dados, por = c("ano", "macrorregiao", "municipio
     vigiar_validar_rj(dados)
   }
 
-  tibble::as_tibble(dados)
+  out <- tibble::as_tibble(dados)
+  .vigiar_restore_data_attributes(out, source_attributes)
 }
 
 .vigiar_detectar_truncamento <- function(dados, tabela = NULL, limite = NULL) {

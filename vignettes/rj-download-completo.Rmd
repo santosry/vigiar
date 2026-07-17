@@ -135,6 +135,7 @@ pm25_months <- merge(
   data.frame(mes = 1:2),
   by = NULL
 )
+pm25_months$pm25_media <- 12 + pm25_months$mes / 10
 
 if (exists("vigiar_rj_completude_tabela", mode = "function")) {
   vigiar_rj_completude_tabela(
@@ -145,6 +146,58 @@ if (exists("vigiar_rj_completude_tabela", mode = "function")) {
   )
 }
 ```
+
+## Explicit Monthly PM2.5 Workflow
+
+`vigiar_baixar_pm25_mensal_rj()` is the dedicated entry point for monthly PM2.5
+means. It uses `df_mensal`, returns the canonical value column `pm25_media`, and
+assesses the expected municipality by year by month grid. The analysis helper is
+offline-capable and can also be used with simulated or archived data.
+
+```{r}
+monthly_completeness <- vigiar_rj_completude_tabela(
+  pm25_months,
+  tabela = "df_mensal",
+  anos_esperados = 2022L,
+  meses_esperados = 1:2
+)
+monthly_analysis <- vigiar_analisar_pm25_mensal_rj(
+  pm25_months,
+  completude = monthly_completeness
+)
+
+monthly_analysis$summary
+monthly_analysis$temporal_domain
+monthly_analysis$by_year_month
+monthly_analysis$quality
+monthly_analysis$quality_by_year_month
+```
+
+The online download below is deliberately not evaluated while building the
+vignette.
+
+```{r, eval = FALSE}
+monthly_pm25 <- vigiar_baixar_pm25_mensal_rj(
+  anos = 2024,
+  meses = 1:12,
+  validar_completude = TRUE
+)
+
+monthly_analysis <- vigiar_analisar_pm25_mensal_rj(monthly_pm25)
+print(monthly_analysis)
+
+monthly_pm25_strict <- vigiar_baixar_pm25_mensal_rj(
+  anos_esperados = 2020:2024,
+  meses_esperados = 1:12,
+  require_complete = TRUE
+)
+```
+
+Strict monthly completeness requires every declared municipality-month cell,
+passing parser and critical-schema evidence, no failed partition, no duplicate
+key, valid PM2.5 values, and no API truncation signal. This is retrieval and data
+quality evidence; it does not validate causal inference, GAM, DLNM, relative
+risk, predictive models, or epidemiological conclusions.
 
 When `require_complete = TRUE`, incomplete coverage or possible truncation is an
 error, not just a warning.
