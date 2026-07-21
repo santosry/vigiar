@@ -1,0 +1,236 @@
+# Download de Dados
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+Este capítulo cobre todas as estratégias de download de dados do dashboard VIGIAR.
+
+## Download de uma tabela específica
+
+A função principal é `vigiar_baixar()`:
+
+```{r}
+#| eval: false
+library(vigiar)
+
+vigiar_conectar()
+
+# Download completo de uma tabela
+pm25 <- vigiar_baixar("df_anual")
+```
+
+### Parâmetros do download
+
+```{r}
+#| eval: false
+vigiar_baixar(
+  tabela      = "df_anual",
+  colunas     = NULL,          # NULL = todas as colunas
+  ordenar_por = NULL,          # Coluna para ordenação
+  limite      = NULL,          # Número máximo de linhas
+  timeout     = 120,           # Timeout HTTP em segundos
+  uf          = "RJ",          # Filtro por UF (NULL = sem filtro)
+  direcao     = c("asc", "desc")  # Direção da ordenação
+)
+```
+
+### Download seletivo (colunas específicas)
+
+```{r}
+#| eval: false
+# Baixar apenas algumas colunas
+pm25_select <- vigiar_baixar(
+  "df_anual",
+  colunas = c("muni", "UF", "ano", "Media_pm25")
+)
+```
+
+### Download com limite de linhas
+
+```{r}
+#| eval: false
+# Útil para testes rápidos ou amostragem
+amostra <- vigiar_baixar("df_anual", limite = 100)
+```
+
+### Download com ordenação
+
+```{r}
+#| eval: false
+# Ordenar por ano (ascendente)
+pm25_ordenado <- vigiar_baixar("df_anual", ordenar_por = "ano")
+
+# Ordenar por ano (descendente)
+pm25_desc <- vigiar_baixar("df_anual", ordenar_por = "ano", direcao = "desc")
+```
+
+### Filtro por UF
+
+Por padrão, o `vigiar_baixar()` filtra para o Rio de Janeiro (`uf = "RJ"`). Para baixar dados de outro estado ou de todo o Brasil:
+
+```{r}
+#| eval: false
+# Todo o Brasil
+pm25_br <- vigiar_baixar("df_anual", uf = NULL)
+
+# São Paulo
+pm25_sp <- vigiar_baixar("df_anual", uf = "SP")
+
+# Múltiplas UFs
+pm25_sudeste <- vigiar_baixar("df_anual",
+  uf = c("RJ", "SP", "MG", "ES"))
+```
+
+## Download de múltiplas tabelas
+
+### Tabelas principais
+
+A função de conveniência `vigiar_baixar_principais()` baixa as 14 tabelas mais relevantes:
+
+```{r}
+#| eval: false
+tudo <- vigiar_baixar_principais()
+names(tudo)
+# [1] "df_anual"  "df_mensal"  "df_muni"  "pop"  "tb_brasil" ...
+```
+
+### Todas as tabelas
+
+```{r}
+#| eval: false
+tudo <- vigiar_baixar_tudo()
+```
+
+### Subconjunto de tabelas
+
+```{r}
+#| eval: false
+# Apenas qualidade do ar
+tabelas_ar <- c("df_anual", "df_mensal", "df_dias", "df_dias_conama")
+dados_ar <- vigiar_baixar_tudo(tabelas_ar)
+```
+
+### Com delay entre downloads (rate limiting)
+
+```{r}
+#| eval: false
+# Esperar 1 segundo entre cada download
+tudo <- vigiar_baixar_tudo(delay = 1)
+```
+
+## Download com cache
+
+Para evitar baixar os mesmos dados repetidamente:
+
+```{r}
+#| eval: false
+# Configurar diretório de cache
+vigiar_cache_dir("~/vigiar_cache")
+
+# Download com cache (reusa por 24h por padrão)
+pm25 <- vigiar_baixar_com_cache("df_anual")
+
+# Verificar o que está em cache
+vigiar_cache_info()
+
+# Limpar cache
+vigiar_limpar_cache(dias = 7)     # Remove cache > 7 dias
+vigiar_limpar_cache(tabela = "df_anual")  # Remove tabela específica
+```
+
+## Download específico para o Rio de Janeiro
+
+Para o estado do Rio de Janeiro, o pacote oferece uma função otimizada:
+
+```{r}
+#| eval: false
+# Download otimizado para RJ (estratégia ASC+DESC particionada)
+pm25_rj <- vigiar_baixar_rj("df_anual")
+```
+
+A estratégia `vigiar_baixar_rj()` usa uma abordagem de **download particionado**:
+
+1. Baixa os dados em ordem ASC (crescente) — pega o início do range
+2. Baixa os dados em ordem DESC (decrescente) — pega o final do range
+3. Combina os resultados e remove duplicatas
+
+Isso contorna a limitação de ~30K linhas da API do Power BI.
+
+## Estimando o tamanho dos dados
+
+Antes de baixar, você pode verificar o catálogo:
+
+```{r}
+#| eval: false
+info <- vigiar_info()
+# Coluna 'colunas' mostra o número de colunas
+# O número de linhas depende do escopo (UF, anos)
+```
+
+## Histórico de downloads
+
+O pacote mantém um registro de todas as operações de download:
+
+```{r}
+#| eval: false
+# Visualizar histórico
+vigiar_historico_downloads()
+
+# Resumo dos downloads
+vigiar_resumo_downloads()
+```
+
+Saída:
+
+```
+# A tibble: 3 × 6
+  tabela    n_linhas n_colunas  tempo_seg  status  timestamp
+  <chr>        <int>     <int>      <dbl>  <chr>   <dttm>
+1 df_anual      5570        12       2.34  ok      2026-07-19 10:15:22
+2 df_mensal    28540        14      12.10  ok      2026-07-19 10:15:40
+3 pop           5570         7       1.87  ok      2026-07-19 10:15:45
+```
+
+## Tratamento de erros no download
+
+### Tabela não encontrada
+
+```
+Erro: Tabela 'xyz' nao encontrada. Use vigiar_tabelas() para ver as disponiveis.
+```
+
+**Solução**: Verifique o nome exato com `vigiar_tabelas()`.
+
+### Truncamento pela API
+
+Se o download retornar ~30.000 linhas, é possível que a API tenha truncado a resposta:
+
+```
+Warning: Possivel truncamento: 29876 linhas (limite API ~30K)
+```
+
+**Solução**: Use `vigiar_baixar_rj()` para tabelas grandes, ou filtre por UF.
+
+### Sessão expirada
+
+```
+Erro: Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.
+```
+
+**Solução**: Execute `vigiar_conectar(refresh = TRUE)`.
+
+## Boas práticas
+
+1. **Sempre valide após o download** com `vigiar_checar_dados()`
+2. **Prefira `vigiar_baixar_rj()`** para tabelas grandes do RJ
+3. **Use cache** para evitar downloads repetidos desnecessários
+4. **Monitore o log** com `vigiar_log()` e `vigiar_historico_downloads()`
+5. **Documente a proveniência** com `vigiar_snapshot()`

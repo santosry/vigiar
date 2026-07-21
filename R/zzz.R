@@ -16,15 +16,18 @@
 #' @importFrom jsonlite fromJSON toJSON write_json
 #' @importFrom openssl sha256
 #' @importFrom tibble as_tibble
-#' @importFrom utils write.csv read.csv browseURL head packageVersion
+#' @importFrom utils write.csv read.csv browseURL head packageVersion globalVariables
 #' @importFrom stats median sd quantile
+#' @importFrom magrittr %>%
+#' @importFrom rlang .data
+#' @importFrom checkmate assert_string assert_character assert_number
+#' @importFrom checkmate assert_flag assert_integerish assert_choice
+#' @importFrom checkmate assert_subset assert_numeric
 ## usethis namespace: end
 NULL
 
-# Suppress R CMD check NOTE about dplyr's data-mask pronouns.
-if (getRversion() >= "2.15.1") {
-  utils::globalVariables(c(".data", "tabela"))
-}
+# Suppress R CMD check notes about NSE pronouns (.data)
+utils::globalVariables(".data")
 
 # vigiar: Download Data from the VIGIAR Environmental Health Surveillance Dashboard
 # Copyright (C) 2026 Ryan Santos

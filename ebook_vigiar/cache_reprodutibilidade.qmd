@@ -1,0 +1,291 @@
+# Cache, Snapshots e Reprodutibilidade
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+A reprodutibilidade é um pilar do pacote **vigiar**. Como os dados do dashboard Power BI podem mudar a qualquer momento (atualizações, correções, alterações no modelo), é essencial ter mecanismos para **congelar** o estado dos dados baixados.
+
+## Cache Local
+
+O cache evita downloads repetidos dos mesmos dados, economizando tempo e banda.
+
+### Configuração
+
+```{r}
+#| eval: false
+library(vigiar)
+
+# Configurar diretório de cache
+vigiar_cache_dir("~/vigiar_cache")
+
+# Verificar configuração
+vigiar_cache_info()
+```
+
+### Download com cache
+
+```{r}
+#| eval: false
+vigiar_conectar()
+
+# Download com cache (TTL padrão: 24 horas)
+pm25 <- vigiar_baixar_com_cache("df_anual")
+
+# Na segunda execução (dentro de 24h), os dados vêm do cache
+pm25 <- vigiar_baixar_com_cache("df_anual")
+# Mensagem: "Usando cache (idade: 2.3 horas, TTL: 24h)"
+```
+
+### Gerenciamento do cache
+
+```{r}
+#| eval: false
+# Listar conteúdo do cache
+vigiar_cache_info()
+
+# Limpar cache por idade
+vigiar_limpar_cache(dias = 7)
+
+# Limpar tabela específica
+vigiar_limpar_cache(tabela = "df_anual")
+
+# Limpar todo o cache
+vigiar_limpar_cache()
+```
+
+## Snapshots
+
+Snapshots são "fotografias" dos dados em um determinado momento, com metadados de proveniência.
+
+### Criando um snapshot
+
+```{r}
+#| eval: false
+snap <- vigiar_snapshot(
+  dados  = pm25,
+  tabela = "df_anual",
+  parametros = list(
+    uf      = "RJ",
+    data    = "2026-07-19",
+    projeto = "IC_Mudancas_Climaticas"
+  )
+)
+
+print(snap)
+```
+
+Saída:
+
+```
+Snapshot VIGIAR
+Tabela: df_anual
+Dimensão: 5570 × 12
+Checksum SHA256: a1b2c3d4e5f6...
+Criado em: 2026-07-19 10:30:00
+Sessão R: R 4.4.0 / vigiar 0.7.1.9000
+Parâmetros:
+  uf: RJ
+  projeto: IC_Mudancas_Climaticas
+```
+
+### Verificando integridade
+
+```{r}
+#| eval: false
+# Verificar se o snapshot está íntegro
+vigiar_verificar_snapshot(snap)  # TRUE ou FALSE
+```
+
+### Salvando e carregando
+
+```{r}
+#| eval: false
+# Salvar
+vigiar_salvar_snapshot(snap, "pm25_rj_2026.rds")
+
+# Carregar posteriormente
+snap_carregado <- vigiar_carregar_snapshot("pm25_rj_2026.rds")
+
+# Verificar integridade
+vigiar_verificar_snapshot(snap_carregado)  # TRUE
+```
+
+### Comparando snapshots
+
+```{r}
+#| eval: false
+# Baixar dados em dois momentos diferentes
+snap_janeiro <- vigiar_snapshot(pm25_jan, tabela = "df_anual")
+snap_julho   <- vigiar_snapshot(pm25_jul, tabela = "df_anual")
+
+# Comparar
+diffs <- vigiar_comparar_snapshots(snap_janeiro, snap_julho)
+diffs
+```
+
+Saída:
+
+```
+Comparação de snapshots: df_anual
+  Dimensão: 5570×12 → 5580×12 (+10 linhas)
+  Checksum: diferente (dados alterados)
+  Colunas: idênticas
+  Timestamps: 2026-01-15 → 2026-07-19
+```
+
+## Schema Locking
+
+O schema do dashboard Power BI pode mudar sem aviso. O schema lock congela a estrutura esperada.
+
+### Criando um lock
+
+```{r}
+#| eval: false
+# Congelar o schema atual
+vigiar_esquema_lock("schema_vigiar_2026-07.json")
+```
+
+O arquivo gerado contém:
+
+```json
+{
+  "locked_at": "2026-07-19T10:30:00",
+  "vigiar_version": "0.7.1.9000",
+  "tables": {
+    "df_anual": {
+      "colunas": {
+        "muni": "integer",
+        "UF": "character",
+        "ano": "integer",
+        ...
+      }
+    },
+    ...
+  }
+}
+```
+
+### Verificando contra um lock
+
+```{r}
+#| eval: false
+# Verificar se o schema atual corresponde ao lock
+vigiar_esquema_verificar("schema_vigiar_2026-07.json")
+```
+
+Se houver mudanças:
+
+```
+Diferenças detectadas no schema:
+  NOVAS TABELAS:
+    + df_novo_indicador
+
+  TABELAS REMOVIDAS:
+    - legenda_antiga
+
+  COLUNAS ALTERADAS:
+    ~ df_anual: +col_nova, -col_removida
+```
+
+### Carregando um lock
+
+```{r}
+#| eval: false
+lock <- vigiar_esquema_carregar_lock("schema_vigiar_2026-07.json")
+```
+
+## Logging
+
+Todas as operações são registradas em um log estruturado.
+
+### Visualizando o log
+
+```{r}
+#| eval: false
+# Log completo
+vigiar_log()
+
+# Resumo do log
+vigiar_resumo_log()
+
+# Histórico de downloads
+vigiar_historico_downloads()
+
+# Resumo de downloads
+vigiar_resumo_downloads()
+```
+
+### Exportando o log
+
+```{r}
+#| eval: false
+vigiar_exportar_log("log_operacoes.json")
+```
+
+### Limpando o log
+
+```{r}
+#| eval: false
+vigiar_limpar_log()
+```
+
+## Fluxo de trabalho para reprodutibilidade
+
+Este é o fluxo recomendado para projetos que exigem reprodutibilidade estrita (ex: publicações científicas):
+
+```{r}
+#| eval: false
+library(vigiar)
+
+# 1. Conectar
+vigiar_conectar()
+
+# 2. Travar o schema
+vigiar_esquema_lock("schema_lock.json")
+
+# 3. Baixar dados
+pm25 <- vigiar_baixar_rj("df_anual")
+
+# 4. Processar e validar
+pm25 <- process_pm25(pm25, tipo = "anual")
+
+# 5. Diagnosticar e auditar
+diag  <- vigiar_diagnosticar_serie(pm25)
+audit <- vigiar_auditar(pm25, tabela = "df_anual")
+
+# 6. Criar snapshot
+snap <- vigiar_snapshot(
+  dados = pm25,
+  tabela = "df_anual",
+  parametros = list(
+    artigo = "Impactos da poluicao do ar no RJ",
+    versao_dados = "2026-07-19"
+  )
+)
+
+# 7. Salvar snapshot
+vigiar_salvar_snapshot(snap, "dados/pm25_artigo.rds")
+
+# 8. Exportar auditoria e log
+vigiar_exportar_auditoria(audit, "dados/auditoria.json")
+vigiar_exportar_log("dados/log_operacoes.json")
+
+# 9. Desconectar
+vigiar_desconectar()
+
+# Agora você tem um pacote de dados reprodutível:
+# ├── schema_lock.json          — estrutura esperada
+# ├── pm25_artigo.rds           — dados + checksum
+# ├── auditoria.json            — evidência de qualidade
+# └── log_operacoes.json        — rastreabilidade completa
+```
+
+Este conjunto de arquivos pode ser arquivado junto com o artigo (ex: repositório Zenodo, OSF) e citado nos métodos.

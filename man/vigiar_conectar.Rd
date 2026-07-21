@@ -7,7 +7,7 @@
 vigiar_conectar(refresh = FALSE, timeout = 30, max_retries = 3)
 }
 \arguments{
-\item{refresh}{If `TRUE`, forces a new session even if one exists.}
+\item{refresh}{If \code{TRUE}, forces a new session even if one exists.}
 
 \item{timeout}{Maximum time in seconds to establish the connection.}
 

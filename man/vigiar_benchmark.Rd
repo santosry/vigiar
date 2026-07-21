@@ -24,8 +24,8 @@ Options: \code{"direct"}, \code{"year_asc_desc"},
 }
 \value{
 A tibble with columns: estrategia, tempo_medio,
-  tempo_min, tempo_max, n_linhas, n_colunas, n_ausentes,
-  taxa_sucesso.
+tempo_min, tempo_max, n_linhas, n_colunas, n_ausentes,
+taxa_sucesso.
 }
 \description{
 Tests different download strategies (direct, year-partitioned,

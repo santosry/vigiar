@@ -15,7 +15,7 @@ vigiar_tendencia_descritiva(dados, variavel = NULL, janela_media_movel = 3)
 }
 \value{
 A tibble with columns: ano, media, variacao_anual,
-  media_movel.
+media_movel.
 }
 \description{
 Calculates year-over-year changes and simple moving averages.

@@ -8,8 +8,8 @@ vigiar_dicionario()
 }
 \value{
 A tibble with columns: table_id, table_name, original_name,
-  standard_name, type_raw, type_processed, description, unit,
-  allowed_values, notes.
+standard_name, type_raw, type_processed, description, unit,
+allowed_values, notes.
 }
 \description{
 Returns the complete variable dictionary as a tibble.

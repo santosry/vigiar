@@ -1,0 +1,1068 @@
+{
+  "locked_at": "2026-07-19 13:59:55",
+  "vigiar_version": "0.7.2",
+  "n_tables": 32,
+  "tabelas": ["DateTableTemplate_40e21453-5bd5-44fc-b9a7-60cc8fbddd13", "medidas", "Ano", "Selecao", "df_mensal", "df_ano", "referencia", "pop", "df_anual", "legenda", "df_dias", "df_mes", "last_update", "LocalDateTable_fc2e8413-127c-4cd2-b026-0453454955bd", "dados_ate", "tb_fracao", "tb_quartis", "legenda_conama", "referencia_conama", "tb_brasil", "tb_uf", "df_muni", "df_dias_conama", "df_indoor_desfecho", "df_indoor", "seletor_indicador", "aux_uf", "att_em", "LocalDateTable_808dd570-073e-4f5e-b607-1877b5ec5c38", "tb_muni", "legenda_quartis", "legenda_indoor"],
+  "esquema": {
+    "DateTableTemplate_40e21453-5bd5-44fc-b9a7-60cc8fbddd13": {
+      "Date": {
+        "nome": "Date",
+        "tipo": "POSIXct"
+      },
+      "Year": {
+        "nome": "Year",
+        "tipo": "integer"
+      },
+      "MonthNo": {
+        "nome": "MonthNo",
+        "tipo": "integer"
+      },
+      "Month": {
+        "nome": "Month",
+        "tipo": "character"
+      },
+      "QuarterNo": {
+        "nome": "QuarterNo",
+        "tipo": "integer"
+      },
+      "Quarter": {
+        "nome": "Quarter",
+        "tipo": "character"
+      },
+      "Day": {
+        "nome": "Day",
+        "tipo": "integer"
+      }
+    },
+    "medidas": {
+      "Value": {
+        "nome": "Value",
+        "tipo": "integer"
+      },
+      "media": {
+        "nome": "media",
+        "tipo": "numeric"
+      },
+      "cor": {
+        "nome": "cor",
+        "tipo": "character"
+      },
+      "cor 2": {
+        "nome": "cor 2",
+        "tipo": "numeric"
+      },
+      "2010": {
+        "nome": "2010",
+        "tipo": "numeric"
+      },
+      "2012": {
+        "nome": "2012",
+        "tipo": "numeric"
+      },
+      "2011": {
+        "nome": "2011",
+        "tipo": "numeric"
+      },
+      "2013": {
+        "nome": "2013",
+        "tipo": "numeric"
+      },
+      "2014": {
+        "nome": "2014",
+        "tipo": "numeric"
+      },
+      "2015": {
+        "nome": "2015",
+        "tipo": "numeric"
+      },
+      "2016": {
+        "nome": "2016",
+        "tipo": "numeric"
+      },
+      "2017": {
+        "nome": "2017",
+        "tipo": "numeric"
+      },
+      "2018": {
+        "nome": "2018",
+        "tipo": "numeric"
+      },
+      "2019": {
+        "nome": "2019",
+        "tipo": "numeric"
+      },
+      "2020": {
+        "nome": "2020",
+        "tipo": "numeric"
+      },
+      "2021": {
+        "nome": "2021",
+        "tipo": "numeric"
+      },
+      "2022": {
+        "nome": "2022",
+        "tipo": "numeric"
+      },
+      "percentual": {
+        "nome": "percentual",
+        "tipo": "numeric"
+      },
+      "RANK": {
+        "nome": "RANK",
+        "tipo": "integer"
+      },
+      "target": {
+        "nome": "target",
+        "tipo": "integer"
+      },
+      "min": {
+        "nome": "min",
+        "tipo": "integer"
+      },
+      "boa": {
+        "nome": "boa",
+        "tipo": "integer"
+      },
+      "moderada": {
+        "nome": "moderada",
+        "tipo": "integer"
+      },
+      "ruim": {
+        "nome": "ruim",
+        "tipo": "integer"
+      },
+      "muitoruim": {
+        "nome": "muitoruim",
+        "tipo": "integer"
+      },
+      "media_dc": {
+        "nome": "media_dc",
+        "tipo": "numeric"
+      },
+      "dp": {
+        "nome": "dp",
+        "tipo": "numeric"
+      },
+      "LSC": {
+        "nome": "LSC",
+        "tipo": "numeric"
+      },
+      "LIC": {
+        "nome": "LIC",
+        "tipo": "numeric"
+      },
+      "atual": {
+        "nome": "atual",
+        "tipo": "numeric"
+      },
+      "limsup": {
+        "nome": "limsup",
+        "tipo": "numeric"
+      },
+      "liminf": {
+        "nome": "liminf",
+        "tipo": "numeric"
+      },
+      "media1": {
+        "nome": "media1",
+        "tipo": "integer"
+      },
+      "dp1": {
+        "nome": "dp1",
+        "tipo": "integer"
+      },
+      "pmatual": {
+        "nome": "pmatual",
+        "tipo": "numeric"
+      },
+      "max": {
+        "nome": "max",
+        "tipo": "integer"
+      },
+      "porcent5": {
+        "nome": "porcent5",
+        "tipo": "numeric"
+      },
+      "porcent": {
+        "nome": "porcent",
+        "tipo": "character"
+      },
+      "ultrapassa": {
+        "nome": "ultrapassa",
+        "tipo": "integer"
+      },
+      "limite": {
+        "nome": "limite",
+        "tipo": "integer"
+      },
+      "categoria": {
+        "nome": "categoria",
+        "tipo": "character"
+      },
+      "pop": {
+        "nome": "pop",
+        "tipo": "integer"
+      },
+      "Soma_População_por_Categoria": {
+        "nome": "Soma_População_por_Categoria",
+        "tipo": "integer"
+      },
+      "Proporção_População": {
+        "nome": "Proporção_População",
+        "tipo": "numeric"
+      },
+      "Proporção População": {
+        "nome": "Proporção População",
+        "tipo": "numeric"
+      },
+      "prop_dias": {
+        "nome": "prop_dias",
+        "tipo": "numeric"
+      },
+      "q1": {
+        "nome": "q1",
+        "tipo": "numeric"
+      },
+      "q2": {
+        "nome": "q2",
+        "tipo": "numeric"
+      },
+      "q3": {
+        "nome": "q3",
+        "tipo": "numeric"
+      },
+      "quartis": {
+        "nome": "quartis",
+        "tipo": "character"
+      },
+      "cat": {
+        "nome": "cat",
+        "tipo": "numeric"
+      },
+      "moderada_conama": {
+        "nome": "moderada_conama",
+        "tipo": "integer"
+      },
+      "boa_conama": {
+        "nome": "boa_conama",
+        "tipo": "integer"
+      },
+      "ruim_conama": {
+        "nome": "ruim_conama",
+        "tipo": "integer"
+      },
+      "muitoruim_conama": {
+        "nome": "muitoruim_conama",
+        "tipo": "integer"
+      },
+      "ultrapassa_conama": {
+        "nome": "ultrapassa_conama",
+        "tipo": "integer"
+      },
+      "porcent_conama": {
+        "nome": "porcent_conama",
+        "tipo": "character"
+      },
+      "Soma_População_por_Categoria_conama": {
+        "nome": "Soma_População_por_Categoria_conama",
+        "tipo": "integer"
+      },
+      "prop_dias_conama": {
+        "nome": "prop_dias_conama",
+        "tipo": "numeric"
+      },
+      "dt_atualizacao": {
+        "nome": "dt_atualizacao",
+        "tipo": "integer"
+      },
+      "Alerta": {
+        "nome": "Alerta",
+        "tipo": "character"
+      }
+    },
+    "Ano": {
+      "Ano": {
+        "nome": "Ano",
+        "tipo": "character"
+      },
+      "Ano Fields": {
+        "nome": "Ano Fields",
+        "tipo": "character"
+      },
+      "Ano Order": {
+        "nome": "Ano Order",
+        "tipo": "integer"
+      }
+    },
+    "Selecao": {
+      "Selecao": {
+        "nome": "Selecao",
+        "tipo": "character"
+      },
+      "Selecao Campos": {
+        "nome": "Selecao Campos",
+        "tipo": "character"
+      },
+      "Selecao Pedido": {
+        "nome": "Selecao Pedido",
+        "tipo": "integer"
+      }
+    },
+    "df_mensal": {
+      "muni": {
+        "nome": "muni",
+        "tipo": "integer"
+      },
+      "pm25": {
+        "nome": "pm25",
+        "tipo": "numeric"
+      },
+      "Região": {
+        "nome": "Região",
+        "tipo": "character"
+      },
+      "UF": {
+        "nome": "UF",
+        "tipo": "character"
+      },
+      "Município": {
+        "nome": "Município",
+        "tipo": "character"
+      },
+      "LAT": {
+        "nome": "LAT",
+        "tipo": "numeric"
+      },
+      "LON": {
+        "nome": "LON",
+        "tipo": "numeric"
+      },
+      "ano": {
+        "nome": "ano",
+        "tipo": "integer"
+      },
+      "mes": {
+        "nome": "mes",
+        "tipo": "integer"
+      },
+      "ID": {
+        "nome": "ID",
+        "tipo": "integer"
+      },
+      "CO_CAT_WHO": {
+        "nome": "CO_CAT_WHO",
+        "tipo": "character"
+      },
+      "CAT_WHO_COR": {
+        "nome": "CAT_WHO_COR",
+        "tipo": "character"
+      },
+      "Média_pm25": {
+        "nome": "Média_pm25",
+        "tipo": "numeric"
+      },
+      "Categoria_pm25": {
+        "nome": "Categoria_pm25",
+        "tipo": "character"
+      },
+      "titulo_top10": {
+        "nome": "titulo_top10",
+        "tipo": "character"
+      },
+      "mes_nome": {
+        "nome": "mes_nome",
+        "tipo": "character"
+      },
+      "chave": {
+        "nome": "chave",
+        "tipo": "character"
+      },
+      "n_dias": {
+        "nome": "n_dias",
+        "tipo": "integer"
+      },
+      "t_dias": {
+        "nome": "t_dias",
+        "tipo": "numeric"
+      },
+      "n_dias_conama": {
+        "nome": "n_dias_conama",
+        "tipo": "integer"
+      }
+    },
+    "df_ano": {
+      "ano": {
+        "nome": "ano",
+        "tipo": "integer"
+      }
+    },
+    "referencia": {
+      "referencia": {
+        "nome": "referencia",
+        "tipo": "character"
+      },
+      "referencia Campos": {
+        "nome": "referencia Campos",
+        "tipo": "integer"
+      },
+      "referencia Pedido": {
+        "nome": "referencia Pedido",
+        "tipo": "integer"
+      }
+    },
+    "pop": {
+      "Column1": {
+        "nome": "Column1",
+        "tipo": "integer"
+      },
+      "muni": {
+        "nome": "muni",
+        "tipo": "integer"
+      },
+      "ano": {
+        "nome": "ano",
+        "tipo": "integer"
+      },
+      "pop": {
+        "nome": "pop",
+        "tipo": "integer"
+      },
+      "categoria": {
+        "nome": "categoria",
+        "tipo": "character"
+      },
+      "UF": {
+        "nome": "UF",
+        "tipo": "character"
+      }
+    },
+    "df_anual": {
+      "muni": {
+        "nome": "muni",
+        "tipo": "integer"
+      },
+      "UF": {
+        "nome": "UF",
+        "tipo": "character"
+      },
+      "ano": {
+        "nome": "ano",
+        "tipo": "integer"
+      },
+      "Media_pm25": {
+        "nome": "Media_pm25",
+        "tipo": "numeric"
+      },
+      "Categoria_pm25": {
+        "nome": "Categoria_pm25",
+        "tipo": "character"
+      },
+      "Categoria_pm25_conama": {
+        "nome": "Categoria_pm25_conama",
+        "tipo": "character"
+      }
+    },
+    "legenda": {
+      "Cor": {
+        "nome": "Cor",
+        "tipo": "character"
+      },
+      "Legenda": {
+        "nome": "Legenda",
+        "tipo": "character"
+      },
+      "Ordem": {
+        "nome": "Ordem",
+        "tipo": "integer"
+      }
+    },
+    "df_dias": {
+      "ID_MUNI": {
+        "nome": "ID_MUNI",
+        "tipo": "integer"
+      },
+      "t_dias": {
+        "nome": "t_dias",
+        "tipo": "numeric"
+      },
+      "mes": {
+        "nome": "mes",
+        "tipo": "integer"
+      },
+      "ano": {
+        "nome": "ano",
+        "tipo": "integer"
+      },
+      "n_dias": {
+        "nome": "n_dias",
+        "tipo": "integer"
+      },
+      "n_dias_conama": {
+        "nome": "n_dias_conama",
+        "tipo": "integer"
+      },
+      "chave": {
+        "nome": "chave",
+        "tipo": "character"
+      }
+    },
+    "df_mes": {
+      "ano": {
+        "nome": "ano",
+        "tipo": "integer"
+      },
+      "mes": {
+        "nome": "mes",
+        "tipo": "integer"
+      },
+      "mes_nome": {
+        "nome": "mes_nome",
+        "tipo": "character"
+      }
+    },
+    "last_update": {
+      "last_update": {
+        "nome": "last_update",
+        "tipo": "POSIXct"
+      }
+    },
+    "LocalDateTable_fc2e8413-127c-4cd2-b026-0453454955bd": {
+      "Date": {
+        "nome": "Date",
+        "tipo": "POSIXct"
+      },
+      "Year": {
+        "nome": "Year",
+        "tipo": "integer"
+      },
+      "MonthNo": {
+        "nome": "MonthNo",
+        "tipo": "integer"
+      },
+      "Month": {
+        "nome": "Month",
+        "tipo": "character"
+      },
+      "QuarterNo": {
+        "nome": "QuarterNo",
+        "tipo": "integer"
+      },
+      "Quarter": {
+        "nome": "Quarter",
+        "tipo": "character"
+      },
+      "Day": {
+        "nome": "Day",
+        "tipo": "integer"
+      }
+    },
+    "dados_ate": {
+      "dados_ate": {
+        "nome": "dados_ate",
+        "tipo": "character"
+      }
+    },
+    "tb_fracao": {
+      "Indicador": {
+        "nome": "Indicador",
+        "tipo": "character"
+      },
+      "n": {
+        "nome": "n",
+        "tipo": "character"
+      },
+      "est": {
+        "nome": "est",
+        "tipo": "numeric"
+      },
+      "low": {
+        "nome": "low",
+        "tipo": "numeric"
+      },
+      "high": {
+        "nome": "high",
+        "tipo": "numeric"
+      },
+      "desfecho": {
+        "nome": "desfecho",
+        "tipo": "character"
+      },
+      "ano": {
+        "nome": "ano",
+        "tipo": "character"
+      },
+      "loc": {
+        "nome": "loc",
+        "tipo": "character"
+      },
+      "Alerta": {
+        "nome": "Alerta",
+        "tipo": "character"
+      }
+    },
+    "tb_quartis": {
+      "Indicador": {
+        "nome": "Indicador",
+        "tipo": "character"
+      },
+      "desfecho": {
+        "nome": "desfecho",
+        "tipo": "character"
+      },
+      "q1": {
+        "nome": "q1",
+        "tipo": "numeric"
+      },
+      "q2": {
+        "nome": "q2",
+        "tipo": "numeric"
+      },
+      "q3": {
+        "nome": "q3",
+        "tipo": "numeric"
+      }
+    },
+    "legenda_conama": {
+      "Cor": {
+        "nome": "Cor",
+        "tipo": "character"
+      },
+      "Legenda": {
+        "nome": "Legenda",
+        "tipo": "character"
+      },
+      "Ordem": {
+        "nome": "Ordem",
+        "tipo": "integer"
+      }
+    },
+    "referencia_conama": {
+      "referencia": {
+        "nome": "referencia",
+        "tipo": "character"
+      },
+      "referencia Campos": {
+        "nome": "referencia Campos",
+        "tipo": "integer"
+      },
+      "Value3": {
+        "nome": "Value3",
+        "tipo": "integer"
+      }
+    },
+    "tb_brasil": {
+      "Indicador": {
+        "nome": "Indicador",
+        "tipo": "character"
+      },
+      "n": {
+        "nome": "n",
+        "tipo": "character"
+      },
+      "est": {
+        "nome": "est",
+        "tipo": "numeric"
+      },
+      "low": {
+        "nome": "low",
+        "tipo": "numeric"
+      },
+      "high": {
+        "nome": "high",
+        "tipo": "numeric"
+      },
+      "desfecho": {
+        "nome": "desfecho",
+        "tipo": "character"
+      },
+      "ano": {
+        "nome": "ano",
+        "tipo": "character"
+      },
+      "loc": {
+        "nome": "loc",
+        "tipo": "character"
+      }
+    },
+    "tb_uf": {
+      "Indicador": {
+        "nome": "Indicador",
+        "tipo": "character"
+      },
+      "n": {
+        "nome": "n",
+        "tipo": "character"
+      },
+      "est": {
+        "nome": "est",
+        "tipo": "numeric"
+      },
+      "low": {
+        "nome": "low",
+        "tipo": "numeric"
+      },
+      "high": {
+        "nome": "high",
+        "tipo": "numeric"
+      },
+      "desfecho": {
+        "nome": "desfecho",
+        "tipo": "character"
+      },
+      "ano": {
+        "nome": "ano",
+        "tipo": "character"
+      },
+      "loc": {
+        "nome": "loc",
+        "tipo": "character"
+      }
+    },
+    "df_muni": {
+      "REGIAO": {
+        "nome": "REGIAO",
+        "tipo": "character"
+      },
+      "REGIAO_UPPER": {
+        "nome": "REGIAO_UPPER",
+        "tipo": "character"
+      },
+      "ORDEM_REGIÃO": {
+        "nome": "ORDEM_REGIÃO",
+        "tipo": "integer"
+      },
+      "UF_COD": {
+        "nome": "UF_COD",
+        "tipo": "integer"
+      },
+      "UF_SIGLA": {
+        "nome": "UF_SIGLA",
+        "tipo": "character"
+      },
+      "UF_NOME": {
+        "nome": "UF_NOME",
+        "tipo": "character"
+      },
+      "UF_PARSED": {
+        "nome": "UF_PARSED",
+        "tipo": "character"
+      },
+      "UF_UPPER": {
+        "nome": "UF_UPPER",
+        "tipo": "character"
+      },
+      "UF_UPPER_PARSED": {
+        "nome": "UF_UPPER_PARSED",
+        "tipo": "character"
+      },
+      "MUN_COD": {
+        "nome": "MUN_COD",
+        "tipo": "integer"
+      },
+      "MUN_NOME": {
+        "nome": "MUN_NOME",
+        "tipo": "character"
+      },
+      "MUN_PARSED": {
+        "nome": "MUN_PARSED",
+        "tipo": "character"
+      },
+      "MUN_UPPER": {
+        "nome": "MUN_UPPER",
+        "tipo": "character"
+      },
+      "MUN_UPPER_PARSED": {
+        "nome": "MUN_UPPER_PARSED",
+        "tipo": "character"
+      },
+      "LAT": {
+        "nome": "LAT",
+        "tipo": "numeric"
+      },
+      "LON": {
+        "nome": "LON",
+        "tipo": "numeric"
+      },
+      "CAPITAL": {
+        "nome": "CAPITAL",
+        "tipo": "character"
+      },
+      "POP_IBGE_22": {
+        "nome": "POP_IBGE_22",
+        "tipo": "integer"
+      },
+      "CIDADE_GEMEA": {
+        "nome": "CIDADE_GEMEA",
+        "tipo": "character"
+      }
+    },
+    "df_dias_conama": {
+      "ID_MUNI": {
+        "nome": "ID_MUNI",
+        "tipo": "integer"
+      },
+      "t_dias_conama": {
+        "nome": "t_dias_conama",
+        "tipo": "numeric"
+      },
+      "mes": {
+        "nome": "mes",
+        "tipo": "integer"
+      },
+      "ano": {
+        "nome": "ano",
+        "tipo": "integer"
+      },
+      "n_dias_conama": {
+        "nome": "n_dias_conama",
+        "tipo": "integer"
+      }
+    },
+    "df_indoor_desfecho": {
+      "Code": {
+        "nome": "Code",
+        "tipo": "numeric"
+      },
+      "State.x": {
+        "nome": "State.x",
+        "tipo": "character"
+      },
+      "Ano": {
+        "nome": "Ano",
+        "tipo": "numeric"
+      },
+      "parametro": {
+        "nome": "parametro",
+        "tipo": "character"
+      },
+      "sexo": {
+        "nome": "sexo",
+        "tipo": "character"
+      },
+      "pop": {
+        "nome": "pop",
+        "tipo": "numeric"
+      },
+      "comb_sol_perc": {
+        "nome": "comb_sol_perc",
+        "tipo": "numeric"
+      },
+      "comb_sol": {
+        "nome": "comb_sol",
+        "tipo": "numeric"
+      },
+      "indicador": {
+        "nome": "indicador",
+        "tipo": "character"
+      },
+      "est": {
+        "nome": "est",
+        "tipo": "numeric"
+      },
+      "low": {
+        "nome": "low",
+        "tipo": "numeric"
+      },
+      "up": {
+        "nome": "up",
+        "tipo": "numeric"
+      },
+      "CV_comb_sol_perc": {
+        "nome": "CV_comb_sol_perc",
+        "tipo": "numeric"
+      },
+      "Classifc_CV": {
+        "nome": "Classifc_CV",
+        "tipo": "character"
+      },
+      "cor_est": {
+        "nome": "cor_est",
+        "tipo": "character"
+      },
+      "Quartis": {
+        "nome": "Quartis",
+        "tipo": "character"
+      }
+    },
+    "df_indoor": {
+      "Code": {
+        "nome": "Code",
+        "tipo": "numeric"
+      },
+      "Ano": {
+        "nome": "Ano",
+        "tipo": "numeric"
+      },
+      "comb_sol": {
+        "nome": "comb_sol",
+        "tipo": "numeric"
+      },
+      "pop_exposta": {
+        "nome": "pop_exposta",
+        "tipo": "numeric"
+      },
+      "percent_comb": {
+        "nome": "percent_comb",
+        "tipo": "numeric"
+      },
+      "cor_comb": {
+        "nome": "cor_comb",
+        "tipo": "character"
+      },
+      "cor_pop": {
+        "nome": "cor_pop",
+        "tipo": "character"
+      },
+      "Quartis": {
+        "nome": "Quartis",
+        "tipo": "character"
+      },
+      "CV": {
+        "nome": "CV",
+        "tipo": "numeric"
+      },
+      "cor_CV": {
+        "nome": "cor_CV",
+        "tipo": "character"
+      }
+    },
+    "seletor_indicador": {
+      "seletor_indicador": {
+        "nome": "seletor_indicador",
+        "tipo": "character"
+      },
+      "seletor_indicador Campos": {
+        "nome": "seletor_indicador Campos",
+        "tipo": "character"
+      },
+      "seletor_indicador Pedido": {
+        "nome": "seletor_indicador Pedido",
+        "tipo": "integer"
+      }
+    },
+    "aux_uf": {
+      "UF_COD": {
+        "nome": "UF_COD",
+        "tipo": "integer"
+      },
+      "UF_PARSED": {
+        "nome": "UF_PARSED",
+        "tipo": "character"
+      }
+    },
+    "att_em": {
+      "att_em": {
+        "nome": "att_em",
+        "tipo": "POSIXct"
+      }
+    },
+    "LocalDateTable_808dd570-073e-4f5e-b607-1877b5ec5c38": {
+      "Date": {
+        "nome": "Date",
+        "tipo": "POSIXct"
+      },
+      "Year": {
+        "nome": "Year",
+        "tipo": "integer"
+      },
+      "MonthNo": {
+        "nome": "MonthNo",
+        "tipo": "integer"
+      },
+      "Month": {
+        "nome": "Month",
+        "tipo": "character"
+      },
+      "QuarterNo": {
+        "nome": "QuarterNo",
+        "tipo": "integer"
+      },
+      "Quarter": {
+        "nome": "Quarter",
+        "tipo": "character"
+      },
+      "Day": {
+        "nome": "Day",
+        "tipo": "integer"
+      }
+    },
+    "tb_muni": {
+      "Indicador": {
+        "nome": "Indicador",
+        "tipo": "character"
+      },
+      "n": {
+        "nome": "n",
+        "tipo": "character"
+      },
+      "est": {
+        "nome": "est",
+        "tipo": "numeric"
+      },
+      "low": {
+        "nome": "low",
+        "tipo": "numeric"
+      },
+      "high": {
+        "nome": "high",
+        "tipo": "numeric"
+      },
+      "desfecho": {
+        "nome": "desfecho",
+        "tipo": "character"
+      },
+      "ano": {
+        "nome": "ano",
+        "tipo": "character"
+      },
+      "loc": {
+        "nome": "loc",
+        "tipo": "character"
+      },
+      "Alerta": {
+        "nome": "Alerta",
+        "tipo": "character"
+      },
+      "cod": {
+        "nome": "cod",
+        "tipo": "integer"
+      },
+      "lat": {
+        "nome": "lat",
+        "tipo": "numeric"
+      },
+      "long": {
+        "nome": "long",
+        "tipo": "numeric"
+      }
+    },
+    "legenda_quartis": {
+      "Value1": {
+        "nome": "Value1",
+        "tipo": "character"
+      },
+      "Value2": {
+        "nome": "Value2",
+        "tipo": "character"
+      },
+      "Value3": {
+        "nome": "Value3",
+        "tipo": "integer"
+      }
+    },
+    "legenda_indoor": {
+      "Value1": {
+        "nome": "Value1",
+        "tipo": "character"
+      },
+      "Value2": {
+        "nome": "Value2",
+        "tipo": "character"
+      },
+      "Value3": {
+        "nome": "Value3",
+        "tipo": "integer"
+      }
+    }
+  }
+}

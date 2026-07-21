@@ -7,7 +7,7 @@
 vigiar_checar_dados(dados, tabela = NULL)
 }
 \arguments{
-\item{dados}{A data frame (or tibble) returned by `vigiar_baixar()`.}
+\item{dados}{A data frame (or tibble) returned by \code{vigiar_baixar()}.}
 
 \item{tabela}{Table name (for messages).}
 }

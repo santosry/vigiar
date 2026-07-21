@@ -8,7 +8,7 @@ vigiar_validar_dicionario()
 }
 \value{
 Invisibly, a list with \code{undocumented}, \code{orfas},
-  \code{coverage_pct}.
+\code{coverage_pct}.
 }
 \description{
 Runs all dictionary checks and returns a report.

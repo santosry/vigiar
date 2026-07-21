@@ -7,7 +7,7 @@
 vigiar_info()
 }
 \value{
-A tibble with columns: `tabela`, `colunas`, `descricao`, `categoria`.
+A tibble with columns: \code{tabela}, \code{colunas}, \code{descricao}, \code{categoria}.
 }
 \description{
 Returns a tibble with all tables, column counts, descriptions,

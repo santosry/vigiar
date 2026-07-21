@@ -1,0 +1,198 @@
+# Exploração do Esquema de Dados
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+Uma vez conectado, o primeiro passo é entender quais dados estão disponíveis. O pacote oferece múltiplas funções para explorar o esquema do dashboard.
+
+## Listando tabelas disponíveis
+
+```{r}
+#| eval: false
+library(vigiar)
+
+vigiar_conectar()
+
+# Listar todas as tabelas
+tabelas <- vigiar_tabelas()
+tabelas
+```
+
+## Catálogo completo
+
+A função `vigiar_info()` retorna um catálogo detalhado com descrições e categorias:
+
+```{r}
+#| eval: false
+catalogo <- vigiar_info()
+catalogo
+```
+
+Saída (exemplo):
+
+```
+# A tibble: 28 × 4
+   tabela              colunas descricao                                    categoria
+   <chr>                 <int> <chr>                                        <chr>
+ 1 df_anual                 12 Medias anuais PM2.5 por municipio           Qualidade do Ar
+ 2 df_mensal                14 Medias mensais PM2.5 por municipio (LAT/LON) Qualidade do Ar
+ 3 df_dias                   6 Dias acima do limite OMS                    Qualidade do Ar
+ 4 df_dias_conama            6 Dias acima do limite CONAMA                 Qualidade do Ar
+ 5 pop                       7 Populacao residente por municipio           Populacao
+ 6 df_muni                  11 Cadastro de municipios                      Cadastro
+ 7 tb_brasil                13 Indicadores de saude agregados -- BRASIL    Indicadores de Saude
+ 8 tb_uf                    10 Indicadores de saude agregados -- UF        Indicadores de Saude
+ 9 tb_muni                  18 Indicadores de saude por MUNICIPIO          Indicadores de Saude
+10 tb_fracao                12 Fracao atribuivel por indicador             Indicadores de Saude
+...
+```
+
+## Visualizando o esquema de uma tabela
+
+```{r}
+#| eval: false
+# Ver colunas e tipos de uma tabela específica
+vigiar_esquema("df_anual")
+```
+
+Saída:
+
+```
+=== Tabela: df_anual ===
+       coluna        tipo
+  1     muni    character
+  2       UF    character
+  3      ano      integer
+  4  Media_pm25   numeric
+  5  Categoria_pm25  character
+  6  LAT       numeric
+  7  LON       numeric
+  ...
+```
+
+## Categorias de tabelas
+
+O dashboard VIGIAR organiza os dados em **domínios temáticos**:
+
+### Qualidade do Ar
+
+| Tabela | Conteúdo | Granularidade |
+|--------|----------|---------------|
+| `df_anual` | Médias anuais PM~2.5~ | Município × Ano |
+| `df_mensal` | Médias mensais PM~2.5~ | Município × Ano × Mês |
+| `df_dias` | Dias críticos (limite OMS: PM~2.5~ > 15 µg/m³) | Município × Ano × Mês |
+| `df_dias_conama` | Dias críticos (limite CONAMA: PM~2.5~ > 50 µg/m³) | Município × Ano × Mês |
+
+### População
+
+| Tabela | Conteúdo |
+|--------|----------|
+| `pop` | População residente por município, ano e categoria de exposição |
+
+### Cadastro
+
+| Tabela | Conteúdo |
+|--------|----------|
+| `df_muni` | Cadastro completo de municípios: região, UF, coordenadas, nomes |
+
+### Indicadores de Saúde
+
+| Tabela | Conteúdo |
+|--------|----------|
+| `tb_brasil` | Indicadores de saúde agregados para o Brasil |
+| `tb_uf` | Indicadores de saúde por Unidade Federativa |
+| `tb_muni` | Indicadores de saúde por município (com código IBGE, lat, long) |
+| `tb_fracao` | Fração atribuível por indicador e desfecho de saúde |
+| `tb_quartis` | Quartis dos indicadores (q1, q2, q3) |
+
+### Exposição Indoor
+
+| Tabela | Conteúdo |
+|--------|----------|
+| `df_indoor` | Exposição a combustíveis sólidos em domicílios |
+| `df_indoor_desfecho` | Desfechos de saúde associados à poluição indoor |
+
+### Medidas e Metadados
+
+| Tabela | Conteúdo |
+|--------|----------|
+| `medidas` | Medidas calculadas: rankings, médias, alertas, proporções |
+| `legenda` | Legenda de cores PM~2.5~ (padrão OMS) |
+| `legenda_conama` | Legenda de cores PM~2.5~ (padrão CONAMA) |
+
+## Dicionário de variáveis
+
+O pacote inclui um dicionário documentado de variáveis:
+
+```{r}
+#| eval: false
+# Dicionário completo
+dict <- vigiar_dicionario()
+
+# Variáveis de um domínio específico
+vigiar_variaveis("pm25")
+vigiar_variaveis("indicadores_saude")
+vigiar_variaveis("indoor")
+
+# Descrever uma variável específica
+vigiar_descrever_variavel("pm25", "pm25_media_anual")
+```
+
+## Variáveis não documentadas
+
+Para identificar colunas que não têm documentação:
+
+```{r}
+#| eval: false
+vigiar_variaveis_nao_documentadas()
+vigiar_variaveis_orfas()
+```
+
+## Abrindo a página de convenções
+
+```{r}
+#| eval: false
+vigiar_convencoes()
+```
+
+Esta função abre no navegador a página com as convenções de nomenclatura e códigos utilizados pelo pacote.
+
+## Verificando mudanças no schema
+
+O schema do dashboard pode mudar sem aviso prévio. Para detectar alterações:
+
+```{r}
+#| eval: false
+# Comparar schema atual com um lock file
+vigiar_esquema_lock("schema_2026-07.json")
+# ... algum tempo depois ...
+vigiar_esquema_verificar("schema_2026-07.json")
+```
+
+Retorna `TRUE` se o schema é idêntico, ou lista as diferenças encontradas.
+
+## Tabelas documentadas vs. não documentadas
+
+```{r}
+#| eval: false
+# Apenas tabelas com documentação completa
+vigiar_tabelas_documentadas()
+```
+
+## Resumo
+
+Com as funções de exploração, você pode:
+
+1. **Listar tabelas** com `vigiar_tabelas()` e `vigiar_info()`
+2. **Inspecionar colunas** com `vigiar_esquema("tabela")`
+3. **Consultar o dicionário** com `vigiar_dicionario()` e `vigiar_variaveis()`
+4. **Detectar mudanças** no schema com `vigiar_esquema_verificar()`
+5. **Documentar variáveis** com `vigiar_descrever_variavel()`

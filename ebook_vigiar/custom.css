@@ -1,0 +1,114 @@
+/* Custom styles for VIGIAR e-book */
+
+/* Color scheme - environmental health theme */
+:root {
+  --vigiar-green: #2e7d32;
+  --vigiar-light-green: #e8f5e9;
+  --vigiar-blue: #1565c0;
+  --vigiar-light-blue: #e3f2fd;
+  --vigiar-red: #c62828;
+  --vigiar-amber: #f57f17;
+  --vigiar-gray: #546e7a;
+}
+
+/* Headers */
+h1, h2, h3, h4 {
+  color: var(--vigiar-green);
+}
+
+h1 {
+  border-bottom: 3px solid var(--vigiar-green);
+  padding-bottom: 0.3em;
+}
+
+h2 {
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 0.2em;
+}
+
+/* Callout boxes */
+
+/* OK / Success */
+.callout-tip {
+  border-left-color: var(--vigiar-green) !important;
+}
+
+/* Warning */
+.callout-warning {
+  border-left-color: var(--vigiar-amber) !important;
+}
+
+/* Critical / Important */
+.callout-important {
+  border-left-color: var(--vigiar-red) !important;
+}
+
+/* Info */
+.callout-note {
+  border-left-color: var(--vigiar-blue) !important;
+}
+
+/* Code blocks */
+pre {
+  border-left: 3px solid var(--vigiar-green);
+  background-color: #f5f5f5;
+}
+
+code {
+  color: var(--vigiar-gray);
+}
+
+/* Tables */
+table {
+  font-size: 0.9em;
+}
+
+thead {
+  background-color: var(--vigiar-light-green);
+}
+
+/* Severity badges */
+.severity-ok {
+  color: var(--vigiar-green);
+  font-weight: bold;
+}
+
+.severity-aviso {
+  color: var(--vigiar-amber);
+  font-weight: bold;
+}
+
+.severity-problema {
+  color: var(--vigiar-red);
+  font-weight: bold;
+}
+
+.severity-critico {
+  color: white;
+  background-color: var(--vigiar-red);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: bold;
+}
+
+/* Links */
+a {
+  color: var(--vigiar-blue);
+}
+
+a:hover {
+  color: var(--vigiar-green);
+}
+
+/* Navbar customization */
+.navbar {
+  background-color: var(--vigiar-green) !important;
+}
+
+/* Blockquote */
+blockquote {
+  border-left: 4px solid var(--vigiar-green);
+  background-color: var(--vigiar-light-green);
+  padding: 10px 15px;
+  margin: 15px 0;
+}

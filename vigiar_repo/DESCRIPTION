@@ -1,0 +1,35 @@
+Package: vigiar
+Type: Package
+Title: Download Data from Brazil's VIGIAR Power BI Dashboard
+Version: 0.1.0
+Authors@R: c(
+    person("Ryan", "Santos", role = c("aut", "cre"),
+           email = "santosry@protonmail.com"),
+    person("vigiar", "team", role = "ctb"))
+Description: Provides functions to download air quality (PM2.5),
+    population exposure, and health surveillance data from Brazil's
+    VIGIAR (Vigilância em Saúde Ambiental) Power BI dashboard,
+    maintained by the Brazilian Ministry of Health. The package
+    handles Power BI session management, API authentication,
+    automatic decompression of the DSR (Data Shape Response) format,
+    and returns tidy data frames ready for analysis.
+License: MIT + file LICENSE
+URL: https://github.com/santosry/vigiar-download
+BugReports: https://github.com/santosry/vigiar-download/issues
+Encoding: UTF-8
+RoxygenNote: 7.3.2
+Depends:
+    R (>= 4.0.0)
+Imports:
+    httr2,
+    jsonlite,
+    tibble
+Suggests:
+    testthat (>= 3.0.0),
+    dplyr,
+    ggplot2,
+    sf,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+Config/testthat/edition: 3

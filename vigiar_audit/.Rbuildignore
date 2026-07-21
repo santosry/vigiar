@@ -1,0 +1,13 @@
+^vigiar.*\.Rproj$
+^\.Rproj\.user$
+^README\.Rmd$
+^\.github$
+^codecov\.yml$
+^codemeta\.json$
+^CITATION\.cff$
+^AI_USE_DECLARATION\.md$
+^CONTRIBUTING\.md$
+^CODE_OF_CONDUCT\.md$
+^SECURITY\.md$
+^LICENSE\.md$
+^\.lintr$

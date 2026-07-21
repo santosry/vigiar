@@ -7,7 +7,7 @@
 vigiar_esquema(tabela = NULL)
 }
 \arguments{
-\item{tabela}{Table name (optional). If `NULL`, lists all tables.}
+\item{tabela}{Table name (optional). If \code{NULL}, lists all tables.}
 }
 \value{
 Invisibly, the schema list.

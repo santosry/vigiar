@@ -1,0 +1,361 @@
+# Exemplos Práticos
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+Este capítulo apresenta exemplos completos de análise usando o pacote **vigiar**, do download à visualização.
+
+## Exemplo 1: Tendência de PM~2.5~ no Rio de Janeiro
+
+Análise da evolução anual da poluição do ar nos municípios do RJ.
+
+```{r}
+#| eval: false
+library(vigiar)
+library(dplyr)
+library(ggplot2)
+
+# 1. Conectar e baixar
+vigiar_conectar()
+pm25 <- process_pm25(vigiar_baixar_rj("df_anual"), tipo = "anual")
+
+# 2. Validar
+vigiar_checar_dados(pm25, tabela = "df_anual")
+
+# 3. Média estadual por ano
+pm25_estadual <- pm25 |>
+  group_by(ano) |>
+  summarise(
+    n = n(),
+    pm25_medio = mean(pm25_media_anual, na.rm = TRUE),
+    pm25_dp   = sd(pm25_media_anual, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+pm25_estadual
+
+# 4. Visualizar
+ggplot(pm25_estadual, aes(x = ano, y = pm25_medio)) +
+  geom_ribbon(aes(ymin = pm25_medio - pm25_dp,
+                  ymax = pm25_medio + pm25_dp),
+              fill = "steelblue", alpha = 0.2) +
+  geom_line(color = "steelblue", size = 1.2) +
+  geom_point(color = "steelblue", size = 2.5) +
+  geom_hline(yintercept = 15, linetype = "dashed",
+             color = "red", alpha = 0.6) +
+  annotate("text", x = max(pm25_estadual$ano), y = 15.5,
+           label = "Limite OMS (15 µg/m³)", hjust = 1, size = 3,
+           color = "red") +
+  labs(
+    title = "Média anual de PM2.5 no Estado do Rio de Janeiro",
+    subtitle = "Média dos 92 municípios com desvio-padrão",
+    x = "Ano", y = expression(PM[2.5] ~ (µg/m³)),
+    caption = "Fonte: VIGIAR / Ministério da Saúde"
+  ) +
+  theme_minimal()
+
+vigiar_desconectar()
+```
+
+## Exemplo 2: Top 10 municípios mais poluídos
+
+```{r}
+#| eval: false
+library(vigiar)
+library(dplyr)
+
+vigiar_conectar()
+pm25 <- process_pm25(vigiar_baixar_rj("df_anual"), tipo = "anual")
+
+# Municípios com maior PM2.5 em 2022
+top_poluidos <- pm25 |>
+  filter(ano == 2022) |>
+  slice_max(pm25_media_anual, n = 10) |>
+  select(cod_municipio, sigla_uf, ano,
+         pm25_media_anual, pm25_categoria) |>
+  arrange(desc(pm25_media_anual))
+
+top_poluidos
+```
+
+## Exemplo 3: Análise por macrorregião de saúde
+
+```{r}
+#| eval: false
+library(vigiar)
+library(dplyr)
+
+vigiar_conectar()
+
+# Baixar e processar
+pm25 <- process_pm25(vigiar_baixar_rj("df_anual"), tipo = "anual")
+
+# Adicionar macrorregiões
+municipios_rj <- vigiar_rj_municipios()
+pm25 <- pm25 |>
+  left_join(municipios_rj, by = "cod_municipio")
+
+# Agregar por macrorregião e ano
+pm25_macro <- pm25 |>
+  group_by(macrorregiao, ano) |>
+  summarise(
+    n_municipios = n_distinct(cod_municipio),
+    pm25_medio = mean(pm25_media_anual, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+pm25_macro
+
+# Visualizar
+library(ggplot2)
+
+ggplot(pm25_macro, aes(x = ano, y = pm25_medio,
+                        color = macrorregiao, group = macrorregiao)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  geom_hline(yintercept = 15, linetype = "dashed", color = "red", alpha = 0.5) +
+  labs(
+    title = "PM2.5 por Macrorregião de Saúde — RJ",
+    subtitle = "Média anual (µg/m³)",
+    x = "Ano", y = expression(PM[2.5] ~ (µg/m³)),
+    color = "Macrorregião",
+    caption = "Fonte: VIGIAR / SES-RJ"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+vigiar_desconectar()
+```
+
+## Exemplo 4: Série temporal com tendência descritiva
+
+```{r}
+#| eval: false
+library(vigiar)
+
+vigiar_conectar()
+pm25 <- process_pm25(vigiar_baixar_rj("df_anual"), tipo = "anual")
+
+# Agregar por ano (função do pacote)
+anual <- vigiar_agregar_tempo(pm25,
+  agregar_por = "ano",
+  variavel = "pm25_media_anual",
+  funcoes = list(media = mean, dp = sd, n = length)
+)
+
+# Tendência descritiva
+tendencia <- vigiar_tendencia_descritiva(pm25,
+  variavel = "pm25_media_anual"
+)
+print(tendencia)
+
+vigiar_desconectar()
+```
+
+## Exemplo 5: Série temporal por UF
+
+```{r}
+#| eval: false
+library(vigiar)
+
+vigiar_conectar()
+pm25 <- process_pm25(vigiar_baixar("df_anual", uf = NULL), tipo = "anual")
+
+# Série temporal nacional
+serie_nacional <- vigiar_serie_temporal(pm25, nivel = "nacional")
+
+# Série temporal por UF
+serie_uf <- vigiar_serie_temporal(pm25, nivel = "uf")
+
+vigiar_desconectar()
+```
+
+## Exemplo 6: Indicadores de saúde vs. poluição
+
+```{r}
+#| eval: false
+library(vigiar)
+library(dplyr)
+
+vigiar_conectar()
+
+# Baixar dados de saúde e poluição
+tudo <- vigiar_baixar_principais()
+saude_brasil <- process_indicadores_saude(tudo$tb_brasil)
+pm25 <- process_pm25(tudo$df_anual, tipo = "anual")
+
+# Agregar PM2.5 nacional
+pm25_nacional <- pm25 |>
+  group_by(ano) |>
+  summarise(
+    pm25_medio = mean(pm25_media_anual, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Juntar com indicadores de saúde
+# (Depende da estrutura exata dos indicadores)
+
+vigiar_desconectar()
+```
+
+## Exemplo 7: Exposição indoor
+
+```{r}
+#| eval: false
+library(vigiar)
+library(dplyr)
+
+vigiar_conectar()
+tudo <- vigiar_baixar_principais()
+
+indoor <- process_exposicao_indoor(tudo$df_indoor)
+
+# Resumo indoor
+vigiar_resumo_indoor(indoor)
+
+# População exposta a combustíveis sólidos por estado
+indoor |>
+  group_by(sigla_uf, ano) |>
+  summarise(
+    pop_exposta = sum(populacao_exposta, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  filter(ano == max(ano)) |>
+  arrange(desc(pop_exposta))
+
+vigiar_desconectar()
+```
+
+## Exemplo 8: Fração atribuível
+
+```{r}
+#| eval: false
+library(vigiar)
+library(dplyr)
+
+vigiar_conectar()
+tudo <- vigiar_baixar_principais()
+
+fracao <- process_fracao_atribuivel(tudo$tb_fracao)
+
+# Resumo
+vigiar_resumo_fracao_atribuivel(fracao)
+
+vigiar_desconectar()
+```
+
+## Exemplo 9: Benchmark de estratégias de download
+
+```{r}
+#| eval: false
+library(vigiar)
+
+vigiar_conectar()
+
+# Comparar estratégias de download
+bench <- vigiar_benchmark("df_anual",
+  strategies = c("direct", "year_asc_desc", "minimal_columns"),
+  repeticoes = 3
+)
+
+print(bench)
+
+# Benchmark multi-tabela
+vigiar_benchmark_tabelas(c("df_anual", "df_mensal", "pop"))
+
+vigiar_desconectar()
+```
+
+## Exemplo 10: Health check completo
+
+```{r}
+#| eval: false
+library(vigiar)
+
+vigiar_conectar()
+
+# Verificação completa da saúde do sistema
+health <- vigiar_health_check()
+print(health)
+
+# Inclui:
+# - Status da conexão
+# - Status do schema
+# - Benchmark rápido
+# - Compliance básico
+# - Resumo do cache
+
+vigiar_desconectar()
+```
+
+## Exemplo 11: Fluxo completo para artigo científico
+
+```{r}
+#| eval: false
+library(vigiar)
+library(dplyr)
+
+# === CONFIGURAÇÃO ===
+vigiar_conectar()
+vigiar_cache_dir("cache/")
+vigiar_esquema_lock("schema.json")
+
+# === DOWNLOAD ===
+pm25  <- process_pm25(vigiar_baixar_rj("df_anual"), tipo = "anual")
+pm25m <- process_pm25(vigiar_baixar_rj("df_mensal"), tipo = "mensal")
+pop   <- process_populacao_exposta(vigiar_baixar_rj("pop"))
+
+# === VALIDAÇÃO ===
+vigiar_validar_rj(pm25)
+vigiar_validar_unidades(pm25)
+vigiar_checar_dados(pm25, "df_anual")
+vigiar_checar_dados(pm25m, "df_mensal")
+
+# === DIAGNÓSTICO ===
+diag <- vigiar_diagnosticar_serie(pm25)
+vigiar_relatorio_diagnostico(diag)
+
+# Parar se houver problemas críticos
+stopifnot(diag$severidade != "crítico")
+
+# === AUDITORIA ===
+audit <- vigiar_auditar(pm25, "df_anual")
+comp  <- vigiar_compliance_check(pm25, "df_anual",
+  profiles = c("rigoroso", "rj"))
+
+# === ANÁLISE ===
+# Média estadual
+pm25_media <- pm25 |>
+  group_by(ano) |>
+  summarise(pm25 = mean(pm25_media_anual, na.rm = TRUE))
+
+# Por macrorregião
+municipios_rj <- vigiar_rj_municipios()
+pm25_macro <- pm25 |>
+  left_join(municipios_rj, by = "cod_municipio") |>
+  group_by(macrorregiao, ano) |>
+  summarise(pm25 = mean(pm25_media_anual, na.rm = TRUE), .groups = "drop")
+
+# === EXPORTAÇÃO ===
+snap <- vigiar_snapshot(pm25, "df_anual",
+  parametros = list(artigo = "impactos_pm25_rj"))
+vigiar_salvar_snapshot(snap, "dados/snapshot_pm25.rds")
+vigiar_exportar_auditoria(audit, "dados/auditoria.json")
+vigiar_exportar_csv(pm25_media, "resultados/pm25_media_rj.csv")
+vigiar_exportar_csv(pm25_macro, "resultados/pm25_macro_rj.csv")
+vigiar_exportar_log("dados/log.json")
+
+# === LIMPEZA ===
+vigiar_desconectar()
+
+message("Análise concluída com sucesso!")
+message("Arquivos gerados em: dados/ e resultados/")
+```

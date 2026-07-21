@@ -16,6 +16,10 @@
 #' @return An object of class \code{vigiar_client}.
 #' @export
 vigiar_client <- function(timeout = 30, max_retries = 3) {
+  # Validate arguments (checkmate — microdatasus pattern)
+  checkmate::assert_number(timeout, lower = 5, upper = 300)
+  checkmate::assert_integerish(max_retries, lower = 1, upper = 10)
+
   # Step 1: fetch dashboard page for cookies + session token
   resp <- .vigiar_retry({
     httr2::request(VIGIAR_BASE_URL) |>

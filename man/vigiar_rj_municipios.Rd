@@ -8,7 +8,7 @@ vigiar_rj_municipios()
 }
 \value{
 A data.frame with columns: codigo_ibge, municipio,
-  macrorregiao_saude, regiao_saude.
+macrorregiao_saude, regiao_saude.
 }
 \description{
 List all 92 Rio de Janeiro municipalities

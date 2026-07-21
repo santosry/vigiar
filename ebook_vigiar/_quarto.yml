@@ -1,0 +1,52 @@
+project:
+  type: book
+
+book:
+  title: "VIGIAR: Vigilância em Saúde Ambiental"
+  subtitle: "Guia prático para download, processamento e diagnóstico de dados de qualidade do ar e indicadores de saúde ambiental com o pacote vigiar"
+  author: "Ryan Santos"
+  date: "2026-07-19"
+  chapters:
+    - index.qmd
+    - intro.qmd
+    - instalacao.qmd
+    - conexao.qmd
+    - exploracao.qmd
+    - download.qmd
+    - rio_de_janeiro.qmd
+    - processamento.qmd
+    - validacao.qmd
+    - diagnostico.qmd
+    - auditoria.qmd
+    - cache_reprodutibilidade.qmd
+    - exportacao.qmd
+    - exemplos_praticos.qmd
+    - faq.qmd
+    - references.qmd
+
+  appendices:
+    - tabelas_referencia.qmd
+
+bibliography: references.bib
+
+format:
+  html:
+    theme:
+      light: flatly
+      dark: darkly
+    css: custom.css
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: false
+    code-tools: true
+    code-link: true
+
+  pdf:
+    documentclass: scrreprt
+    toc: true
+    number-sections: true
+
+editor: visual
+
+language: pt-BR

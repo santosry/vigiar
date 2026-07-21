@@ -1,0 +1,44 @@
+# R CMD check
+*.Rcheck/
+..Rcheck/
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+.Renviron
+
+# Package development
+vigiar_*.tar.gz
+vigiar_*.tgz
+revdep/
+
+# Temporary files
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Vignettes
+inst/doc/*
+!inst/doc/.gitkeep
+vignettes/*.html
+vignettes/*.pdf
+
+# Code coverage
+covr_*
+*.lcov
+
+# renv
+renv/library/
+renv/local/
+renv/cellar/
+renv/lock/
+renv/python/
+renv/staging/
+
+# pkgdown
+docs/
+_site/
+pkgdown/

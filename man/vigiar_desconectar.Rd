@@ -7,7 +7,7 @@
 vigiar_desconectar()
 }
 \value{
-Invisibly, `NULL`.
+Invisibly, \code{NULL}.
 }
 \description{
 Disconnect and clear VIGIAR session

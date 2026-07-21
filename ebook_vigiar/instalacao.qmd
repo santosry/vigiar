@@ -1,0 +1,200 @@
+# Instalação e Configuração
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+## Instalação do R e RStudio
+
+Se você ainda não tem o R instalado:
+
+1. Acesse [https://cran.r-project.org](https://cran.r-project.org)
+2. Faça o download para o seu sistema operacional
+3. Execute o instalador
+
+Recomendamos também o **RStudio** (ou **Positron**) como IDE:
+
+- [https://posit.co/download/rstudio-desktop/](https://posit.co/download/rstudio-desktop/)
+
+## Instalação do pacote vigiar
+
+### Via GitHub (recomendado)
+
+```{r}
+#| eval: false
+# Instalar o devtools se necessário
+install.packages("devtools")
+
+# Instalar o vigiar do GitHub
+devtools::install_github("santosry/vigiar")
+```
+
+### Instalação local
+
+Se você baixou o arquivo `.tar.gz` do pacote:
+
+```{r}
+#| eval: false
+install.packages("vigiar_0.7.0.tar.gz", repos = NULL, type = "source")
+```
+
+## Dependências
+
+O pacote requer os seguintes pacotes R. Eles serão instalados automaticamente:
+
+| Pacote | Versão mínima | Função |
+|--------|--------------|--------|
+| `httr2` | qualquer | Requisições HTTP para a API do Power BI |
+| `jsonlite` | qualquer | Parsing de JSON (queries e respostas) |
+| `tibble` | qualquer | Data frames modernos (tibbles) |
+| `dplyr` | qualquer | Manipulação de dados |
+| `cli` | qualquer | Mensagens formatadas no console |
+| `openssl` | qualquer | Checksums SHA256 |
+
+### Instalação manual das dependências
+
+```{r}
+#| eval: false
+install.packages(c(
+  "httr2", "jsonlite", "tibble",
+  "dplyr", "cli", "openssl"
+))
+```
+
+### Dependências opcionais
+
+```{r}
+#| eval: false
+# Para exportação Parquet
+install.packages("arrow")
+
+# Para geração de relatórios
+install.packages(c("knitr", "rmarkdown"))
+
+# Para visualização
+install.packages("ggplot2")
+
+# Para testes
+install.packages(c("testthat", "withr"))
+```
+
+## Carregando o pacote
+
+```{r}
+#| eval: false
+library(vigiar)
+```
+
+Ao carregar, o pacote exibe informações sobre a versão e o estado:
+
+```
+# vigiar 0.7.1.9000 — VIGIAR Environmental Health Data
+# Duvida dos dados antes de confiar neles.
+# 92 municipios do RJ • 9 macrorregioes SES-RJ
+# Execute vigiar_conectar() para iniciar.
+```
+
+## Verificando a instalação
+
+```{r}
+#| eval: false
+# Verificar versão
+packageVersion("vigiar")
+
+# Verificar funções disponíveis
+ls("package:vigiar")
+
+# Teste rápido (requer internet)
+library(vigiar)
+
+# Conectar ao dashboard
+vigiar_conectar()
+
+# Listar tabelas
+vigiar_tabelas()
+
+# Ver informações do catálogo
+vigiar_info()
+
+# Desconectar
+vigiar_desconectar()
+```
+
+## Solução de Problemas na Instalação
+
+### Erro no Windows: "Rtools is required"
+
+Se você encontrar este erro ao instalar do GitHub, instale o RTools:
+
+1. Acesse [https://cran.r-project.org/bin/windows/Rtools/](https://cran.r-project.org/bin/windows/Rtools/)
+2. Baixe e instale a versão apropriada para sua versão do R
+3. Durante a instalação, marque a opção para adicionar ao PATH
+
+### Erro de compilação no Linux
+
+Instale as dependências de sistema:
+
+```bash
+# Ubuntu/Debian
+sudo apt-get install libssl-dev libcurl4-openssl-dev
+
+# Fedora/RHEL
+sudo dnf install openssl-devel libcurl-devel
+```
+
+### Erro: "there is no package called..."
+
+Certifique-se de que as dependências estão instaladas:
+
+```{r}
+#| eval: false
+deps <- c("httr2", "jsonlite", "tibble", "dplyr", "cli", "openssl")
+install.packages(setdiff(deps, installed.packages()[,"Package"]))
+```
+
+## Configuração do ambiente
+
+### Diretório de cache
+
+O pacote `vigiar` pode armazenar dados em cache local para acelerar downloads repetidos:
+
+```{r}
+#| eval: false
+# Configurar diretório de cache
+vigiar_cache_dir("~/vigiar_cache")
+
+# Verificar configuração atual
+vigiar_cache_info()
+```
+
+### Timeout de download
+
+Para tabelas muito grandes, aumente o timeout:
+
+```{r}
+#| eval: false
+# Aumentar timeout global do R (em segundos)
+options(timeout = 300)
+
+# Ou especificar por operação
+vigiar_baixar("df_anual", timeout = 120)
+```
+
+### Renv (reprodutibilidade)
+
+Para projetos que exigem reprodutibilidade estrita, use o `renv`:
+
+```{r}
+#| eval: false
+install.packages("renv")
+renv::init()
+renv::install("santosry/vigiar")
+renv::snapshot()
+```

@@ -33,7 +33,7 @@ test_that("vigiar_auditar runs on a simple data frame", {
     pm25_media_anual = c(22.5, 18.3, 15.7),
     stringsAsFactors = FALSE
   )
-  audit <- vigiar_auditar(dados, tabela = "test", verbose = FALSE)
+  audit <- vigiar_auditar(dados, tabela = "test")
   expect_s3_class(audit, "vigiar_audit")
   expect_true("schema" %in% names(audit))
   expect_true("ibge" %in% names(audit))
@@ -50,7 +50,7 @@ test_that("vigiar_auditar detects IBGE issues", {
     ano = c(2022L, 2022L),
     stringsAsFactors = FALSE
   )
-  audit <- vigiar_auditar(dados, tabela = "test", verbose = FALSE)
+  audit <- vigiar_auditar(dados, tabela = "test")
   expect_false(audit$ibge$ok)
   expect_equal(audit$ibge$n_invalidos, 2)
 })
@@ -62,7 +62,7 @@ test_that("vigiar_auditar detects temporal issues", {
     ano = c(1800L, 3000L),
     stringsAsFactors = FALSE
   )
-  audit <- vigiar_auditar(dados, tabela = "test", verbose = FALSE)
+  audit <- vigiar_auditar(dados, tabela = "test")
   expect_false(audit$temporal$ok)
 })
 
@@ -74,14 +74,14 @@ test_that("vigiar_auditar detects unit issues in PM2.5", {
     pm25_media = c(-50, 2000),
     stringsAsFactors = FALSE
   )
-  audit <- vigiar_auditar(dados, tabela = "test", verbose = FALSE)
+  audit <- vigiar_auditar(dados, tabela = "test")
   expect_false(audit$units$ok)
 })
 
 test_that("vigiar_auditar_tudo runs on named list", {
   df1 <- data.frame(cod_municipio = 355030L, ano = 2022L, stringsAsFactors = FALSE)
   df2 <- data.frame(cod_municipio = 330455L, ano = 2022L, stringsAsFactors = FALSE)
-  result <- vigiar_auditar_tudo(list(df_anual = df1, df_mensal = df2), verbose = FALSE)
+  result <- vigiar_auditar_tudo(list(df_anual = df1, df_mensal = df2))
   expect_s3_class(result, "vigiar_audit_list")
   expect_length(result, 2)
   expect_true("df_anual" %in% names(result))
@@ -89,14 +89,14 @@ test_that("vigiar_auditar_tudo runs on named list", {
 
 test_that("print.vigiar_audit works", {
   dados <- data.frame(cod_municipio = 355030L, ano = 2022L)
-  audit <- vigiar_auditar(dados, tabela = "test", verbose = FALSE)
-  expect_message(print(audit), "Auditoria")
+  audit <- vigiar_auditar(dados, tabela = "test")
+  expect_output(print(audit), "Auditoria")
 })
 
 test_that("print.vigiar_audit_list works", {
   df1 <- data.frame(cod_municipio = 355030L, ano = 2022L)
-  result <- vigiar_auditar_tudo(list(t1 = df1), verbose = FALSE)
-  expect_message(print(result), "Multi-Tabela")
+  result <- vigiar_auditar_tudo(list(t1 = df1))
+  expect_output(print(result), "Multi-Tabela")
 })
 
 test_that("vigiar_compliance_check runs all profiles", {
@@ -107,17 +107,15 @@ test_that("vigiar_compliance_check runs all profiles", {
     stringsAsFactors = FALSE
   )
   result <- vigiar_compliance_check(dados, tabela = "test",
-                                     profiles = c("basico", "rigoroso", "rj", "corrupcao"),
-                                     verbose = FALSE)
+                                     profiles = c("basico", "rigoroso", "rj", "corrupcao"))
   expect_s3_class(result, "vigiar_compliance")
   expect_equal(names(result), c("basico", "rigoroso", "rj", "corrupcao"))
 })
 
 test_that("print.vigiar_compliance works", {
   dados <- data.frame(cod_municipio = 355030L, ano = 2022L)
-  result <- vigiar_compliance_check(dados, tabela = "test", profiles = "basico",
-                                     verbose = FALSE)
-  expect_message(print(result), "Compliance")
+  result <- vigiar_compliance_check(dados, tabela = "test", profiles = "basico")
+  expect_output(print(result), "Compliance")
 })
 
 test_that("vigiar_checksum returns consistent hash", {
@@ -131,7 +129,7 @@ test_that("vigiar_checksum returns consistent hash", {
 
 test_that("vigiar_exportar_auditoria writes JSON", {
   dados <- data.frame(cod_municipio = 355030L, ano = 2022L)
-  audit <- vigiar_auditar(dados, tabela = "test", verbose = FALSE)
+  audit <- vigiar_auditar(dados, tabela = "test")
   tmp <- file.path(tempdir(), "audit.json")
   on.exit(unlink(tmp))
   vigiar_exportar_auditoria(audit, tmp)
@@ -188,7 +186,7 @@ test_that("vigiar_resumo_log works", {
   .vigiar_env$log <- list()
   .vigiar_log("INFO", "msg1")
   .vigiar_log("WARN", "msg2")
-  expect_message(vigiar_resumo_log(), "Resumo do Log")
+  expect_output(vigiar_resumo_log(), "Resumo do Log")
 })
 
 test_that("vigiar_historico_downloads returns empty initially", {
@@ -210,7 +208,7 @@ test_that("vigiar_resumo_downloads works", {
   .vigiar_env$download_history <- list()
   .vigiar_registrar_download("t1", 100L, 5L, 1.0, "url")
   .vigiar_registrar_download("t2", 200L, 3L, 2.0, "url")
-  expect_message(vigiar_resumo_downloads(), "Downloads")
+  expect_output(vigiar_resumo_downloads(), "Downloads")
 })
 
 # ── Snapshot ──────────────────────────────────────────────────────────────────
@@ -255,7 +253,7 @@ test_that("vigiar_salvar_snapshot and vigiar_carregar_snapshot roundtrip", {
 test_that("print.vigiar_snapshot works", {
   dados <- data.frame(x = 1:3)
   snap <- vigiar_snapshot(dados = dados, tabela = "test")
-  expect_message(print(snap), "VIGIAR Snapshot")
+  expect_output(print(snap), "VIGIAR Snapshot")
 })
 
 test_that("vigiar_comparar_snapshots detects differences", {
@@ -408,7 +406,7 @@ test_that("vigiar_auditar handles empty data frame", {
     ano = integer(),
     stringsAsFactors = FALSE
   )
-  audit <- vigiar_auditar(dados, tabela = "test", verbose = FALSE)
+  audit <- vigiar_auditar(dados, tabela = "test")
   expect_s3_class(audit, "vigiar_audit")
 })
 
@@ -430,15 +428,13 @@ test_that("vigiar_snapshot handles many columns", {
 
 test_that("vigiar_compliance_check profile 'basico' works", {
   dados <- data.frame(cod_municipio = 355030L, ano = 2022L)
-  result <- vigiar_compliance_check(dados, tabela = "test", profiles = "basico",
-                                     verbose = FALSE)
+  result <- vigiar_compliance_check(dados, tabela = "test", profiles = "basico")
   expect_true(isTRUE(result$basico$ok))
 })
 
 test_that("vigiar_compliance_check 'all' runs everything", {
   dados <- data.frame(cod_municipio = 355030L, sigla_uf = "SP", ano = 2022L)
-  result <- vigiar_compliance_check(dados, tabela = "test", profiles = "all",
-                                     verbose = FALSE)
+  result <- vigiar_compliance_check(dados, tabela = "test", profiles = "all")
   expect_true("basico" %in% names(result))
   expect_true("rigoroso" %in% names(result))
   expect_true("rj" %in% names(result))

@@ -1,0 +1,56 @@
+# Referências {.unnumbered}
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Pacotes utilizados
+
+- Wickham, H. (2023). **httr2**: Perform HTTP Requests and Process the Responses. R package.
+- Ooms, J. (2023). **jsonlite**: A Simple and Robust JSON Parser and Generator for R.
+- Müller, K., Wickham, H. (2023). **tibble**: Simple Data Frames.
+- Wickham, H., François, R., Henry, L., Müller, K., Vaughan, D. (2023). **dplyr**: A Grammar of Data Manipulation.
+- Csárdi, G. (2023). **cli**: Helpers for Developing Command Line Interfaces.
+- Ooms, J. (2023). **openssl**: Toolkit for Encryption, Signatures and Certificates Based on OpenSSL.
+
+## Dados e sistemas
+
+- Ministério da Saúde. **VIGIAR** — Vigilância em Saúde Ambiental. Dashboard Power BI público. Disponível em: [app.powerbi.com](https://app.powerbi.com/view?r=eyJrIjoiNmRhODQwNzItNThlOS00ZmQ4LWJjZmItZDYxOTNhOTRmYmFhIiwidCI6IjlhNTU0YWQzLWI1MmItNDg2Mi1hMzZmLTg0ZDg5MWU1YzcwNSJ9)
+
+- Secretaria de Estado de Saúde do Rio de Janeiro (SES-RJ). **Macrorregiões e Regiões de Saúde do Estado do Rio de Janeiro**.
+
+- IBGE. **Malha Municipal Digital** e **Estimativas de População**.
+
+## Artigos e referências científicas
+
+- Saldanha, R. F., Bastos, R. R., Barcellos, C. (2019). Microdatasus: pacote para download e pré-processamento de microdados do Departamento de Informática do SUS (DATASUS). **Cadernos de Saúde Pública**, 35(9), e00032419. DOI: [10.1590/0102-311X00032419](https://doi.org/10.1590/0102-311x00032419)
+
+- Organização Mundial da Saúde (OMS). **WHO global air quality guidelines**: particulate matter (PM~2.5~ and PM~10~), ozone, nitrogen dioxide, sulfur dioxide and carbon monoxide. Geneva: World Health Organization; 2021.
+
+- CONAMA. Resolução nº 491, de 19 de novembro de 2018. Dispõe sobre padrões de qualidade do ar.
+
+## Software
+
+- R Core Team (2024). **R**: A Language and Environment for Statistical Computing. R Foundation for Statistical Computing, Vienna, Austria.
+
+- Posit Team (2024). **RStudio**: Integrated Development Environment for R. Posit Software, PBC, Boston, MA.
+
+## Como citar o pacote vigiar
+
+> Santos, R. (2026). **vigiar**: VIGIAR Environmental Health Data for Rio de Janeiro. R package version 0.7.1.9000. [https://github.com/santosry/vigiar](https://github.com/santosry/vigiar)
+
+### BibTeX
+
+```bibtex
+@Manual{santos2026vigiar,
+  title = {vigiar: VIGIAR Environmental Health Data for Rio de Janeiro},
+  author = {Ryan Santos},
+  year = {2026},
+  note = {R package version 0.7.1.9000},
+  url = {https://github.com/santosry/vigiar},
+}
+```

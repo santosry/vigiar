@@ -1,0 +1,129 @@
+# Tabelas de Referência {.unnumbered}
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+Este apêndice consolida as tabelas de referência do pacote **vigiar**.
+
+## Tabelas do Dashboard VIGIAR
+
+### Qualidade do Ar
+
+| Tabela | Descrição | Granularidade | Principais colunas |
+|--------|-----------|---------------|-------------------|
+| `df_anual` | Médias anuais PM~2.5~ | Município × Ano | muni, UF, ano, Media_pm25, Categoria_pm25 |
+| `df_mensal` | Médias mensais PM~2.5~ | Município × Ano × Mês | muni, UF, ano, mês, pm25, LAT, LON |
+| `df_dias` | Dias críticos (OMS: > 15 µg/m³) | Município × Ano × Mês | ID_MUNI, mes, ano, n_dias, t_dias |
+| `df_dias_conama` | Dias críticos (CONAMA: > 50 µg/m³) | Município × Ano × Mês | ID_MUNI, mes, ano, n_dias_conama |
+
+### População
+
+| Tabela | Descrição | Principais colunas |
+|--------|-----------|-------------------|
+| `pop` | População exposta | muni, ano, pop, categoria, UF |
+
+### Cadastro
+
+| Tabela | Descrição | Principais colunas |
+|--------|-----------|-------------------|
+| `df_muni` | Cadastro de municípios | REGIAO, UF_SIGLA, UF_COD, MUN_NOME, LAT, LON |
+
+### Indicadores de Saúde
+
+| Tabela | Descrição | Principais colunas |
+|--------|-----------|-------------------|
+| `tb_brasil` | Indicadores agregados — Brasil | Indicador, n, est, low, high, ano |
+| `tb_uf` | Indicadores agregados — UF | Indicador, n, est, low, high, ano, loc |
+| `tb_muni` | Indicadores por município | Indicador, n, est, low, high, ano, loc |
+| `tb_fracao` | Fração atribuível | Indicador, n, est, low, high, desfecho |
+| `tb_quartis` | Quartis dos indicadores | Indicador, desfecho, q1, q2, q3 |
+
+### Exposição Indoor
+
+| Tabela | Descrição | Principais colunas |
+|--------|-----------|-------------------|
+| `df_indoor` | Exposição combustíveis sólidos | Code, Ano, comb_sol, pop_exposta |
+| `df_indoor_desfecho` | Desfechos saúde indoor | Code, State.x, Ano, parametro, sexo |
+
+### Metadados e Auxiliares
+
+| Tabela | Descrição |
+|--------|-----------|
+| `medidas` | Medidas calculadas (61 colunas) |
+| `legenda` | Legenda de cores PM~2.5~ (OMS) |
+| `legenda_conama` | Legenda de cores PM~2.5~ (CONAMA) |
+| `legenda_quartis` | Legenda de cores para quartis |
+| `legenda_indoor` | Legenda de cores para indoor |
+| `df_mes` | Tabela auxiliar: meses (número → nome) |
+| `df_ano` | Anos disponíveis na base |
+| `referencia` | Valores de referência OMS |
+| `referencia_conama` | Valores de referência CONAMA |
+
+## Macrorregiões de Saúde — RJ (SES-RJ)
+
+| # | Macrorregião | Nº aproximado de municípios |
+|---|-------------|---------------------------|
+| 1 | Metropolitana I | 20 |
+| 2 | Metropolitana II | 7 |
+| 3 | Baía da Ilha Grande | 3 |
+| 4 | Centro-Sul | 10 |
+| 5 | Médio Paraíba | 12 |
+| 6 | Noroeste | 13 |
+| 7 | Norte | 8 |
+| 8 | Serrana | 16 |
+| 9 | Baixada Litorânea | 3 |
+
+## Padronização de colunas (processamento)
+
+### PM~2.5~ Anual
+
+| Nome original (Power BI) | Nome padronizado (vigiar) | Tipo |
+|--------------------------|--------------------------|------|
+| `muni` | `cod_municipio` | integer |
+| `UF` | `sigla_uf` | character |
+| `ano` | `ano` | integer |
+| `Media_pm25` | `pm25_media_anual` | numeric |
+| `Categoria_pm25` | `pm25_categoria` | factor |
+| `LAT` | `latitude` | numeric |
+| `LON` | `longitude` | numeric |
+
+## Códigos IBGE — Rio de Janeiro
+
+O estado do Rio de Janeiro (UF 33) compreende os códigos IBGE de município no intervalo:
+
+```
+330010 (Angra dos Reis) a 330620 (Vassouras)
+```
+
+Total: 92 municípios.
+
+## Limites de referência — PM~2.5~
+
+| Padrão | Limite anual (µg/m³) | Limite 24h (µg/m³) |
+|--------|---------------------|---------------------|
+| OMS (2021) | 5 | 15 |
+| CONAMA (2018) | — | 50 |
+| OMS (2005 — antigo) | 10 | 25 |
+
+## Severidade de diagnóstico
+
+| Nível | Significado | Ação recomendada |
+|-------|-------------|-----------------|
+| `ok` | Sem problemas | Prosseguir com análise |
+| `aviso` | Problema menor | Documentar ressalva |
+| `problema` | Problema significativo | Investigar antes de usar |
+| `crítico` | Dados possivelmente corrompidos | Não usar sem correção |
+
+## Perfis de Compliance
+
+| Perfil | Checks incluídos | Uso recomendado |
+|--------|-----------------|-----------------|
+| `basico` | Schema + IBGE + ausentes | Exploração inicial |
+| `rigoroso` | Todos + outliers | Publicação científica |
+| `rj` | Range IBGE RJ + cobertura 92 municípios | Análises do RJ |
+| `corrupcao` | Benford + outliers + duplicatas + quebras | Detecção de anomalias |

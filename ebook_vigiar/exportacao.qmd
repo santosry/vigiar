@@ -1,0 +1,200 @@
+# Exportação e Integração
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+O pacote **vigiar** permite exportar dados em múltiplos formatos para integração com outros softwares e sistemas.
+
+## Exportação para CSV
+
+Formato universal, compatível com Excel, Python, Stata, etc.:
+
+```{r}
+#| eval: false
+library(vigiar)
+
+vigiar_conectar()
+pm25 <- process_pm25(vigiar_baixar_rj("df_anual"), tipo = "anual")
+
+# Exportar CSV
+vigiar_exportar_csv(pm25, "pm25_rio_de_janeiro.csv")
+```
+
+O CSV gerado inclui:
+- Colunas padronizadas (nomes em português claro)
+- Encoding UTF-8
+- Valores decimais com ponto (.)
+
+## Exportação para RDS (nativo do R)
+
+Preserva todas as classes S3, atributos e metadados:
+
+```{r}
+#| eval: false
+# Exportar RDS
+vigiar_exportar_rds(pm25, "pm25_rj_processado.rds")
+
+# Recarregar preservando classes
+pm25_recarregado <- readRDS("pm25_rj_processado.rds")
+class(pm25_recarregado)
+# [1] "vigiar_pm25" "vigiar_tbl"  "tbl_df"  "tbl"  "data.frame"
+```
+
+## Exportação para Parquet
+
+Formato colunar eficiente (requer o pacote `arrow`):
+
+```{r}
+#| eval: false
+# Instalar arrow se necessário
+# install.packages("arrow")
+
+# Exportar Parquet
+vigiar_exportar_parquet(pm25, "pm25_rj.parquet")
+```
+
+Vantagens do Parquet:
+- Compressão eficiente (arquivos menores)
+- Leitura rápida (formato colunar)
+- Compatível com Python (pandas, polars), Spark, DuckDB
+- Preserva tipos de dados
+
+## Exportação de auditoria
+
+```{r}
+#| eval: false
+audit <- vigiar_auditar(pm25, tabela = "df_anual")
+vigiar_exportar_auditoria(audit, "auditoria_pm25.json")
+```
+
+## Exportação de log
+
+```{r}
+#| eval: false
+vigiar_exportar_log("log_operacoes.json")
+```
+
+## Integração com DATASUS
+
+Os dados do VIGIAR usam códigos IBGE de município (6 dígitos), compatíveis com os sistemas do DATASUS:
+
+```{r}
+#| eval: false
+# Dados VIGIAR
+pm25_rj <- process_pm25(vigiar_baixar_rj("df_anual"), tipo = "anual")
+
+# Suponha que você tenha dados do SIM (Mortalidade) via microdatasus
+# library(microdatasus)
+# sim_rj <- fetch_datasus(2020, 2020, uf = "RJ", "SIM-DO")
+# sim_rj <- process_sim(sim_rj)
+
+# Ambos usam cod_municipio de 6 dígitos → join direto!
+# dados_integrados <- pm25_rj |>
+#   left_join(sim_rj, by = c("cod_municipio" = "CODMUNRES"))
+```
+
+## Integração com GIS
+
+Os dados de PM~2.5~ incluem latitude e longitude, permitindo integração com SIG:
+
+```{r}
+#| eval: false
+# Dados com coordenadas
+pm25_mensal <- process_pm25(
+  vigiar_baixar_rj("df_mensal"),
+  tipo = "mensal"
+)
+
+# Converter para sf (se o pacote sf estiver instalado)
+# library(sf)
+# pm25_sf <- st_as_sf(pm25_mensal,
+#   coords = c("longitude", "latitude"),
+#   crs = 4326
+# )
+
+# Exportar como GeoPackage
+# st_write(pm25_sf, "pm25_rj.gpkg")
+```
+
+## Integração com DuckDB / SQLite
+
+Para grandes volumes de dados, bancos de dados locais são eficientes:
+
+```{r}
+#| eval: false
+library(DBI)
+library(duckdb)
+
+# Criar conexão
+con <- dbConnect(duckdb::duckdb(), "vigiar.duckdb")
+
+# Escrever dados
+dbWriteTable(con, "pm25_anual", pm25, overwrite = TRUE)
+dbWriteTable(con, "pm25_mensal", pm25_mensal, overwrite = TRUE)
+
+# Consultar com SQL
+dbGetQuery(con, "
+  SELECT sigla_uf, ano, AVG(pm25_media_anual) as media
+  FROM pm25_anual
+  GROUP BY sigla_uf, ano
+  ORDER BY ano
+")
+
+dbDisconnect(con)
+```
+
+## Integração com Python
+
+Via formato Parquet ou CSV:
+
+```python
+# Python (pandas)
+import pandas as pd
+
+# Ler Parquet exportado pelo vigiar
+pm25 = pd.read_parquet("pm25_rj.parquet")
+print(pm25.head())
+
+# Ou CSV
+pm25 = pd.read_csv("pm25_rio_de_janeiro.csv")
+```
+
+## Exportação de dados sumarizados
+
+Além dos dados brutos, você pode exportar resultados de análises:
+
+```{r}
+#| eval: false
+library(dplyr)
+
+# Sumarizar por ano
+resumo_anual <- pm25 |>
+  group_by(ano) |>
+  summarise(
+    n_municipios = n(),
+    pm25_media = mean(pm25_media_anual, na.rm = TRUE),
+    pm25_dp = sd(pm25_media_anual, na.rm = TRUE),
+    pm25_min = min(pm25_media_anual, na.rm = TRUE),
+    pm25_max = max(pm25_media_anual, na.rm = TRUE)
+  )
+
+# Exportar
+vigiar_exportar_csv(resumo_anual, "resumo_pm25_anual_rj.csv")
+```
+
+## Tabela de formatos
+
+| Formato | Função | Vantagens | Quando usar |
+|---------|--------|-----------|-------------|
+| CSV | `vigiar_exportar_csv()` | Universal, legível | Compartilhamento, Excel |
+| RDS | `vigiar_exportar_rds()` | Preserva classes S3 | Continuar análise no R |
+| Parquet | `vigiar_exportar_parquet()` | Compressão, colunar | Grandes volumes, Python |
+| JSON | `vigiar_exportar_auditoria()` | Estruturado, legível | Metadados, auditoria |

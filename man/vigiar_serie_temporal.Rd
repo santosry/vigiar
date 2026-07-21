@@ -14,7 +14,7 @@ vigiar_serie_temporal(dados, nivel = c("nacional", "uf", "municipio"))
 }
 \value{
 A tibble with columns: ano, media, n, and spatial
-  identifier columns if \code{nivel != "nacional"}.
+identifier columns if \code{nivel != "nacional"}.
 }
 \description{
 Returns a tibble with year and aggregated values, suitable

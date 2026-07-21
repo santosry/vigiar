@@ -1,0 +1,176 @@
+# Conexão ao Dashboard Power BI
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+Este capítulo explica como estabelecer uma sessão com o dashboard VIGIAR no Power BI, o primeiro passo para acessar os dados programaticamente.
+
+## Estabelecendo uma conexão
+
+A função principal é `vigiar_conectar()`. Ela realiza duas operações:
+
+1. **Obtém cookies e tokens** da página do dashboard Power BI
+2. **Carrega o esquema conceitual** (tabelas e colunas disponíveis)
+
+```{r}
+#| eval: false
+library(vigiar)
+
+# Conexão simples
+vigiar_conectar()
+```
+
+Saída esperada:
+
+```
+Sessao VIGIAR estabelecida. Carregando esquema de dados...
+Sessao pronta! 28 tabelas disponiveis.
+```
+
+## Parâmetros da conexão
+
+```{r}
+#| eval: false
+vigiar_conectar(
+  refresh   = FALSE,   # Força renovação da sessão
+  timeout   = 30,      # Timeout em segundos
+  max_retries = 3      # Tentativas máximas em falhas
+)
+```
+
+### Renovando a sessão
+
+As sessões do Power BI expiram após algumas horas de inatividade. Para renovar:
+
+```{r}
+#| eval: false
+# Força uma nova sessão
+vigiar_conectar(refresh = TRUE)
+```
+
+### Aumentando o timeout
+
+Se sua conexão for lenta ou instável:
+
+```{r}
+#| eval: false
+vigiar_conectar(timeout = 60, max_retries = 5)
+```
+
+## Verificando o estado da sessão
+
+```{r}
+#| eval: false
+# Verificar se existe sessão ativa
+vigiar_sessao_ativa()  # TRUE ou FALSE
+```
+
+## Status do dashboard
+
+Para verificar se o dashboard VIGIAR está online e se o esquema de dados mudou:
+
+```{r}
+#| eval: false
+status <- vigiar_status()
+```
+
+Se o esquema mudou (novas tabelas, colunas removidas), você receberá um aviso:
+
+```
+Warning: Dashboard VIGIAR online, mas o esquema de dados mudou!
+Execute vigiar_conectar(refresh = TRUE) para atualizar.
+```
+
+## Encerrando a sessão
+
+```{r}
+#| eval: false
+vigiar_desconectar()
+```
+
+## O que acontece nos bastidores
+
+### Passo 1: Página inicial
+
+O pacote faz uma requisição HTTP GET à URL pública do dashboard Power BI. O servidor retorna:
+
+- Cookies de sessão (`WFESessionId`, `ARRAffinity`)
+- Um token `telemetrySessionId` embutido no JavaScript da página
+
+### Passo 2: Esquema conceitual
+
+Com os cookies obtidos, o pacote consulta o endpoint:
+
+```
+https://wabi-brazil-south-b-primary-api.analysis.windows.net/
+  public/reports/{resource_key}/conceptualschema
+```
+
+Este endpoint retorna um JSON com todas as tabelas (entidades), colunas e tipos de dados do modelo do Power BI.
+
+### Passo 3: Armazenamento
+
+As informações da sessão e o esquema são armazenados no ambiente interno `.vigiar_env` e ficam disponíveis para todas as funções subsequentes do pacote.
+
+## Diagrama da Sessão
+
+```
+┌──────────────┐     GET dashboard     ┌──────────────────┐
+│   vigiar     │ ──────────────────────→│  Power BI Server │
+│  conectar()  │                        │                  │
+│              │←──── cookies + ────────│                  │
+│              │    telemetrySessionId  │                  │
+└──────┬───────┘                        └──────────────────┘
+       │
+       │ GET /conceptualschema
+       │ (com cookies)
+       ↓
+┌──────────────┐
+│ .vigiar_env  │
+│  ├─ sessao   │ → session_id, cookies, resource_key
+│  └─ esquema  │ → 28 tabelas com colunas e tipos
+└──────────────┘
+```
+
+## Tratamento de erros
+
+### Dashboard indisponível
+
+```
+Erro: Nao foi possivel extrair o telemetrySessionId do dashboard Power BI.
+O dashboard pode estar temporariamente indisponivel.
+```
+
+**Solução**: Aguarde alguns minutos e tente novamente. O dashboard do Ministério da Saúde pode passar por manutenções.
+
+### Timeout
+
+**Solução**: Aumente o parâmetro `timeout` ou verifique sua conexão com a Internet.
+
+### Sessão expirada (erro 403)
+
+```
+Warning: Sessao expirada. Execute vigiar_conectar(refresh = TRUE).
+```
+
+**Solução**: Execute `vigiar_conectar(refresh = TRUE)`.
+
+### Geo-bloqueio
+
+O Power BI pode restringir o acesso de algumas regiões geográficas. Se você estiver acessando de fora do Brasil e encontrar erros de acesso, considere usar uma VPN com IP brasileiro.
+
+## Boas práticas
+
+1. **Sempre verifique a sessão** antes de baixar dados: `vigiar_sessao_ativa()`
+2. **Use `vigiar_status()`** periodicamente para detectar mudanças no esquema
+3. **Trave o esquema** com `vigiar_esquema_lock()` para garantir reprodutibilidade
+4. **Desconecte** ao final da sessão de trabalho: `vigiar_desconectar()`
+5. **Monitore o log** para diagnosticar problemas: `vigiar_log()`

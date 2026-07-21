@@ -7,7 +7,7 @@
 vigiar_sessao_ativa()
 }
 \value{
-`TRUE` if a session exists, `FALSE` otherwise.
+\code{TRUE} if a session exists, \code{FALSE} otherwise.
 }
 \description{
 Check if a VIGIAR session is active

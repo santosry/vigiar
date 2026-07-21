@@ -8,7 +8,7 @@ vigiar_log()
 }
 \value{
 A tibble with columns: timestamp, level, message,
-  table, metadata_json.
+table, metadata_json.
 }
 \description{
 Returns a tibble with all logged operations since package load

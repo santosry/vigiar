@@ -1,0 +1,199 @@
+# Validação de Dados
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+A validação é uma etapa crucial antes de qualquer análise. O pacote **vigiar** oferece validações específicas para cada aspecto dos dados: códigos IBGE, datas, unidades, valores fisicamente plausíveis e consistência.
+
+## Validação de códigos IBGE
+
+Verifica se os códigos de município estão no formato correto (6 dígitos) e pertencem à UF esperada:
+
+```{r}
+#| eval: false
+library(vigiar)
+
+vigiar_conectar()
+pm25 <- process_pm25(vigiar_baixar_rj("df_anual"), tipo = "anual")
+
+# Validar códigos IBGE
+vigiar_validar_ibge(pm25, col_codigo = "cod_municipio")
+```
+
+Saída:
+
+```
+# Validação IBGE: 5570 registros
+# Códigos válidos: 5570 (100.0%)
+# Códigos inválidos: 0
+# UF correspondente: RJ (330010-330620)
+```
+
+### O que é verificado:
+
+- Formato: exatamente 6 dígitos numéricos
+- Range: código dentro dos intervalos válidos por UF
+- Dígito verificador: consistência do DV do IBGE
+- Duplicatas: municípios repetidos no mesmo ano
+
+## Validação de datas
+
+```{r}
+#| eval: false
+# Para dados mensais
+pm25_mensal <- process_pm25(
+  vigiar_baixar_rj("df_mensal"),
+  tipo = "mensal"
+)
+
+vigiar_validar_datas(pm25_mensal)
+```
+
+Verifica:
+- Anos em intervalos plausíveis (2000–2030)
+- Meses entre 1 e 12
+- Combinações ano/mês válidas
+- Datas futuras (alerta)
+- Saltos temporais (anos faltantes)
+
+## Validação de unidades
+
+```{r}
+#| eval: false
+vigiar_validar_unidades(pm25)
+```
+
+Verifica:
+- PM~2.5~: valores devem ser positivos (≥ 0 µg/m³)
+- Concentrações fisicamente plausíveis (< 500 µg/m³)
+- População: valores positivos e inteiros
+- Frações: entre 0 e 1 (ou 0-100%)
+
+## Validação específica para o RJ
+
+```{r}
+#| eval: false
+vigiar_validar_rj(pm25)
+```
+
+Verifica se todos os códigos de município pertencem ao RJ (330010–330620).
+
+## Validação do dicionário
+
+```{r}
+#| eval: false
+# Verificar se todas as colunas estão documentadas
+vigiar_validar_dicionario(pm25)
+```
+
+## Check de integridade
+
+```{r}
+#| eval: false
+# Verificação completa
+resultado <- vigiar_checar_dados(pm25, tabela = "df_anual")
+```
+
+O resultado inclui:
+
+```
+Diagnostico: df_anual
+----------------------------------------
+Linhas:  5570
+Colunas: 12
+Linhas duplicadas: 0
+
+Valores ausentes por coluna:
+  pm25_media_anual              234 (4.2%)
+  latitude                       45 (0.8%)
+```
+
+## Fluxo completo de validação
+
+Recomendamos executar todas as validações em sequência antes de qualquer análise:
+
+```{r}
+#| eval: false
+# Pipeline de validação completo
+validar_dados <- function(dados, tipo = "pm25_anual") {
+
+  cat("\n=== VALIDAÇÃO DE DADOS VIGIAR ===\n\n")
+
+  # 1. Integridade básica
+  cat("1. Integridade básica...\n")
+  vigiar_checar_dados(dados)
+
+  # 2. Códigos IBGE
+  cat("\n2. Códigos IBGE...\n")
+  if ("cod_municipio" %in% names(dados)) {
+    vigiar_validar_ibge(dados, "cod_municipio")
+  }
+
+  # 3. Datas
+  cat("\n3. Datas...\n")
+  if (any(c("ano", "mes") %in% names(dados))) {
+    vigiar_validar_datas(dados)
+  }
+
+  # 4. Unidades
+  cat("\n4. Unidades...\n")
+  vigiar_validar_unidades(dados)
+
+  # 5. RJ (se aplicável)
+  cat("\n5. Escopo RJ...\n")
+  if ("cod_municipio" %in% names(dados)) {
+    codigos <- unique(dados$cod_municipio)
+    no_rj <- codigos[codigos < 330010 | codigos > 330620]
+    if (length(no_rj) > 0) {
+      warning("Encontrados ", length(no_rj), " municípios fora do RJ!")
+    } else {
+      message("Todos os municípios pertencem ao RJ.")
+    }
+  }
+
+  cat("\n=== VALIDAÇÃO CONCLUÍDA ===\n")
+}
+
+# Uso
+validar_dados(pm25)
+```
+
+## Alertas de validação
+
+O pacote classifica problemas em níveis de severidade:
+
+| Severidade | Significado | Ação |
+|-----------|-------------|------|
+| `ok` | Dados íntegros | Prosseguir com a análise |
+| `aviso` | Problema menor | Documentar a ressalva |
+| `problema` | Problema significativo | Investigar antes de usar |
+| `crítico` | Dados possivelmente corrompidos | **Não usar** sem correção |
+
+```{r}
+#| eval: false
+# Classificar alertas encontrados
+alertas <- vigiar_classificar_alertas(pm25)
+alertas
+```
+
+## Exemplo: detectando problemas
+
+```{r}
+#| eval: false
+# Simular um problema: inserir valor impossível de PM2.5
+pm25_problema <- pm25
+pm25_problema$pm25_media_anual[1] <- -999
+
+# A validação deve detectar
+vigiar_validar_unidades(pm25_problema)
+# Warning: Valores negativos encontrados em pm25_media_anual: 1 registro(s)
+# Severidade: problema
+```

@@ -1,0 +1,119 @@
+# Introdução ao VIGIAR e ao pacote vigiar
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+## O Sistema VIGIAR
+
+O VIGIAR (Vigilância em Saúde Ambiental) é um programa do Ministério da Saúde do Brasil que integra dados ambientais e de saúde para monitorar os impactos da poluição do ar na saúde da população brasileira.
+
+O dashboard público do VIGIAR está disponível no Power BI:
+
+> [https://app.powerbi.com/view?r=eyJrIjoiNmRhODQwNzItNThlOS00ZmQ4LWJjZmItZDYxOTNhOTRmYmFhIiwidCI6IjlhNTU0YWQzLWI1MmItNDg2Mi1hMzZmLTg0ZDg5MWU1YzcwNSJ9](https://app.powerbi.com/view?r=eyJrIjoiNmRhODQwNzItNThlOS00ZmQ4LWJjZmItZDYxOTNhOTRmYmFhIiwidCI6IjlhNTU0YWQzLWI1MmItNDg2Mi1hMzZmLTg0ZDg5MWU1YzcwNSJ9)
+
+### Dados disponíveis
+
+O dashboard consolida dados de múltiplas fontes:
+
+#### Qualidade do Ar (PM~2.5~)
+
+- Médias anuais e mensais de PM~2.5~ por município brasileiro
+- Dias críticos (acima dos limites OMS e CONAMA)
+- Coordenadas geográficas (latitude/longitude)
+- Categorização por faixas de concentração
+
+#### População Exposta
+
+- População residente por município e ano
+- Categorias de exposição à poluição do ar
+- Dados do IBGE (censos e projeções)
+
+#### Indicadores de Saúde
+
+- Mortalidade por doenças respiratórias e cardiovasculares
+- Internações hospitalares (SIH)
+- Anos de vida perdidos (YLL)
+- Indicadores agregados por Brasil, UF e município
+- Fração atribuível à poluição do ar
+
+#### Exposição Indoor
+
+- População exposta a combustíveis sólidos em domicílios
+- Desfechos de saúde associados
+- Dados desagregados por sexo e estado
+
+## Por que o pacote vigiar?
+
+O dashboard do VIGIAR é interativo e visual, mas para pesquisa científica e análise de dados, baixar os dados manualmente é:
+
+- **Demorado**: são 14+ tabelas com milhares de registros
+- **Não reprodutível**: cada download manual pode gerar resultados diferentes
+- **Propenso a erros**: copiar/colar ou exportar manualmente introduz erros
+- **Não auditável**: sem registro de quando e como os dados foram obtidos
+
+O pacote **vigiar** resolve esses problemas implementando o acesso programático à API interna do Power BI, garantindo:
+
+1. **Automação completa**: downloads em lote com uma linha de código
+2. **Reprodutibilidade**: snapshots com SHA256, schema locking, logging
+3. **Validação integrada**: verificação de códigos IBGE, datas, unidades
+4. **Diagnóstico automático**: detecção de quebras de série, duplicatas, valores suspeitos
+5. **Auditoria multi-perfil**: conformidade com padrões rigorosos de qualidade de dados
+
+## Arquitetura do pacote
+
+O pacote implementa o protocolo de API do Power BI "Publish to Web":
+
+```
+Usuário → vigiar_conectar() → Power BI Page → cookies + session
+              ↓
+         vigiar_baixar("tabela")
+              ↓
+         .vigiar_construir_query()  → monta JSON Semantic Query
+              ↓
+         .vigiar_executar_query()   → POST /querydata
+              ↓
+         .vigiar_parse_dados()      → decodifica DSR → data.frame
+```
+
+### Módulos principais
+
+| Módulo | Arquivo(s) | Função |
+|--------|-----------|--------|
+| Conexão | `conexao.R`, `client.R` | Sessão Power BI, cookies, retry |
+| API | `api.R` | Construção e execução de queries |
+| Download | `download.R`, `rj.R` | Download, filtro UF/RJ, catálogo |
+| Parse | `parse.R` | Decodificação DSR → data.frame |
+| Processamento | `process.R` | Padronização e tipagem S3 |
+| Validação | `validar.R` | IBGE, datas, unidades, RJ |
+| Diagnóstico | `diagnostic.R` | Qualidade de séries temporais |
+| Auditoria | `compliance.R`, `auditar.R` | SHA256, multi-perfil |
+| Cache | `cache.R` | Cache local, snapshots, schema lock |
+| Logging | `log.R` | Log estruturado INFO/WARN/ERROR |
+| Classes | `classes.R` | S3: vigiar_tbl, print, summary |
+| Dicionário | `dictionary.R` | Documentação de variáveis |
+| Séries | `series.R` | Agregação temporal, tendências |
+| Exportação | `exportar.R` | CSV, RDS, Parquet, JSON |
+| Resumo | `resumo.R` | Resumos estatísticos por domínio |
+
+### Filosofia: desconfie dos dados
+
+O pacote **vigiar** adota uma postura de **ceticismo saudável** em relação aos dados:
+
+> *"O vigiar desconfia dos dados antes de seduzir o pesquisador com gráficos."*
+
+Por isso, toda operação de download é acompanhada de validação, e o pipeline de diagnóstico é executado antes de qualquer análise.
+
+## Pré-requisitos
+
+- **R** ≥ 4.1.0
+- Conexão com a Internet (para download dos dados)
+- Pacotes: `httr2`, `jsonlite`, `tibble`, `dplyr`, `cli`, `openssl`
+- Opcionais: `arrow` (para Parquet), `knitr`/`rmarkdown` (para vignettes), `ggplot2` (para visualização)

@@ -1,0 +1,20 @@
+citHeader("Para citar o pacote vigiar em publicações, use:")
+
+citEntry(
+  entry = "Manual",
+  title = "vigiar: Download Data from Brazil's VIGIAR Power BI Dashboard",
+  author = personList(
+    person("Ryan", "Santos")
+  ),
+  year = "2026",
+  note = paste("R package version 0.1.0,",
+               "https://github.com/santosry/vigiar-download"),
+  textVersion = paste(
+    "Ryan Santos (2026).",
+    "vigiar: Download Data from Brazil's VIGIAR Power BI Dashboard.",
+    "R package version 0.1.0.",
+    "https://github.com/santosry/vigiar-download"
+  )
+)
+
+citFooter("Os dados são do Ministério da Saúde — VIGIAR (Vigilância em Saúde Ambiental).")

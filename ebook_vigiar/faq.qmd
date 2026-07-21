@@ -1,0 +1,209 @@
+# Perguntas Frequentes (FAQ)
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+## Conexão e Sessão
+
+### A sessão expira? Como renovar?
+
+Sim. As sessões do Power BI expiram após algumas horas de inatividade. Para renovar:
+
+```{r}
+#| eval: false
+vigiar_conectar(refresh = TRUE)
+```
+
+Se encontrar erro 403 (Forbidden), a sessão expirou.
+
+### Posso ter múltiplas sessões simultâneas?
+
+Não. O pacote mantém uma única sessão no ambiente interno `.vigiar_env`. Use `vigiar_desconectar()` e depois `vigiar_conectar()` para trocar.
+
+### O dashboard ficou fora do ar. O que fazer?
+
+O dashboard do Ministério da Saúde pode passar por manutenções. Aguarde alguns minutos e tente novamente. Você pode verificar o status:
+
+```{r}
+#| eval: false
+vigiar_status()
+```
+
+## Download
+
+### A API limita a 30.000 linhas. Como baixar tabelas maiores?
+
+Use `vigiar_baixar_rj()` que implementa download particionado (ASC + DESC) para cobrir todo o range. Se mesmo assim não for suficiente:
+
+- Baixe por ano: `vigiar_baixar("df_anual", uf = "RJ", ordenar_por = "ano")`
+- Use filtros combinados de ano e UF
+- Para tabelas muito grandes, baixe em lotes e combine
+
+### Como baixar dados de todos os estados?
+
+```{r}
+#| eval: false
+pm25_brasil <- vigiar_baixar("df_anual", uf = NULL)
+```
+
+**Cuidado**: isso pode exceder o limite de 30K linhas. Para análises nacionais, considere baixar estado por estado.
+
+### O download está muito lento. Como melhorar?
+
+1. **Use cache**: `vigiar_baixar_com_cache("df_anual")`
+2. **Aumente o timeout**: `vigiar_baixar("df_anual", timeout = 300)`
+3. **Baixe apenas colunas necessárias**: `vigiar_baixar("df_anual", colunas = c("ano", "UF", "pm25"))`
+4. **Verifique sua conexão** com a internet
+
+### Posso baixar dados para análise em tempo real?
+
+O VIGIAR não é um sistema de monitoramento em tempo real. Os dados são atualizados periodicamente (geralmente anual). O dashboard reflete a última atualização disponível. Use `vigiar_status()` para verificar se há dados novos.
+
+## Schema e Mudanças
+
+### O dashboard mudou e o pacote parou de funcionar. O que fazer?
+
+1. Execute `vigiar_status()` para diagnosticar
+2. Execute `vigiar_conectar(refresh = TRUE)` para obter o schema atualizado
+3. Use `vigiar_esquema_verificar("schema_lock.json")` para ver diferenças
+4. Se tabelas foram renomeadas/removidas, adapte seu código
+5. Reporte o problema em: [github.com/santosry/vigiar/issues](https://github.com/santosry/vigiar/issues)
+
+### Como garantir reprodutibilidade se o schema muda?
+
+1. **Trave o schema** com `vigiar_esquema_lock()`
+2. **Use snapshots** com `vigiar_snapshot()` e `vigiar_salvar_snapshot()`
+3. **Versione** o arquivo de lock e os snapshots com git
+4. **Documente** a versão do pacote usada (`packageVersion("vigiar")`)
+
+## Dados
+
+### Os dados do VIGIAR são oficiais?
+
+Sim. Os dados vêm diretamente do dashboard público do VIGIAR (Ministério da Saúde). No entanto:
+
+- O dashboard é uma ferramenta de **visualização**, não um repositório oficial de dados
+- Os dados podem ser **preliminares** ou estar em **atualização**
+- **Sempre valide** os dados antes de usar em análises
+- **Cite a fonte**: Ministério da Saúde / VIGIAR
+
+### Qual a diferença entre data de processamento e data do evento?
+
+Para o VIGIAR, os dados representam **médias anuais/mensais calculadas**, não eventos individuais. A data nos dados é o **ano de referência** da medição.
+
+### Dados de PM~2.5~: são medições ou estimativas?
+
+Os dados de PM~2.5~ no VIGIAR são uma combinação de:
+- Medições de estações de monitoramento (onde disponíveis)
+- Estimativas por satélite
+- Modelagem estatística
+
+Consulte a documentação do VIGIAR para detalhes metodológicos.
+
+### Por que alguns municípios não têm dados?
+
+Possíveis razões:
+- **Sem estação de monitoramento**: municípios pequenos podem não ter medições
+- **Dados insuficientes**: menos de 75% dos dias do ano com medição
+- **Falha na coleta**: problemas técnicos nas estações
+- **Atualização pendente**: dados ainda não processados
+
+Use `vigiar_checar_cobertura_espacial()` para identificar municípios faltantes.
+
+## Processamento e Validação
+
+### Preciso sempre processar os dados?
+
+**Sim, recomendamos fortemente.** Os dados brutos do Power BI têm nomes de colunas inconsistentes e tipos incorretos. O processamento:
+
+- Padroniza nomes (`muni` → `cod_municipio`)
+- Corrige tipos (`character` → `integer` para códigos)
+- Adiciona classes S3 para métodos especializados
+- Adiciona metadados (tabela de origem, timestamp)
+
+### Posso pular a validação?
+
+**Não recomendamos.** A validação é rápida e detecta problemas que podem invalidar análises. O custo de não validar é muito maior que o tempo gasto.
+
+### O que faço se a validação encontrar problemas?
+
+| Severidade | Ação |
+|-----------|------|
+| `aviso` | Documente a ressalva, prossiga com cautela |
+| `problema` | Investigue a causa, considere excluir registros problemáticos |
+| `crítico` | **Não use os dados**. Refaça o download ou reporte o problema |
+
+## Integração
+
+### Posso usar o vigiar junto com o microdatasus?
+
+Sim! Ambos usam códigos IBGE de 6 dígitos para municípios, permitindo joins diretos:
+
+```{r}
+#| eval: false
+library(vigiar)
+library(microdatasus)
+library(dplyr)
+
+# VIGIAR: poluição do ar
+vigiar_conectar()
+pm25 <- process_pm25(vigiar_baixar_rj("df_anual"), tipo = "anual")
+
+# microdatasus: mortalidade
+sim <- fetch_datasus(2020, 2020, uf = "RJ", "SIM-DO")
+sim <- process_sim(sim)
+
+# Join pelo código do município
+dados <- pm25 |>
+  filter(ano == 2020) |>
+  left_join(sim, by = c("cod_municipio" = "CODMUNRES"))
+```
+
+### Posso usar vigiar em um pipeline de CI/CD (GitHub Actions)?
+
+Sim. Configure o cache no workflow:
+
+```yaml
+- name: Cache VIGIAR data
+  uses: actions/cache@v3
+  with:
+    path: ~/vigiar_cache
+    key: vigiar-${{ hashFiles('schema_lock.json') }}
+```
+
+E use `vigiar_baixar_com_cache()` no script.
+
+## Erros Comuns
+
+### "Nao foi possivel extrair o telemetrySessionId"
+
+- O dashboard pode estar fora do ar
+- Sua conexão pode estar bloqueada (firewall, proxy)
+- Tente acessar o dashboard pelo navegador primeiro
+
+### "Nenhuma sessao ativa"
+
+Execute `vigiar_conectar()` antes de qualquer operação.
+
+### Timeout em downloads grandes
+
+```{r}
+#| eval: false
+# Aumente o timeout global
+options(timeout = 600)
+
+# Ou por operação
+vigiar_baixar("df_anual", timeout = 300)
+```
+
+### Erro 403 Forbidden
+
+Sessão expirada. Execute `vigiar_conectar(refresh = TRUE)`.

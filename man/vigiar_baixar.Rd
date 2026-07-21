@@ -15,9 +15,9 @@ vigiar_baixar(
 )
 }
 \arguments{
-\item{tabela}{Table name (use `vigiar_tabelas()` to list).}
+\item{tabela}{Table name (use \code{vigiar_tabelas()} to list).}
 
-\item{colunas}{Optional character vector of column names. `NULL` = all.}
+\item{colunas}{Optional character vector of column names. \code{NULL} = all.}
 
 \item{ordenar_por}{Column to sort by (optional).}
 
@@ -25,12 +25,12 @@ vigiar_baixar(
 
 \item{timeout}{Timeout in seconds for the HTTP request.}
 
-\item{uf}{UF filter. Filters data client-side. Use `NULL` for no filter. Default `"RJ"`.}
+\item{uf}{UF filter. Filters data client-side. Use \code{NULL} for no filter. Default \code{"RJ"}.}
 
-\item{direcao}{Sort direction: `"asc"` (ascending) or `"desc"` (descending).}
+\item{direcao}{Sort direction: \code{"asc"} (ascending) or \code{"desc"} (descending).}
 }
 \value{
-A [tibble::tibble()] with the downloaded data.
+A \code{\link[tibble:tibble]{tibble::tibble()}} with the downloaded data.
 }
 \description{
 Download data from a single table

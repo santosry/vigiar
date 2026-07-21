@@ -7,7 +7,7 @@
 vigiar_baixar_tudo(tabelas = NULL, progress = TRUE, delay = 0.5)
 }
 \arguments{
-\item{tabelas}{Character vector of table names. `NULL` = all.}
+\item{tabelas}{Character vector of table names. \code{NULL} = all.}
 
 \item{progress}{Show progress messages.}
 

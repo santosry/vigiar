@@ -58,6 +58,15 @@ vigiar_esquema <- function(tabela = NULL) {
 vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
                            limite = NULL, timeout = 120, uf = "RJ",
                            direcao = c("asc", "desc")) {
+  # Validate arguments (checkmate — microdatasus pattern)
+  checkmate::assert_string(tabela, null.ok = FALSE)
+  checkmate::assert_character(colunas, null.ok = TRUE, any.missing = FALSE)
+  checkmate::assert_string(ordenar_por, null.ok = TRUE)
+  checkmate::assert_integerish(limite, lower = 1, null.ok = TRUE)
+  checkmate::assert_number(timeout, lower = 1, upper = 600)
+  checkmate::assert_character(uf, null.ok = TRUE)
+  checkmate::assert_choice(direcao[1], c("asc", "desc"))
+
   if (is.null(.vigiar_env$sessao)) {
     stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
   }
@@ -137,6 +146,11 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
 #' @return Named list of tibbles.
 #' @export
 vigiar_baixar_tudo <- function(tabelas = NULL, progress = TRUE, delay = 0.5) {
+  # Validate arguments (checkmate — microdatasus pattern)
+  checkmate::assert_character(tabelas, null.ok = TRUE, any.missing = FALSE)
+  checkmate::assert_flag(progress)
+  checkmate::assert_number(delay, lower = 0, upper = 10)
+
   if (is.null(.vigiar_env$sessao)) {
     stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
   }

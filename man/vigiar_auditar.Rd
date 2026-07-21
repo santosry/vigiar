@@ -15,7 +15,7 @@ vigiar_auditar(dados, tabela = NULL, verbose = TRUE)
 }
 \value{
 A list with audit sections: \code{schema}, \code{ibge},
-  \code{temporal}, \code{units}, \code{coverage}, \code{checksums}.
+\code{temporal}, \code{units}, \code{coverage}, \code{checksums}.
 }
 \description{
 Performs a comprehensive audit of a VIGIAR data table against

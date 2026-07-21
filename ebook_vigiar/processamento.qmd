@@ -1,0 +1,240 @@
+# Processamento e Padronização
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+Após o download, os dados brutos do Power BI precisam ser processados e padronizados. O pacote **vigiar** oferece funções de processamento por domínio que seguem o padrão do `microdatasus`.
+
+## Por que processar?
+
+Os dados brutos do Power BI:
+
+- Usam nomes de colunas inconsistentes (`muni`, `UF`, `Media_pm25`)
+- Tipos de dados podem vir como `character` quando deveriam ser `numeric`
+- Não possuem metadados estruturados
+- Códigos de município podem não estar no formato IBGE padrão
+
+O processamento resolve esses problemas e adiciona classes S3 tipadas.
+
+## Pipeline de processamento
+
+```{r}
+#| eval: false
+library(vigiar)
+
+vigiar_conectar()
+
+# Download
+dados <- vigiar_baixar_rj("df_anual")
+
+# Processamento
+pm25 <- process_pm25(dados, tipo = "anual")
+```
+
+## Processamento por domínio
+
+Cada domínio de dados tem sua própria função `process_*()`:
+
+### Qualidade do Ar (PM~2.5~)
+
+```{r}
+#| eval: false
+# PM2.5 anual
+pm25_anual <- process_pm25(dados_anual, tipo = "anual")
+
+# PM2.5 mensal
+pm25_mensal <- process_pm25(dados_mensal, tipo = "mensal")
+```
+
+**Padronizações aplicadas:**
+
+| Original | Padronizado | Tipo |
+|----------|------------|------|
+| `muni` | `cod_municipio` | integer (6 dígitos) |
+| `UF` | `sigla_uf` | character |
+| `Media_pm25` | `pm25_media_anual` | numeric |
+| `Categoria_pm25` | `pm25_categoria` | factor |
+| `LAT` | `latitude` | numeric |
+| `LON` | `longitude` | numeric |
+
+### Indicadores de Saúde
+
+```{r}
+#| eval: false
+indicadores <- process_indicadores_saude(dados_saude)
+```
+
+### População Exposta
+
+```{r}
+#| eval: false
+pop <- process_populacao_exposta(dados_pop)
+```
+
+### Exposição Indoor
+
+```{r}
+#| eval: false
+indoor <- process_exposicao_indoor(dados_indoor)
+```
+
+### Fração Atribuível
+
+```{r}
+#| eval: false
+fracao <- process_fracao_atribuivel(dados_fracao)
+```
+
+### Municípios
+
+```{r}
+#| eval: false
+municipios <- process_municipios(dados_muni)
+```
+
+### UFs
+
+```{r}
+#| eval: false
+ufs <- process_ufs(dados_uf)
+```
+
+## Processamento em lote
+
+Para processar múltiplas tabelas de uma vez:
+
+```{r}
+#| eval: false
+# Baixar todas as tabelas principais
+tudo <- vigiar_baixar_principais()
+
+# Processar tudo
+tudo_processado <- process_vigiar(tudo)
+```
+
+## Padronização manual de colunas
+
+Se você precisar padronizar colunas específicas:
+
+```{r}
+#| eval: false
+dados_padronizados <- vigiar_padronizar_colunas(dados,
+  renomear = c(
+    "muni" = "cod_municipio",
+    "UF" = "sigla_uf"
+  )
+)
+```
+
+## Classes S3 tipadas
+
+Após o processamento, os dados recebem classes S3 que herdam de `vigiar_tbl`:
+
+```
+vigiar_pm25 → vigiar_tbl → tibble → data.frame
+vigiar_health → vigiar_tbl → tibble → data.frame
+vigiar_population → vigiar_tbl → tibble → data.frame
+vigiar_indoor → vigiar_tbl → tibble → data.frame
+vigiar_attributable_fraction → vigiar_tbl → tibble → data.frame
+```
+
+### Métodos S3 disponíveis
+
+```{r}
+#| eval: false
+# Print formatado
+pm25
+
+# Saída:
+# # VIGIAR tibble: df_anual  |  5570 linhas x 12 colunas
+# # Processado em: 2026-07-19 10:15:22
+# # A tibble: 5,570 × 12
+#    cod_municipio sigla_uf  ano pm25_media_anual pm25_categoria ...
+# ...
+
+# Resumo estatístico
+summary(pm25)
+
+# Validação
+validate(pm25)
+```
+
+## Resumo por domínio
+
+Cada classe S3 tem seu próprio método de resumo:
+
+```{r}
+#| eval: false
+# Resumo PM2.5
+vigiar_resumo_pm25(pm25)
+
+# Resumo população
+vigiar_resumo_populacao(pop)
+
+# Resumo indicadores de saúde
+vigiar_resumo_saude(indicadores)
+
+# Resumo indoor
+vigiar_resumo_indoor(indoor)
+
+# Resumo fração atribuível
+vigiar_resumo_fracao_atribuivel(fracao)
+
+# Resumo genérico (dispatch automático)
+vigiar_resumo(pm25)
+```
+
+## Verificações pós-processamento
+
+```{r}
+#| eval: false
+# Checagem básica
+vigiar_checar_dados(pm25, tabela = "df_anual")
+
+# Verificar tipos das colunas
+str(pm25)
+
+# Verificar se há NAs introduzidos
+colSums(is.na(pm25))
+```
+
+## Exemplo completo de processamento
+
+```{r}
+#| eval: false
+library(vigiar)
+library(dplyr)
+
+# 1. Conectar e baixar
+vigiar_conectar()
+tudo <- vigiar_baixar_principais()
+
+# 2. Processar cada domínio
+pm25    <- process_pm25(tudo$df_anual, tipo = "anual")
+saude   <- process_indicadores_saude(tudo$tb_brasil)
+pop     <- process_populacao_exposta(tudo$pop)
+indoor  <- process_exposicao_indoor(tudo$df_indoor)
+municipios <- process_municipios(tudo$df_muni)
+
+# 3. Verificar classes
+class(pm25)     # "vigiar_pm25" "vigiar_tbl" "tbl_df" ...
+class(saude)    # "vigiar_health" "vigiar_tbl" ...
+
+# 4. Resumos
+vigiar_resumo(pm25)
+vigiar_resumo(saude)
+
+# 5. Validar
+validate(pm25)
+vigiar_validar_ibge(pm25, col_codigo = "cod_municipio")
+
+vigiar_desconectar()
+```

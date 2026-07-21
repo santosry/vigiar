@@ -1,0 +1,229 @@
+# Auditoria e Compliance
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+A auditoria é a camada mais rigorosa de verificação do pacote **vigiar**. Ela combina todas as validações e diagnósticos em um relatório estruturado, com checksums criptográficos e perfis de compliance.
+
+## Auditoria completa
+
+```{r}
+#| eval: false
+library(vigiar)
+
+vigiar_conectar()
+pm25 <- process_pm25(vigiar_baixar_rj("df_anual"), tipo = "anual")
+
+# Auditoria completa de uma tabela
+audit <- vigiar_auditar(pm25, tabela = "df_anual")
+print(audit)
+```
+
+### Estrutura do relatório de auditoria
+
+```
+==================================================
+AUDITORIA VIGIAR — df_anual
+==================================================
+Data: 2026-07-19 10:30:00
+Checksum SHA256: a1b2c3d4e5f6...
+
+--------------------------------------------------
+1. SCHEMA
+--------------------------------------------------
+  Colunas: 12
+  Nomes padronizados: sim
+  Tipos consistentes: sim
+
+--------------------------------------------------
+2. CÓDIGOS IBGE
+--------------------------------------------------
+  Total: 5570 | Válidos: 5570 (100%)
+  Range RJ: 330010–330620 | Conformidade: ok
+
+--------------------------------------------------
+3. CONSISTÊNCIA TEMPORAL
+--------------------------------------------------
+  Período: 2010–2022 (13 anos)
+  Anos faltantes: 0
+  Quebras de série: 3 municípios
+
+--------------------------------------------------
+4. UNIDADES E VALORES
+--------------------------------------------------
+  PM2.5 média: 11.3 µg/m³ (min: 4.2, max: 28.7)
+  Valores negativos: 0
+  Valores ausentes: 234 (4.2%)
+
+--------------------------------------------------
+5. COBERTURA
+--------------------------------------------------
+  Municípios esperados: 92 | Presentes: 87 (94.6%)
+  Faltantes: 5 municípios em 2022
+
+--------------------------------------------------
+6. INTEGRIDADE (SHA256)
+--------------------------------------------------
+  Checksum: a1b2c3d4e5f67890...
+  Verificado: ok
+
+==================================================
+SEVERIDADE: aviso
+RECOMENDAÇÃO: Dados utilizáveis com ressalvas documentadas.
+==================================================
+```
+
+## Checksum SHA256
+
+O checksum criptográfico garante a integridade dos dados:
+
+```{r}
+#| eval: false
+# Calcular checksum
+hash <- vigiar_checksum(pm25)
+hash
+# [1] "a1b2c3d4e5f6789012345678901234567890abcd..."
+```
+
+O checksum é determinístico: os mesmos dados sempre geram o mesmo hash. Isso permite:
+
+- Verificar se os dados foram alterados
+- Comparar versões de download
+- Garantir reprodutibilidade em publicações científicas
+
+## Perfis de Compliance
+
+O pacote oferece múltiplos perfis de verificação:
+
+```{r}
+#| eval: false
+# Compliance com múltiplos perfis
+comp <- vigiar_compliance_check(pm25, tabela = "df_anual",
+  profiles = c("basico", "rigoroso", "rj", "corrupcao")
+)
+print(comp)
+```
+
+### Perfis disponíveis
+
+| Perfil | Descrição | Checks |
+|--------|-----------|--------|
+| `basico` | Verificações essenciais | Schema + IBGE + ausentes |
+| `rigoroso` | Análise completa | Todos os checks + outliers |
+| `rj` | Foco no Rio de Janeiro | Range IBGE RJ + cobertura 92 municípios |
+| `corrupcao` | Detecção de anomalias | Outliers, duplicatas, quebras, digitação |
+
+### Perfil "corrupcao"
+
+Este perfil aplica testes estatísticos para detectar possíveis problemas de qualidade:
+
+```{r}
+#| eval: false
+comp <- vigiar_compliance_check(pm25,
+  tabela = "df_anual",
+  profiles = "corrupcao"
+)
+```
+
+Verifica:
+- **Lei de Benford**: distribuição de dígitos iniciais (detecção de dados fabricados)
+- **Outliers**: usando IQR (intervalo interquartil)
+- **Duplicatas exatas**: registros idênticos
+- **Quebras de série**: variações ano-a-ano anômalas
+
+## Auditoria em lote
+
+```{r}
+#| eval: false
+# Baixar e processar várias tabelas
+tudo <- vigiar_baixar_principais()
+
+# Auditar todas
+auditorias <- vigiar_auditar_tudo(tudo)
+print(auditorias)
+```
+
+## Exportação da auditoria
+
+```{r}
+#| eval: false
+# Exportar como JSON (para arquivamento)
+vigiar_exportar_auditoria(audit, "auditoria_pm25_2026.json")
+
+# O JSON pode ser versionado com git
+```
+
+## Comparação de auditorias
+
+```{r}
+#| eval: false
+# Primeira auditoria
+audit_jan <- vigiar_auditar(pm25, tabela = "df_anual")
+
+# ... meses depois, novo download ...
+pm25_jul <- process_pm25(vigiar_baixar_rj("df_anual"), tipo = "anual")
+audit_jul <- vigiar_auditar(pm25_jul, tabela = "df_anual")
+
+# Comparar
+# (Use os checksums e snapshots para detectar diferenças)
+```
+
+## Exemplo: fluxo de auditoria para publicação
+
+```{r}
+#| eval: false
+library(vigiar)
+
+# 1. Conectar e baixar
+vigiar_conectar()
+pm25 <- process_pm25(vigiar_baixar_rj("df_anual"), tipo = "anual")
+
+# 2. Validar e diagnosticar
+diag <- vigiar_diagnosticar_serie(pm25)
+vigiar_relatorio_diagnostico(diag)
+
+# 3. Auditar (perfil rigoroso)
+audit <- vigiar_auditar(pm25, tabela = "df_anual")
+comp <- vigiar_compliance_check(pm25,
+  tabela = "df_anual",
+  profiles = c("rigoroso", "rj")
+)
+
+# 4. Verificar severidade
+if (audit$severidade %in% c("problema", "crítico")) {
+  stop("Dados não passaram na auditoria. Investigue antes de publicar.")
+}
+
+# 5. Criar snapshot para submissão
+snap <- vigiar_snapshot(dados = pm25, tabela = "df_anual")
+vigiar_salvar_snapshot(snap, "pm25_submissao_2026.rds")
+
+# 6. Exportar auditoria como evidência
+vigiar_exportar_auditoria(audit, "auditoria_submissao_2026.json")
+
+# 7. Desconectar
+vigiar_desconectar()
+
+# Agora você tem:
+# - Dados validados e auditados
+# - Snapshot com SHA256
+# - Relatório de auditoria em JSON
+# - Diagnóstico completo
+# Tudo pronto para submissão científica!
+```
+
+## Boas práticas de auditoria
+
+1. **Audite sempre** antes de qualquer análise publicável
+2. **Use o perfil `rigoroso`** para trabalhos acadêmicos
+3. **Exporte a auditoria** como metadado suplementar
+4. **Inclua o checksum** nos métodos do artigo
+5. **Versionar** o JSON de auditoria junto com o código

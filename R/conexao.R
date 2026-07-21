@@ -19,6 +19,11 @@
 #' @return Invisibly, a list with session data.
 #' @export
 vigiar_conectar <- function(refresh = FALSE, timeout = 30, max_retries = 3) {
+  # Validate arguments (checkmate — microdatasus pattern)
+  checkmate::assert_flag(refresh)
+  checkmate::assert_number(timeout, lower = 5, upper = 300)
+  checkmate::assert_integerish(max_retries, lower = 1, upper = 10)
+
   if (!refresh && !is.null(.vigiar_env$sessao)) {
     message("Sessao VIGIAR ja esta ativa. Use refresh = TRUE para renovar.")
     return(invisible(.vigiar_env$sessao))

@@ -1,0 +1,222 @@
+# Rio de Janeiro
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+O pacote **vigiar** tem um foco especial no estado do Rio de Janeiro, com funcionalidades específicas para os **92 municípios** e **9 macrorregiões de saúde** definidas pela SES-RJ.
+
+## Cadastro de municípios do RJ
+
+```{r}
+#| eval: false
+library(vigiar)
+
+vigiar_conectar()
+
+# Data frame com os 92 municípios do RJ
+rj_muni <- vigiar_rj_municipios()
+head(rj_muni)
+```
+
+O cadastro inclui:
+
+| Coluna | Descrição |
+|--------|-----------|
+| `cod_municipio` | Código IBGE de 6 dígitos (330010–330620) |
+| `nome_municipio` | Nome do município |
+| `macrorregiao` | Macrorregião de saúde (SES-RJ) |
+| `regiao_saude` | Região de saúde |
+
+## Macrorregiões de saúde
+
+O estado é dividido em **9 macrorregiões**:
+
+```{r}
+#| eval: false
+macros <- vigiar_rj_macrorregioes()
+macros
+```
+
+| # | Macrorregião |
+|---|-------------|
+| 1 | Metropolitana I |
+| 2 | Metropolitana II |
+| 3 | Baía da Ilha Grande |
+| 4 | Centro-Sul |
+| 5 | Médio Paraíba |
+| 6 | Noroeste |
+| 7 | Norte |
+| 8 | Serrana |
+| 9 | Baixada Litorânea |
+
+## Regiões de saúde
+
+Subdivisão mais granular:
+
+```{r}
+#| eval: false
+regioes <- vigiar_rj_regioes_saude()
+regioes
+```
+
+## Download otimizado para o RJ
+
+Para tabelas grandes, o pacote usa uma estratégia de download particionado:
+
+```{r}
+#| eval: false
+# Download particionado ASC+DESC para cobrir todo o range
+pm25_rj <- vigiar_baixar_rj("df_anual")
+```
+
+### Como funciona
+
+```
+┌─────────────────────────────────────────────────┐
+│                Estratégia RJ                     │
+│                                                  │
+│  1. Download ASC  → pega início do range (~15K) │
+│  2. Download DESC → pega final do range (~15K)  │
+│  3. Combina e remove duplicatas                  │
+│                                                  │
+│  Resultado: ~30K linhas (vs ~15K em download    │
+│  simples com limite da API)                     │
+└─────────────────────────────────────────────────┘
+```
+
+### Quando usar
+
+| Situação | Recomendação |
+|----------|-------------|
+| Tabelas < 15K linhas | `vigiar_baixar("tabela", uf = "RJ")` |
+| Tabelas > 15K linhas | `vigiar_baixar_rj("tabela")` |
+| Tabelas muito grandes (> 30K) | Use filtros por ano ou região |
+
+## Análise agregada por macrorregião
+
+```{r}
+#| eval: false
+# Baixar dados do RJ
+pm25 <- vigiar_baixar_rj("df_anual")
+
+# Processar
+pm25 <- process_pm25(pm25, tipo = "anual")
+
+# Agregar por macrorregião de saúde
+resumo <- vigiar_rj_resumo(pm25, agregacao = "macrorregiao")
+resumo
+```
+
+Saída (exemplo):
+
+```
+# A tibble: 9 × 5
+  macrorregiao       n_municipios pm25_medio pm25_max pm25_min
+  <chr>                     <int>      <dbl>    <dbl>    <dbl>
+1 Metropolitana I              20       12.3     18.9      7.2
+2 Metropolitana II              7       11.8     15.4      8.1
+3 Baia da Ilha Grande           3       10.2     14.1      6.8
+4 Centro-Sul                   10        9.8     13.5      5.2
+...
+```
+
+## Séries temporais por região
+
+```{r}
+#| eval: false
+# Série temporal com quebra por macrorregião
+series <- vigiar_rj_series(pm25,
+  variavel = "pm25_media_anual",
+  agrupamento = "macrorregiao"
+)
+```
+
+## Validação específica para o RJ
+
+```{r}
+#| eval: false
+# Verificar se todos os códigos IBGE são do RJ (330010-330620)
+vigiar_validar_rj(pm25)
+
+# Validar códigos IBGE
+vigiar_validar_ibge(pm25, col_codigo = "cod_municipio")
+```
+
+## Cobertura espacial no RJ
+
+```{r}
+#| eval: false
+# Verificar cobertura dos 92 municípios
+cobertura <- vigiar_checar_cobertura_espacial(
+  pm25,
+  col_codigo = "cod_municipio",
+  uf = "RJ"
+)
+
+# Municípios sem dados
+cobertura$faltantes
+```
+
+## Exemplo completo: Painel RJ
+
+Abaixo, um fluxo de trabalho completo para análise de PM~2.5~ no RJ:
+
+```{r}
+#| eval: false
+library(vigiar)
+library(dplyr)
+library(ggplot2)
+
+# 1. Conectar
+vigiar_conectar()
+
+# 2. Baixar dados do RJ
+pm25 <- vigiar_baixar_rj("df_anual")
+
+# 3. Processar
+pm25 <- process_pm25(pm25, tipo = "anual")
+
+# 4. Validar
+vigiar_validar_rj(pm25)
+vigiar_checar_dados(pm25, tabela = "df_anual")
+
+# 5. Diagnosticar
+diag <- vigiar_diagnosticar_serie(pm25)
+vigiar_relatorio_diagnostico(diag)
+
+# 6. Analisar por macrorregião
+vigiar_rj_resumo(pm25, agregacao = "macrorregiao") |>
+  arrange(desc(pm25_medio))
+
+# 7. Auditoria
+audit <- vigiar_auditar(pm25, tabela = "df_anual")
+print(audit)
+
+# 8. Snapshot para reprodutibilidade
+snap <- vigiar_snapshot(dados = pm25, tabela = "df_anual")
+vigiar_salvar_snapshot(snap, "pm25_rj_2026.rds")
+
+# 9. Desconectar
+vigiar_desconectar()
+```
+
+## Compatibilidade com DATASUS
+
+Os códigos de município usados pelo pacote são compatíveis com os sistemas do DATASUS:
+
+| Sistema | Código | Exemplo |
+|---------|--------|---------|
+| SIH (Internações) | `MUNIC_RES` | 330455 |
+| SIM (Mortalidade) | `CODMUNRES` | 330455 |
+| SINASC (Nascimentos) | `CODMUNRES` | 330455 |
+| vigiar | `cod_municipio` | 330455 |
+
+Esta compatibilidade permite integrar os dados do VIGIAR com qualquer base do DATASUS.

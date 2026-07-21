@@ -1,0 +1,232 @@
+# Diagnóstico de Séries Temporais
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+O módulo de diagnóstico é o coração da filosofia do pacote: **desconfie dos dados antes de analisá-los**. Ele avalia a qualidade das séries temporais e classifica cada aspecto com níveis de severidade.
+
+## Diagnóstico completo
+
+A função principal é `vigiar_diagnosticar_serie()`:
+
+```{r}
+#| eval: false
+library(vigiar)
+
+vigiar_conectar()
+pm25 <- process_pm25(vigiar_baixar_rj("df_anual"), tipo = "anual")
+
+# Diagnóstico completo
+diag <- vigiar_diagnosticar_serie(pm25)
+
+# Verificar severidade geral
+diag$severidade
+```
+
+## Checks individuais
+
+O diagnóstico é composto por verificações individuais que podem ser executadas separadamente:
+
+### Verificação de códigos IBGE
+
+```{r}
+#| eval: false
+# Verificar consistência dos códigos de município
+vigiar_checar_ibge(diag, pm25, "cod_municipio")
+```
+
+### Verificação de PM~2.5~
+
+```{r}
+#| eval: false
+# Verificar valores de PM2.5
+vigiar_checar_pm25(diag, pm25, "pm25_media_anual")
+```
+
+O que verifica:
+- Valores negativos (severidade: `crítico`)
+- Valores extremamente altos (> 200 µg/m³)
+- Valores zerados em todos os anos para um município
+- Variabilidade zero (todos os anos iguais)
+
+### Verificação de duplicatas
+
+```{r}
+#| eval: false
+# Verificar registros duplicados
+vigiar_checar_duplicatas(diag, pm25, "cod_municipio", "ano")
+```
+
+### Verificação de quebra de série
+
+```{r}
+#| eval: false
+# Detectar quebras na série temporal
+vigiar_checar_quebra_serie(diag, pm25,
+  "cod_municipio", "ano", "pm25_media_anual"
+)
+```
+
+Uma "quebra de série" ocorre quando:
+- Um município não tem dados em um ano intermediário (ex: tem 2018 e 2020, mas não 2019)
+- A variação ano-a-ano excede um limiar (ex: PM~2.5~ dobra de um ano para outro)
+- O número de municípios reportados muda abruptamente
+
+### Verificação de cobertura temporal
+
+```{r}
+#| eval: false
+# Verificar cobertura de anos
+vigiar_checar_cobertura_temporal(diag, pm25, "ano")
+```
+
+Analisa:
+- Range de anos disponíveis
+- Anos faltantes no intervalo
+- Número de municípios por ano
+
+### Verificação de cobertura espacial
+
+```{r}
+#| eval: false
+# Verificar cobertura de municípios
+vigiar_checar_cobertura_espacial(diag, pm25, "cod_municipio", uf = "RJ")
+```
+
+## Relatório de diagnóstico
+
+Para obter um relatório consolidado:
+
+```{r}
+#| eval: false
+vigiar_relatorio_diagnostico(diag)
+```
+
+Saída:
+
+```
+==================================================
+RELATÓRIO DE DIAGNÓSTICO — VIGIAR
+==================================================
+
+Tabela: df_anual
+Dimensão: 5570 linhas × 12 colunas
+Período: 2010–2022
+Severidade geral: aviso
+
+--------------------------------------------------
+CHECKS
+--------------------------------------------------
+
+[ok]       Códigos IBGE           — 92/92 municípios válidos
+[ok]       Duplicatas             — 0 registros duplicados
+[aviso]    PM2.5                  — 234 valores ausentes (4.2%)
+[ok]       Cobertura temporal     — 13 anos (2010–2022) completos
+[aviso]    Cobertura espacial     — 5 municípios sem dados em 2022
+[problema] Quebra de série        — 3 municípios com variação > 50%
+
+==================================================
+AÇÕES RECOMENDADAS:
+
+1. [aviso] Investigar 234 valores ausentes de PM2.5
+2. [problema] Verificar 3 municípios com variação anômala:
+   - Rio das Ostras (330452): 2021→2022 (+67%)
+   - Itaguaí (330200): 2020→2021 (-52%)
+   - Paraty (330380): 2019→2020 (+71%)
+==================================================
+```
+
+## Níveis de severidade
+
+| Nível | Significado | Ícone |
+|-------|-------------|-------|
+| `ok` | Sem problemas detectados | ✅ |
+| `aviso` | Problema menor, documentar | ⚠️ |
+| `problema` | Problema que requer investigação | 🔴 |
+| `crítico` | Dados potencialmente corrompidos | 🚫 |
+
+## Uso do objeto diagnostic
+
+O objeto `vigiar_diagnostic` é uma lista estruturada:
+
+```{r}
+#| eval: false
+# Estrutura do diagnóstico
+str(diag, max.level = 1)
+
+# Acessar checks individuais
+diag$checks$ibge
+diag$checks$pm25
+diag$checks$duplicatas
+
+# Resumo
+summary(diag)
+```
+
+## Criando um diagnostic manualmente
+
+Você pode criar um objeto diagnostic e adicionar checks:
+
+```{r}
+#| eval: false
+diag <- new_vigiar_diagnostic(tabela = "df_anual")
+
+# Adicionar checks
+vigiar_checar_ibge(diag, pm25, "cod_municipio")
+vigiar_checar_pm25(diag, pm25, "pm25_media_anual")
+
+# Ver resultado
+diag$severidade
+```
+
+## Exemplo completo: pipeline de diagnóstico
+
+```{r}
+#| eval: false
+library(vigiar)
+
+# 1. Conectar e baixar
+vigiar_conectar()
+pm25 <- process_pm25(vigiar_baixar_rj("df_anual"), tipo = "anual")
+
+# 2. Criar diagnóstico
+diag <- new_vigiar_diagnostic(tabela = "df_anual")
+
+# 3. Executar todos os checks
+diag <- vigiar_checar_ibge(diag, pm25, "cod_municipio")
+diag <- vigiar_checar_pm25(diag, pm25, "pm25_media_anual")
+diag <- vigiar_checar_duplicatas(diag, pm25, "cod_municipio", "ano")
+diag <- vigiar_checar_quebra_serie(diag, pm25,
+  "cod_municipio", "ano", "pm25_media_anual"
+)
+diag <- vigiar_checar_cobertura_temporal(diag, pm25, "ano")
+diag <- vigiar_checar_cobertura_espacial(diag, pm25,
+  "cod_municipio", uf = "RJ"
+)
+
+# 4. Relatório
+vigiar_relatorio_diagnostico(diag)
+
+# 5. Agir sobre os problemas
+if (diag$severidade %in% c("problema", "crítico")) {
+  warning("Dados precisam de investigação antes da análise!")
+}
+
+vigiar_desconectar()
+```
+
+## Boas práticas
+
+1. **Sempre execute o diagnóstico** antes de qualquer análise ou modelagem
+2. **Documente os problemas encontrados** — eles fazem parte dos metadados da pesquisa
+3. **Não ignore severidade `crítico`** — os dados podem estar corrompidos
+4. **Investigue quebras de série** — podem indicar mudanças metodológicas
+5. **Registre o diagnóstico** junto com o snapshot para reprodutibilidade

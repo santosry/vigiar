@@ -1,0 +1,72 @@
+# Bem-vindo {.unnumbered}
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+Este é o guia prático do pacote **vigiar** para a linguagem R. Aqui você aprenderá a baixar, processar, validar e analisar dados de vigilância em saúde ambiental do Brasil diretamente do dashboard VIGIAR do Ministério da Saúde.
+
+## O que é o VIGIAR?
+
+O VIGIAR (Vigilância em Saúde Ambiental) é um sistema do Ministério da Saúde brasileiro que monitora:
+
+- **Qualidade do ar** (PM~2.5~) por município brasileiro
+- **Dados populacionais** expostos à poluição atmosférica
+- **Indicadores de saúde** associados (doenças respiratórias, internações, óbitos)
+- **Exposição indoor** a combustíveis sólidos
+- **Indicadores agrupados** por Brasil, UF e município
+- **Fração atribuível** da carga de doença à poluição do ar
+
+## O que é o pacote vigiar?
+
+O **vigiar** é um pacote R que automatiza o download dos dados públicos do dashboard VIGIAR no Power BI. Ele implementa o protocolo "Publish to Web" da API do Power BI para extrair os dados de forma programática, permitindo que pesquisadores, gestores e analistas de saúde pública trabalhem com esses dados de forma **reprodutível** e **auditável**.
+
+## Principais funcionalidades
+
+- ✅ Conexão automática ao dashboard Power BI do VIGIAR
+- ✅ Download de 14+ tabelas de dados ambientais e de saúde
+- ✅ Foco especial no estado do Rio de Janeiro (92 municípios, 9 macrorregiões)
+- ✅ Processamento e padronização de colunas
+- ✅ Validação: IBGE, datas, unidades, integridade
+- ✅ Diagnóstico de séries temporais (severidade: ok | aviso | problema | crítico)
+- ✅ Auditoria completa com checksums SHA256
+- ✅ Compliance multi-perfil: básico, rigoroso, RJ, corrupção
+- ✅ Cache local, snapshots e reprodutibilidade
+- ✅ Logging estruturado de todas as operações
+- ✅ Exportação: CSV, RDS, Parquet, JSON
+
+## Como este guia está organizado
+
+| Capítulo | Conteúdo |
+|----------|----------|
+| [Instalação](instalacao.qmd) | Como instalar o pacote e suas dependências |
+| [Conexão](conexao.qmd) | Estabelecendo sessão com o dashboard Power BI |
+| [Exploração](exploracao.qmd) | Navegando pelo esquema de dados |
+| [Download](download.qmd) | Baixando tabelas e filtrando dados |
+| [Rio de Janeiro](rio_de_janeiro.qmd) | Funcionalidades específicas para o estado do RJ |
+| [Processamento](processamento.qmd) | Padronização e tipagem dos dados |
+| [Validação](validacao.qmd) | Validando códigos IBGE, datas e unidades |
+| [Diagnóstico](diagnostico.qmd) | Diagnosticando qualidade das séries temporais |
+| [Auditoria](auditoria.qmd) | Auditoria completa e compliance |
+| [Cache e Reprodutibilidade](cache_reprodutibilidade.qmd) | Cache local, snapshots e schema locking |
+| [Exportação](exportacao.qmd) | Exportando dados em múltiplos formatos |
+| [Exemplos Práticos](exemplos_praticos.qmd) | Análises completas passo a passo |
+| [FAQ](faq.qmd) | Perguntas frequentes e solução de problemas |
+
+## Citação
+
+Para citar o pacote em trabalhos acadêmicos:
+
+> Santos, R. (2026). vigiar: Download de dados do dashboard VIGIAR de Vigilância em Saúde Ambiental. Pacote R versão 0.7.1.9000.
+> [https://github.com/santosry/vigiar](https://github.com/santosry/vigiar)
+
+## Licença
+
+O pacote **vigiar** é distribuído sob a licença MIT. Os dados baixados pertencem ao Ministério da Saúde / VIGIAR.
