@@ -54,6 +54,9 @@ VIGIAR_API_CLUSTER <- paste0(
 
 .vigiar_env <- new.env(parent = emptyenv())
 # .vigiar_env$client holds the vigiar_client object (set by vigiar_conectar)
+# .vigiar_env$status_verificado guarda se o schema ao vivo ja foi validado
+# por vigiar_status() (prerequisito para downloads em pipelines nao interativos).
+.vigiar_env$status_verificado <- FALSE
 
 # -- NULL-coalesce operator ----------------------------------------------------
 

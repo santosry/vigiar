@@ -5,6 +5,10 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  schedule:
+    # Execucao semanal (domingos) para validar o contrato de conexao
+    # contra o dashboard real antes que uma mudanca de schema afete usuarios.
+    - cron: '0 0 * * 0'
 
 name: R-CMD-check
 
@@ -27,7 +31,7 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
-      VIGIAR_RUN_ONLINE_TESTS: false
+      VIGIAR_RUN_ONLINE_TESTS: ${{ github.event_name == 'schedule' && 'true' || 'false' }}
 
     steps:
       - uses: actions/checkout@v4

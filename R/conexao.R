@@ -29,6 +29,9 @@ vigiar_conectar <- function(refresh = FALSE, timeout = 30, max_retries = 3) {
     return(invisible(.vigiar_env$sessao))
   }
 
+  # Nova sessao: invalida qualquer verificacao de schema anterior.
+  .vigiar_env$status_verificado <- FALSE
+
   # Step 1 -- Fetch dashboard page
   resp <- .vigiar_retry(
     {
@@ -194,6 +197,7 @@ vigiar_sessao_ativa <- function() {
 vigiar_status <- function() {
   if (is.null(.vigiar_env$sessao)) {
     message("Nenhuma sessao ativa.")
+    .vigiar_env$status_verificado <- FALSE
     return(invisible(list(online = FALSE, tables_ok = FALSE)))
   }
 
@@ -220,6 +224,10 @@ vigiar_status <- function() {
     new_tables    = if (exists("new_tables")) new_tables else character(0),
     missing_tables = if (exists("missing_tables")) missing_tables else character(0)
   )
+
+  # Registra se o schema ao vivo foi validado, para que vigiar_baixar()
+  # possa exigir essa checagem em pipelines nao interativos.
+  .vigiar_env$status_verificado <- isTRUE(online && tables_ok)
 
   if (online && tables_ok) {
     message("Dashboard VIGIAR online. Esquema de dados consistente.")

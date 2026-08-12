@@ -72,6 +72,14 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
   }
   .vigiar_check_tabela(tabela)
 
+  # Em pipelines nao interativos (Rscript/CI), exige que o schema ao vivo
+  # tenha sido validado com vigiar_status() antes do download. Isso evita
+  # que uma mudanca de schema produza dados truncados sem erro visivel.
+  stopifnot(
+    "Execute vigiar_status() e confirme tables_ok == TRUE antes de vigiar_baixar*() em pipelines nao interativos." =
+      interactive() || isTRUE(.vigiar_env$status_verificado)
+  )
+
   t_start <- Sys.time()
   .vigiar_log("INFO", sprintf("Iniciando download: %s", tabela), table = tabela)
   cli::cli_alert_info("Baixando tabela '{tabela}'...")

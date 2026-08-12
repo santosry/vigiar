@@ -80,6 +80,11 @@ vigiar_info()
 # Baixar tabela com filtro RJ (estratégia ASC+DESC particionada)
 pm25 <- vigiar_baixar_rj("df_anual")
 
+# Pipelines não interativos: valide o schema antes de baixar
+status <- vigiar_status()
+stopifnot(isTRUE(status$tables_ok))
+dados <- vigiar_baixar("df_anual", uf = "RJ")
+
 # Download com cache local (reusa por 24h)
 vigiar_cache_dir("~/vigiar_cache")
 dados <- vigiar_baixar_com_cache("df_anual")

@@ -174,3 +174,17 @@ O Power BI pode restringir o acesso de algumas regiões geográficas. Se você e
 3. **Trave o esquema** com `vigiar_esquema_lock()` para garantir reprodutibilidade
 4. **Desconecte** ao final da sessão de trabalho: `vigiar_desconectar()`
 5. **Monitore o log** para diagnosticar problemas: `vigiar_log()`
+
+### Pipelines não interativos
+
+Em scripts executados via `Rscript` ou em CI/CD, o `vigiar_baixar()` exige que
+o esquema ao vivo tenha sido validado antes do download. Isso evita que uma
+mudança de schema do Power BI produza dados truncados sem erro visível:
+
+```{r}
+#| eval: false
+vigiar_conectar()
+status <- vigiar_status()
+stopifnot(isTRUE(status$tables_ok))   # falha visível se o schema mudou
+dados <- vigiar_baixar("df_anual", uf = "RJ")
+```
