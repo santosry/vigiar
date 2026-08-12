@@ -233,7 +233,7 @@ vigiar_resumo_downloads <- function() {
   cli::cli_text("Total de linhas: {sum(hist$n_rows, na.rm=TRUE)}")
 
   cli::cli_h2("Por tabela")
-  by_table <- dplyr::count(hist, tabela, sort = TRUE)
+  by_table <- dplyr::count(hist, .data$tabela, sort = TRUE)
   for (i in seq_len(min(nrow(by_table), 10))) {
     cli::cli_text("  {by_table$tabela[i]}: {by_table$n[i]} downloads")
   }
