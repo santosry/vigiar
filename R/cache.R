@@ -22,14 +22,14 @@
 #' @export
 vigiar_snapshot <- function(dados = NULL, tabela = NULL, ...,
                              congelar_esquema = FALSE) {
-  if (!is.null(tabela)) {
+  if (is.null(dados)) {
+    if (is.null(tabela)) {
+      stop("Forneca 'dados' ou 'tabela' para criar um snapshot.")
+    }
     if (is.null(.vigiar_env$sessao)) {
       stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
     }
     dados <- vigiar_baixar(tabela, ...)
-    tabela <- tabela
-  } else if (is.null(dados)) {
-    stop("Forneca 'dados' ou 'tabela' para criar um snapshot.")
   }
 
   tabela <- tabela %||% attr(dados, "vigiar_tabela") %||% "desconhecida"
@@ -446,6 +446,12 @@ vigiar_esquema_carregar_lock <- function(caminho = "vigiar_schema_lock.json") {
     stop("Arquivo lock nao encontrado: ", caminho)
   }
   lock <- jsonlite::fromJSON(caminho, simplifyVector = FALSE)
+  # Normaliza a lista de tabelas para vetor de caracteres (fromJSON com
+  # simplifyVector = FALSE devolve list, mas o resto do codigo espera chr).
+  if (!is.null(lock$tabelas)) {
+    lock$tabelas <- vapply(lock$tabelas, as.character, character(1),
+                           USE.NAMES = FALSE)
+  }
   class(lock) <- "vigiar_schema_lock"
   lock
 }
