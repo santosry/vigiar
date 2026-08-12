@@ -194,17 +194,6 @@ Usuário → vigiar_conectar() → Power BI Page → obtém cookies/session
          vigiar_auditar()             → auditoria + SHA256
 ```
 
-## Limitações
-
-- **API Power BI**: limita respostas a ~30K linhas. Use `vigiar_baixar_rj()`
-  para tabelas grandes (download ASC + DESC particionado).
-- **Schema instável**: o dashboard pode mudar sem aviso. Use
-  `vigiar_esquema_lock()` para congelar e `vigiar_status()` para verificar.
-- **Dependência externa**: o pacote depende do portal Power BI do Ministério
-  da Saúde. Se o portal sair do ar, o download falha.
-- **Dados secundários**: o pacote baixa dados públicos, não os gera. Validação
-  é obrigatória antes de qualquer análise.
-
 ## Citação
 
 Para citar o pacote em trabalhos acadêmicos:
@@ -216,9 +205,3 @@ Para citar o pacote em trabalhos acadêmicos:
 ## Licença
 
 MIT. Os dados baixados pertencem ao Ministério da Saúde / VIGIAR.
-
-## Agradecimento
-
-O desenvolvimento deste pacote foi inspirado pelo pacote
-[*microdatasus*](https://github.com/rfsaldanha/microdatasus), de Raphael
-Saldanha, Ronaldo Bastos e Christovam Barcellos.

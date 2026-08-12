@@ -111,6 +111,22 @@ O pacote **vigiar** adota uma postura de **ceticismo saudável** em relação ao
 
 Por isso, toda operação de download é acompanhada de validação, e o pipeline de diagnóstico é executado antes de qualquer análise.
 
+## Limitações metodológicas
+
+Esta seção concentra as limitações do pacote para evitar que sejam reafirmadas
+com redações diferentes em outros capítulos.
+
+- **Limite de linhas da API (~30 mil)**: a API do Power BI usada pelo VIGIAR
+  trunca respostas em aproximadamente 30 mil linhas. Para tabelas maiores,
+  use `vigiar_baixar_rj()` (download particionado ASC+DESC) ou filtre por ano
+  e UF.
+- **Schema instável**: o dashboard pode mudar sem aviso. Use
+  `vigiar_esquema_lock()` para congelar e `vigiar_status()` para verificar.
+- **Dependência externa**: o pacote depende do portal Power BI do Ministério
+  da Saúde. Se o portal sair do ar, o download falha.
+- **Dados secundários**: o pacote baixa dados públicos, não os gera. Validação
+  é obrigatória antes de qualquer análise.
+
 ## Pré-requisitos
 
 - **R** ≥ 4.1.0

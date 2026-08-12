@@ -162,7 +162,7 @@ A estratégia `vigiar_baixar_rj()` usa uma abordagem de **download particionado*
 2. Baixa os dados em ordem DESC (decrescente) — pega o final do range
 3. Combina os resultados e remove duplicatas
 
-Isso contorna a limitação de ~30K linhas da API do Power BI.
+Isso contorna o limite de ~30 mil linhas da API (ver [Limitações metodológicas](intro.qmd)).
 
 ## Estimando o tamanho dos dados
 
@@ -211,7 +211,8 @@ Erro: Tabela 'xyz' nao encontrada. Use vigiar_tabelas() para ver as disponiveis.
 
 ### Truncamento pela API
 
-Se o download retornar ~30.000 linhas, é possível que a API tenha truncado a resposta:
+Se o download retornar cerca de 30 mil linhas, a API pode ter truncado a
+resposta (ver [Limitações metodológicas](intro.qmd)):
 
 ```
 Warning: Possivel truncamento: 29876 linhas (limite API ~30K)

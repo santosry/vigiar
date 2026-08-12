@@ -39,9 +39,12 @@ vigiar_status()
 
 ## Download
 
-### A API limita a 30.000 linhas. Como baixar tabelas maiores?
+### A API limita a ~30 mil linhas. Como baixar tabelas maiores?
 
-Use `vigiar_baixar_rj()` que implementa download particionado (ASC + DESC) para cobrir todo o range. Se mesmo assim não for suficiente:
+A API do Power BI trunca respostas em aproximadamente 30 mil linhas (ver
+[Limitações metodológicas](intro.qmd)). Use `vigiar_baixar_rj()` que implementa
+download particionado (ASC + DESC) para cobrir todo o range. Se mesmo assim
+não for suficiente:
 
 - Baixe por ano: `vigiar_baixar("df_anual", uf = "RJ", ordenar_por = "ano")`
 - Use filtros combinados de ano e UF
@@ -54,7 +57,9 @@ Use `vigiar_baixar_rj()` que implementa download particionado (ASC + DESC) para 
 pm25_brasil <- vigiar_baixar("df_anual", uf = NULL)
 ```
 
-**Cuidado**: isso pode exceder o limite de 30K linhas. Para análises nacionais, considere baixar estado por estado.
+**Cuidado**: isso pode exceder o limite de ~30 mil linhas (ver
+[Limitações metodológicas](intro.qmd)). Para análises nacionais, considere
+baixar estado por estado.
 
 ### O download está muito lento. Como melhorar?
 

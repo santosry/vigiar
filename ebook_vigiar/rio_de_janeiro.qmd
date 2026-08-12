@@ -69,7 +69,8 @@ regioes
 
 ## Download otimizado para o RJ
 
-Para tabelas grandes, o pacote usa uma estratégia de download particionado:
+Para tabelas grandes, o pacote usa uma estratégia de download particionado
+(ver [Limitações metodológicas](intro.qmd)):
 
 ```{r}
 #| eval: false
@@ -87,8 +88,8 @@ pm25_rj <- vigiar_baixar_rj("df_anual")
 │  2. Download DESC → pega final do range (~15K)  │
 │  3. Combina e remove duplicatas                  │
 │                                                  │
-│  Resultado: ~30K linhas (vs ~15K em download    │
-│  simples com limite da API)                     │
+│  Resultado: ~30 mil linhas (vs ~15 mil em       │
+│  download simples com limite da API             │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -98,7 +99,7 @@ pm25_rj <- vigiar_baixar_rj("df_anual")
 |----------|-------------|
 | Tabelas < 15K linhas | `vigiar_baixar("tabela", uf = "RJ")` |
 | Tabelas > 15K linhas | `vigiar_baixar_rj("tabela")` |
-| Tabelas muito grandes (> 30K) | Use filtros por ano ou região |
+| Tabelas muito grandes (> 30 mil linhas) | Use filtros por ano ou região |
 
 ## Análise agregada por macrorregião
 
