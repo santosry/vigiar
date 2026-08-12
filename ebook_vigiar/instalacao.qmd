@@ -42,7 +42,7 @@ Se você baixou o arquivo `.tar.gz` do pacote:
 
 ```{r}
 #| eval: false
-install.packages("vigiar_0.7.0.tar.gz", repos = NULL, type = "source")
+install.packages("vigiar_0.7.2.tar.gz", repos = NULL, type = "source")
 ```
 
 ## Dependências
@@ -95,7 +95,7 @@ library(vigiar)
 Ao carregar, o pacote exibe informações sobre a versão e o estado:
 
 ```
-# vigiar 0.7.1.9000 — VIGIAR Environmental Health Data
+# vigiar 0.7.2 — VIGIAR Environmental Health Data
 # Duvida dos dados antes de confiar neles.
 # 92 municipios do RJ • 9 macrorregioes SES-RJ
 # Execute vigiar_conectar() para iniciar.

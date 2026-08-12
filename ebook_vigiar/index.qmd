@@ -9,6 +9,9 @@ knitr::opts_chunk$set(
   message = FALSE,
   warning = FALSE
 )
+
+# Versao e BibTeX centralizados (fonte: DESCRIPTION).
+source("_version.R")
 ```
 
 Este é o guia prático do pacote **vigiar** para a linguagem R. Aqui você aprenderá a baixar, processar, validar e analisar dados de vigilância em saúde ambiental do Brasil diretamente do dashboard VIGIAR do Ministério da Saúde.
@@ -64,7 +67,7 @@ O **vigiar** é um pacote R que automatiza o download dos dados públicos do das
 
 Para citar o pacote em trabalhos acadêmicos:
 
-> Santos, R. (2026). vigiar: Download de dados do dashboard VIGIAR de Vigilância em Saúde Ambiental. Pacote R versão 0.7.1.9000.
+> Santos, R. (2026). vigiar: Download de dados do dashboard VIGIAR de Vigilância em Saúde Ambiental. Pacote R versão `r vigiar_version`.
 > [https://github.com/santosry/vigiar](https://github.com/santosry/vigiar)
 
 ## Licença

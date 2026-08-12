@@ -6,6 +6,9 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+
+# Versao e BibTeX centralizados (fonte: DESCRIPTION).
+source("_version.R")
 ```
 
 ## Pacotes utilizados
@@ -41,16 +44,14 @@ knitr::opts_chunk$set(
 
 ## Como citar o pacote vigiar
 
-> Santos, R. (2026). **vigiar**: VIGIAR Environmental Health Data for Rio de Janeiro. R package version 0.7.1.9000. [https://github.com/santosry/vigiar](https://github.com/santosry/vigiar)
+> Santos, R. (2026). **vigiar**: VIGIAR Environmental Health Data for Rio de Janeiro. R package version `r vigiar_version`. [https://github.com/santosry/vigiar](https://github.com/santosry/vigiar)
 
 ### BibTeX
 
-```bibtex
-@Manual{santos2026vigiar,
-  title = {vigiar: VIGIAR Environmental Health Data for Rio de Janeiro},
-  author = {Ryan Santos},
-  year = {2026},
-  note = {R package version 0.7.1.9000},
-  url = {https://github.com/santosry/vigiar},
-}
+```{r}
+#| echo: false
+#| results: asis
+cat("```bibtex\n")
+cat(vigiar_bibtex)
+cat("```\n")
 ```

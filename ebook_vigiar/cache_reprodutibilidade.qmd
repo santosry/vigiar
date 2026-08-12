@@ -90,7 +90,7 @@ Tabela: df_anual
 Dimensão: 5570 × 12
 Checksum SHA256: a1b2c3d4e5f6...
 Criado em: 2026-07-19 10:30:00
-Sessão R: R 4.4.0 / vigiar 0.7.1.9000
+Sessão R: R 4.4.0 / vigiar 0.7.2
 Parâmetros:
   uf: RJ
   projeto: IC_Mudancas_Climaticas
@@ -158,7 +158,7 @@ O arquivo gerado contém:
 ```json
 {
   "locked_at": "2026-07-19T10:30:00",
-  "vigiar_version": "0.7.1.9000",
+  "vigiar_version": "0.7.2",
   "tables": {
     "df_anual": {
       "colunas": {
