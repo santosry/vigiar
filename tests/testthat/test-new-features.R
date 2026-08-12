@@ -14,13 +14,20 @@ test_that("vigiar_benchmark_tabelas errors without session", {
   expect_error(vigiar_benchmark_tabelas(), "Nenhuma sessao")
 })
 
-test_that("vigiar_health_check errors gracefully without connection", {
-  # Error is expected since there's no active connection
-  result <- tryCatch(
-    vigiar_health_check(timeout = 5),
-    error = function(e) e
+test_that("vigiar_health_check reports offline without a connection", {
+  # Simula uma conexao que falha de forma deterministica, independentemente
+  # de o ambiente de CI ter ou nao acesso ao dashboard.
+  testthat::local_mocked_bindings(
+    vigiar_conectar = function(...) stop("mock: sem conexao"),
+    .package = "vigiar"
   )
-  expect_s3_class(result, "error")
+  .vigiar_env$sessao <- NULL
+
+  result <- vigiar_health_check(timeout = 5)
+
+  expect_type(result, "list")
+  expect_false(result$online)
+  expect_null(.vigiar_env$sessao)
 })
 
 # ── Compliance & Audit ────────────────────────────────────────────────────────
@@ -90,13 +97,13 @@ test_that("vigiar_auditar_tudo runs on named list", {
 test_that("print.vigiar_audit works", {
   dados <- data.frame(cod_municipio = 355030L, ano = 2022L)
   audit <- vigiar_auditar(dados, tabela = "test")
-  expect_output(print(audit), "Auditoria")
+  expect_message(print(audit), "Auditoria")
 })
 
 test_that("print.vigiar_audit_list works", {
   df1 <- data.frame(cod_municipio = 355030L, ano = 2022L)
   result <- vigiar_auditar_tudo(list(t1 = df1))
-  expect_output(print(result), "Multi-Tabela")
+  expect_message(print(result), "Multi-Tabela")
 })
 
 test_that("vigiar_compliance_check runs all profiles", {
@@ -115,7 +122,7 @@ test_that("vigiar_compliance_check runs all profiles", {
 test_that("print.vigiar_compliance works", {
   dados <- data.frame(cod_municipio = 355030L, ano = 2022L)
   result <- vigiar_compliance_check(dados, tabela = "test", profiles = "basico")
-  expect_output(print(result), "Compliance")
+  expect_message(print(result), "Compliance")
 })
 
 test_that("vigiar_checksum returns consistent hash", {
@@ -186,7 +193,7 @@ test_that("vigiar_resumo_log works", {
   .vigiar_env$log <- list()
   .vigiar_log("INFO", "msg1")
   .vigiar_log("WARN", "msg2")
-  expect_output(vigiar_resumo_log(), "Resumo do Log")
+  expect_message(vigiar_resumo_log(), "Resumo do Log")
 })
 
 test_that("vigiar_historico_downloads returns empty initially", {
@@ -208,7 +215,7 @@ test_that("vigiar_resumo_downloads works", {
   .vigiar_env$download_history <- list()
   .vigiar_registrar_download("t1", 100L, 5L, 1.0, "url")
   .vigiar_registrar_download("t2", 200L, 3L, 2.0, "url")
-  expect_output(vigiar_resumo_downloads(), "Downloads")
+  expect_message(vigiar_resumo_downloads(), "Downloads")
 })
 
 # ── Snapshot ──────────────────────────────────────────────────────────────────
@@ -253,7 +260,7 @@ test_that("vigiar_salvar_snapshot and vigiar_carregar_snapshot roundtrip", {
 test_that("print.vigiar_snapshot works", {
   dados <- data.frame(x = 1:3)
   snap <- vigiar_snapshot(dados = dados, tabela = "test")
-  expect_output(print(snap), "VIGIAR Snapshot")
+  expect_message(print(snap), "VIGIAR Snapshot")
 })
 
 test_that("vigiar_comparar_snapshots detects differences", {
