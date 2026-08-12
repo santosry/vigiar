@@ -1,0 +1,74 @@
+# Considerações legais e de uso responsável
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+O pacote **vigiar** acessa o dashboard VIGIAR publicado pelo Ministério da Saúde
+no Power BI por meio do recurso **"Publish to Web"**. Este capítulo descreve a
+natureza desse acesso e as precauções recomendadas para uso institucional.
+
+## Natureza pública do dashboard
+
+O dashboard é publicado publicamente e **não exige autenticação**: qualquer
+pessoa com o link pode visualizá-lo. A ausência de login indica que a
+publicação foi **intencional para consumo externo**, o que fundamenta o acesso
+programático implementado pelo pacote.
+
+Ainda assim, o acesso do `vigiar` é uma **engenharia reversa de um endpoint
+interno e não contratual** do Power BI. A Microsoft pode alterar a estrutura
+das páginas ou os termos de uso a qualquer momento.
+
+## Termos de uso do Power BI e do Ministério da Saúde
+
+A documentação técnica documenta o risco de **schema instável**, mas o risco de
+conformidade com os termos de uso também deve ser avaliado:
+
+- O uso programático de conteúdo publicado via "Publish to Web" pode estar
+  sujeito aos **Termos de Uso do Microsoft Power BI** e às políticas da
+  Microsoft para conteúdo público.
+- As políticas de uso do dashboard do **Ministério da Saúde** também devem ser
+  observadas por gestores públicos e instituições.
+- Esta documentação **não constitui parecer jurídico**. Instituições que
+  dependam do `vigiar` em pipeline de rotina devem validar a compatibilidade
+  com seus times jurídicos e de conformidade antes de colocar o pacote em
+  produção.
+
+## Uso responsável da infraestrutura
+
+O `vigiar` consulta servidores públicos do Ministério da Saúde. Para não
+sobrecarregar a infraestrutura:
+
+```{r}
+#| eval: false
+# Limite conservador de requisicoes com httr2 (ex.: 30 por minuto)
+req <- httr2::request("https://app.powerbi.com/view?r=...") |>
+  httr2::req_throttle(rate = 30 / 60)
+
+# Em downloads em lote, use o delay do proprio pacote
+vigiar_baixar_tudo(delay = 1)
+```
+
+Recomendações:
+
+- Use `vigiar_baixar_com_cache()` para evitar downloads repetidos.
+- Em downloads em lote, mantenha `delay >= 0.5` entre requisições.
+- Em integrações próprias com `httr2`, aplique `req_throttle()` com taxa conservadora.
+- Prefira horários de menor demanda e evite laços de consulta contínua.
+
+## Resumo
+
+| Aspecto | Avaliação |
+|---------|-----------|
+| Dashboard público | Sim — "Publish to Web", sem autenticação |
+| Acesso programático | Engenharia reversa de endpoint não contratual |
+| Risco técnico | Documentado (schema instável) e monitorado por `vigiar_status()` |
+| Risco legal | Deve ser validado institucionalmente (Termos do Power BI e do MS) |
+| Uso responsável | `req_throttle()`, cache e delay conservador |

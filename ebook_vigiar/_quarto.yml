@@ -22,6 +22,7 @@ book:
     - exportacao.qmd
     - exemplos_praticos.qmd
     - faq.qmd
+    - uso_responsavel.qmd
     - references.qmd
 
   appendices:

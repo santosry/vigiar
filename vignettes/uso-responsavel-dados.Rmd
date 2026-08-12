@@ -54,6 +54,20 @@ Power BI "Publish to Web".
 - Nenhum dado individual ou identificável está presente.
 - O pacote não coleta, armazena ou transmite dados pessóais.
 
+## Considerações legais e de uso responsável
+
+O dashboard VIGIAR é publicado via Power BI **"Publish to Web"**, sem
+autenticação, o que indica publicação intencional para consumo externo. O
+acesso programático implementado pelo pacote, porém, é engenharia reversa de
+um endpoint interno e não contratual do Power BI.
+
+- **Termos de uso**: verifique a compatibilidade com os Termos de Uso do
+  Microsoft Power BI e com as políticas de uso do Ministério da Saúde antes de
+  uso institucional. Esta documentação não constitui parecer jurídico.
+- **Taxa de requisição conservadora**: use `httr2::req_throttle()` (por
+  exemplo, `rate = 30 / 60`) e o parâmetro `delay` de `vigiar_baixar_tudo()`
+  para não sobrecarregar a infraestrutura pública.
+
 ## Citação
 
 ```r

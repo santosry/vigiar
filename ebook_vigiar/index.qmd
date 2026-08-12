@@ -62,6 +62,7 @@ O **vigiar** é um pacote R que automatiza o download dos dados públicos do das
 | [Exportação](exportacao.qmd) | Exportando dados em múltiplos formatos |
 | [Exemplos Práticos](exemplos_praticos.qmd) | Análises completas passo a passo |
 | [FAQ](faq.qmd) | Perguntas frequentes e solução de problemas |
+| [Considerações legais e uso responsável](uso_responsavel.qmd) | Termos de uso e precauções para uso institucional |
 
 ## Citação
 
