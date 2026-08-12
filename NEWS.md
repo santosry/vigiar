@@ -1,3 +1,18 @@
+# vigiar 0.7.2
+
+## Higienizacao do controle de versao
+
+* Removidas do working tree as copias completas e desatualizadas do pacote
+  (`vigiar/`, `vigiar_audit/` e `vigiar_repo/`), que eram rastreadas pelo Git e
+  causavam ambiguidade de fonte de verdade e inflacao do historico/clone.
+* O conteudo continua preservado no historico do Git (commit `0a05cc8` e
+  anteriores) para referencia; nenhuma funcao ou teste exclusivo dessas
+  arvores foi perdido -- os diffs funcao a funcao confirmaram que todas as
+  implementacoes ja existiam, superadas, na arvore raiz.
+* Removidas as entradas `^vigiar_audit$` e `^vigiar_repo$` do `.Rbuildignore`.
+* `CONTRIBUTING.md` agora proibe explicitamente versionar copias completas do
+  pacote dentro do proprio repositorio.
+
 # vigiar 0.7.0
 
 ## New: Benchmark & Performance

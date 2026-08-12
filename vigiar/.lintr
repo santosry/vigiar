@@ -1,8 +1,0 @@
-linters: linters_with_defaults(
-    line_length_linter(120),
-    object_name_linter(styles = c("snake_case", "dotted.case", "ALL_CAPS")),
-    T_and_F_symbol_linter = T_and_F_symbol_linter(),
-    commented_code_linter = NULL,
-    indentation_linter = indentation_linter(2L),
-    semicolon_linter = NULL
-  )

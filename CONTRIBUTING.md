@@ -160,6 +160,14 @@ vignettes/
 - Mensagens usam `cli::` para formatacao
 - Logging usa `.vigiar_log()` para registro estruturado
 
+## Regras de versionamento
+
+- **Nao versione copias completas do pacote dentro do proprio repositorio.**
+  A arvore raiz e a unica fonte de verdade; copias completas (como pastas
+  `vigiar/`, `vigiar_audit/` ou `vigiar_repo/`) geram ambiguidade e deriva
+  documental. Use branches/tags ou o historico do Git para preservar
+  versoes antigas.
+
 ## Processo de review
 
 1. Fork o repositorio

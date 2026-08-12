@@ -11,8 +11,6 @@
 ^\.git$
 ^renv\.lock$
 ^renv$
-^vigiar_audit$
-^vigiar_repo$
 ^vigiar_0\.7\.0\.tar\.gz$
 ^vigiar\.rj\.Rcheck$
 ^vigiar_v2\.Rcheck$
