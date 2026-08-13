@@ -29,7 +29,7 @@ disponíveis no dashboard VIGIAR. O dicionário documenta:
 - **Unidade** de medida
 - **Valores aceitos** e intervalos plausíveis
 
-```{r}
+```{r, eval = FALSE}
 library(vigiar)
 
 # Carregar o dicionário completo
@@ -39,7 +39,7 @@ head(dict)
 
 ## Estrutura do Dicionário
 
-```{r}
+```{r, eval = FALSE}
 names(dict)
 ```
 
@@ -61,32 +61,32 @@ names(dict)
 
 ### PM2.5 (Qualidade do Ar)
 
-```{r}
+```{r, eval = FALSE}
 vigiar_variaveis("pm25")
 ```
 
 ### População Exposta
 
-```{r}
-vigiar_variaveis("população_exposta")
+```{r, eval = FALSE}
+vigiar_variaveis("populacao_exposta")
 ```
 
 ### Indicadores de Saúde
 
-```{r}
-vigiar_variaveis("indicadores_saúde")
+```{r, eval = FALSE}
+vigiar_variaveis("indicadores_saude")
 ```
 
 ## Consultar uma Variável Específica
 
-```{r}
+```{r, eval = FALSE}
 vigiar_descrever_variavel("pm25", "pm25_media_anual")
-vigiar_descrever_variavel("indicadores_saúde", "estimativa")
+vigiar_descrever_variavel("indicadores_saude", "estimativa")
 ```
 
 ## Schema de um Domínio
 
-```{r}
+```{r, eval = FALSE}
 vigiar_schema("pm25")
-vigiar_schema("exposição_indoor")
+vigiar_schema("exposicao_indoor")
 ```

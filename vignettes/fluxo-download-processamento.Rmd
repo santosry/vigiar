@@ -33,7 +33,7 @@ vigiar_baixar("tabela")          # raw data
 
 ## Passó 1 — Download Bruto
 
-```{r}
+```{r, eval = FALSE}
 library(vigiar)
 
 vigiar_conectar()
@@ -48,7 +48,7 @@ names(dados_brutos)
 
 ## Passó 2 — Processamento
 
-```{r}
+```{r, eval = FALSE}
 # Processamento automático (detecta o tipo pela tabela)
 dados_processados <- process_vigiar(dados_brutos, tabela = "df_anual")
 
@@ -63,12 +63,12 @@ names(pm25)
 
 ## Passó 3 — Validação
 
-```{r}
+```{r, eval = FALSE}
 # Diagnóstico de qualidade
 vigiar_checar_dados(pm25, "df_anual")
 
 # Validação de tipos e intervalos
-validaté(pm25)
+validate.vigiar_tbl(pm25)
 
 # Resumo estatístico
 summary(pm25)
@@ -76,7 +76,7 @@ summary(pm25)
 
 ## Pipeline Completo
 
-```{r}
+```{r, eval = FALSE}
 # PM2.5
 pm25 <- vigiar_baixar("df_anual") |>
   process_pm25()
@@ -91,7 +91,7 @@ saúde_uf <- vigiar_baixar("tb_uf") |>
 
 # Fração atribuível
 fracao <- vigiar_baixar("tb_fracao") |>
-  process_fracao_atribuível()
+  process_fracao_atribuivel()
 
 # Exposição indoor
 indoor <- vigiar_baixar("df_indoor") |>
@@ -139,7 +139,7 @@ O processamento atribui classes S3 aos dados:
 | `vigiar_municípios` | Cadastro de municípios |
 | `vigiar_uf` | Dados agregados por UF |
 
-```{r}
+```{r, eval = FALSE}
 class(pm25)
 # [1] "vigiar_pm25"  "vigiar_air_quality"  "vigiar_tbl"
 # [4] "tbl_df"       "tbl"                 "data.frame"
@@ -149,7 +149,7 @@ class(pm25)
 
 Cada tibble processado carrega atributos com metadados:
 
-```{r}
+```{r, eval = FALSE}
 attr(pm25, "vigiar_metadados")
 # $fonte
 # [1] "VIGIAR — Ministério da Saúde"

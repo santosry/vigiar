@@ -55,5 +55,5 @@ jobs:
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
-          error-on: "error"
-          build-args: "--no-manual"
+          error-on: '"error"'
+          build_args: '"--no-manual"'

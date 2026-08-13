@@ -41,3 +41,7 @@ renv/staging/
 docs/
 _site/
 pkgdown/
+
+# E-book (Quarto)
+ebook_vigiar/_book/
+ebook_vigiar/*.html
