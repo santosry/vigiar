@@ -56,15 +56,19 @@ O pacote requer os seguintes pacotes R. Eles serão instalados automaticamente:
 | `tibble` | qualquer | Data frames modernos (tibbles) |
 | `dplyr` | qualquer | Manipulação de dados |
 | `cli` | qualquer | Mensagens formatadas no console |
+| `checkmate` | qualquer | Validação de argumentos |
 | `openssl` | qualquer | Checksums SHA256 |
+| `magrittr` | qualquer | Operador pipe `%>%` |
+| `rlang` | qualquer | Estruturas de programação funcional |
+| `tools` | base | Utilitários do R (integridade de arquivos) |
 
 ### Instalação manual das dependências
 
 ```{r}
 #| eval: false
 install.packages(c(
-  "httr2", "jsonlite", "tibble",
-  "dplyr", "cli", "openssl"
+  "httr2", "jsonlite", "tibble", "dplyr", "cli",
+  "checkmate", "openssl", "magrittr", "rlang"
 ))
 ```
 
@@ -155,7 +159,8 @@ Certifique-se de que as dependências estão instaladas:
 
 ```{r}
 #| eval: false
-deps <- c("httr2", "jsonlite", "tibble", "dplyr", "cli", "openssl")
+deps <- c("httr2", "jsonlite", "tibble", "dplyr", "cli",
+          "checkmate", "openssl", "magrittr", "rlang")
 install.packages(setdiff(deps, installed.packages()[,"Package"]))
 ```
 

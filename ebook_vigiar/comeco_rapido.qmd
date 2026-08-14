@@ -1,0 +1,155 @@
+# Começo rápido {#comeco-rapido}
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+Este capítulo reúne o caminho mínimo para você ir do zero aos primeiros
+resultados com o **vigiar**. Cada passo aqui aponta para o capítulo detalhado
+correspondente, então use esta página como um roteiro de bolso e consulte os
+capítulos quando precisar de mais profundidade.
+
+> **vigiar desconfia dos dados antes de seduzir o pesquisador com gráficos.**
+
+## Antes de começar
+
+Você só precisa de duas coisas:
+
+1. **R** ≥ 4.1.0 e o pacote instalado — veja [Instalação](instalacao.qmd).
+2. **Conexão com a internet** para acessar o dashboard VIGIAR.
+
+Confirme que a instalação está ok:
+
+```{r}
+#| eval: false
+packageVersion("vigiar")        # deve mostrar 0.7.2 ou superior
+library(vigiar)
+```
+
+## O fluxo completo em ~20 linhas
+
+O exemplo abaixo percorre todas as etapas essenciais de uma análise: conectar,
+baixar, processar, diagnosticar, auditar e congelar os dados.
+
+```{r}
+#| eval: false
+library(vigiar)
+library(dplyr)
+
+# 1. Conectar ao dashboard
+vigiar_conectar()
+
+# 2. Baixar os dados do Rio de Janeiro
+pm25 <- vigiar_baixar_rj("df_anual")
+
+# 3. Processar e padronizar
+pm25 <- process_pm25(pm25, tipo = "anual")
+
+# 4. Diagnosticar a qualidade da série
+diag <- vigiar_diagnosticar_serie(pm25)
+vigiar_relatorio_diagnostico(diag)
+
+# 5. Agregar a tendência por ano
+tendencia <- vigiar_serie_temporal(pm25, nivel = "nacional")
+print(tendencia)
+
+# 6. Auditar os dados
+audit <- vigiar_auditar(pm25, tabela = "df_anual")
+print(audit)
+
+# 7. Criar um snapshot para reprodutibilidade
+snap <- vigiar_snapshot(dados = pm25, tabela = "df_anual")
+vigiar_salvar_snapshot(snap, "pm25_rj_2026.rds")
+
+# 8. Encerrar a sessão
+vigiar_desconectar()
+```
+
+## Entendendo cada passo
+
+| Passo | Função | O que faz | Capítulo |
+|-------|--------|-----------|----------|
+| 1 | `vigiar_conectar()` | Abre a sessão com o dashboard Power BI e carrega o esquema. | [Conexão](conexao.qmd) |
+| 2 | `vigiar_baixar_rj("df_anual")` | Baixa a tabela de PM~2.5~ anual do RJ com estratégia particionada. | [Download](download.qmd) e [Rio de Janeiro](rio_de_janeiro.qmd) |
+| 3 | `process_pm25(..., tipo = "anual")` | Padroniza colunas, corrige tipos e adiciona classes S3. | [Processamento](processamento.qmd) |
+| 4 | `vigiar_diagnosticar_serie()` | Avalia quebras de série, duplicatas, ausentes e cobertura. | [Diagnóstico](diagnostico.qmd) |
+| 5 | `vigiar_serie_temporal()` | Agrega os dados em uma série temporal pronta para análise. | [Exemplos práticos](exemplos_praticos.qmd) |
+| 6 | `vigiar_auditar()` | Gera auditoria completa com checksum SHA256. | [Auditoria](auditoria.qmd) |
+| 7 | `vigiar_snapshot()` / `vigiar_salvar_snapshot()` | Congela os dados com metadados de proveniência. | [Reprodutibilidade](cache_reprodutibilidade.qmd) |
+| 8 | `vigiar_desconectar()` | Encerra a sessão de forma limpa. | [Conexão](conexao.qmd) |
+
+## O que observar no diagnóstico
+
+O relatório de diagnóstico classifica cada verificação com uma severidade:
+
+- ✅ `ok` — pode prosseguir.
+- ⚠️ `aviso` — documente a ressalva.
+- 🔴 `problema` — investigue antes de usar.
+- 🚫 `crítico` — não use os dados sem correção.
+
+Se o relatório apontar `problema` ou `crítico`, pare e investigue. Essa é a
+regra de ouro do pacote: **desconfie dos dados antes de analisá-los**.
+
+## Mapa do fluxo de trabalho
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                     FLUXO DE TRABALHO VIGIAR                    │
+│                                                                │
+│  1. vigiar_conectar()        ── abre a sessão                  │
+│          ↓                                                     │
+│  2. vigiar_baixar_rj()       ── download particionado RJ       │
+│          ↓                                                     │
+│  3. process_pm25()           ── padronização + classes S3      │
+│          ↓                                                     │
+│  4. vigiar_diagnosticar_serie() ── diagnóstico de qualidade    │
+│          ↓                                                     │
+│  5. vigiar_auditar()         ── auditoria + SHA256             │
+│          ↓                                                     │
+│  6. vigiar_snapshot()        ── congelamento para              │
+│                                reprodutibilidade               │
+│          ↓                                                     │
+│  7. vigiar_desconectar()     ── encerramento da sessão         │
+└────────────────────────────────────────────────────────────────┘
+```
+
+## Uma variação mínima: apenas explorar
+
+Se você só quer inspecionar o que está disponível antes de baixar:
+
+```{r}
+#| eval: false
+library(vigiar)
+
+vigiar_conectar()
+
+vigiar_tabelas()   # lista todas as tabelas
+vigiar_info()      # catálogo com descrições e categorias
+vigiar_esquema("df_anual")  # colunas e tipos de uma tabela
+
+vigiar_desconectar()
+```
+
+## Próximos passos
+
+Agora que você tem o mapa geral, siga a ordem sugerida do e-book:
+
+1. [Instalação](instalacao.qmd) — configure o ambiente corretamente.
+2. [Conexão](conexao.qmd) — entenda o que acontece por trás da sessão.
+3. [Exploração](exploracao.qmd) — conheça o esquema de dados e o dicionário.
+4. [Download](download.qmd) — domine as estratégias de download.
+5. [Rio de Janeiro](rio_de_janeiro.qmd) — use os recursos específicos do RJ.
+6. [Processamento](processamento.qmd) — padronize os dados.
+7. [Validação](validacao.qmd) — valide antes de analisar.
+8. [Diagnóstico](diagnostico.qmd) — avalie a qualidade das séries.
+9. [Auditoria](auditoria.qmd) — audite e comprove a integridade.
+10. [Cache e Reprodutibilidade](cache_reprodutibilidade.qmd) — congele os dados.
+11. [Exportação](exportacao.qmd) — exporte em CSV, RDS, Parquet e JSON.
+12. [Exemplos práticos](exemplos_praticos.qmd) — veja análises completas passo a passo.

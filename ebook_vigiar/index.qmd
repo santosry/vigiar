@@ -16,6 +16,8 @@ source("_version.R")
 
 Este é o guia prático do pacote **vigiar** para a linguagem R. Aqui você aprenderá a baixar, processar, validar e analisar dados de vigilância em saúde ambiental do Brasil diretamente do dashboard VIGIAR do Ministério da Saúde.
 
+> **vigiar desconfia dos dados antes de seduzir o pesquisador com gráficos.**
+
 ## O que é o VIGIAR?
 
 O VIGIAR (Vigilância em Saúde Ambiental) é um sistema do Ministério da Saúde brasileiro que monitora:
@@ -49,6 +51,7 @@ O **vigiar** é um pacote R que automatiza o download dos dados públicos do das
 
 | Capítulo | Conteúdo |
 |----------|----------|
+| [Começo rápido](comeco_rapido.qmd) | O fluxo essencial em ~20 linhas, explicado passo a passo |
 | [Instalação](instalacao.qmd) | Como instalar o pacote e suas dependências |
 | [Conexão](conexao.qmd) | Estabelecendo sessão com o dashboard Power BI |
 | [Exploração](exploracao.qmd) | Navegando pelo esquema de dados |

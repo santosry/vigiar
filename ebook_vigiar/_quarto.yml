@@ -9,6 +9,7 @@ book:
   chapters:
     - index.qmd
     - intro.qmd
+    - comeco_rapido.qmd
     - instalacao.qmd
     - conexao.qmd
     - exploracao.qmd
