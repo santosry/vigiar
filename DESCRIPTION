@@ -35,7 +35,6 @@ Imports:
     dplyr,
     httr2,
     jsonlite,
-    magrittr,
     openssl,
     rlang,
     tibble,
@@ -44,6 +43,7 @@ Suggests:
     testthat (>= 3.0.0),
     arrow,
     knitr,
+    lifecycle,
     rmarkdown,
     withr
 VignetteBuilder: knitr

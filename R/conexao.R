@@ -202,6 +202,10 @@ vigiar_status <- function() {
   }
 
   online <- FALSE
+  new_tables <- character(0)
+  missing_tables <- character(0)
+  tables_ok <- FALSE
+
   tryCatch({
     esquema <- .vigiar_obter_esquema(.vigiar_env$sessao, timeout = 10)
     online <- TRUE
@@ -211,18 +215,13 @@ vigiar_status <- function() {
     missing_tables <- setdiff(cached_tables, live_tables)
 
     tables_ok <- length(new_tables) == 0 && length(missing_tables) == 0
-  }, error = function(e) {
-    online <<- FALSE
-    new_tables <<- character(0)
-    missing_tables <<- character(0)
-    tables_ok <<- FALSE
-  })
+  }, error = function(e) NULL)
 
   status <- list(
     online        = online,
     tables_ok     = tables_ok,
-    new_tables    = if (exists("new_tables")) new_tables else character(0),
-    missing_tables = if (exists("missing_tables")) missing_tables else character(0)
+    new_tables    = new_tables,
+    missing_tables = missing_tables
   )
 
   # Registra se o schema ao vivo foi validado, para que vigiar_baixar()

@@ -1,3 +1,21 @@
+# vigiar (em desenvolvimento)
+
+## Qualidade de codigo e ciclo de vida
+
+* `R/rj.R`: trocado `sapply()` por `vapply()` (retorno tipado e previsivel).
+* `R/conexao.R`: removido `<<-` do `tryCatch()` em `vigiar_status()`;
+  as variaveis agora sao inicializadas antes do bloco.
+* Pipe padronizado no operador nativo `|>`; removidos o re-export de `%>%`
+  e a dependencia de `magrittr` (arquivo `R/utils-pipe.R` removido).
+* `NEWS.md` agora e incluido no pacote (removido do `.Rbuildignore`).
+* `R/zzz.R`: estado interno inicializado em `.onLoad()`.
+* Novo registro de ciclo de vida da API publica: `R/lifecycle.R` com a funcao
+  `vigiar_lifecycle()` e badges `lifecycle` na documentacao do pacote.
+* `tests`: adicionados snapshot tests para `print.vigiar_tbl` e
+  `summary.vigiar_tbl`.
+* CI: piso de cobertura (50%) em `test-coverage.yaml` e `NOT_CRAN: true` nos
+  workflows para que os snapshot tests rodem de fato.
+
 # vigiar 0.7.2
 
 ## Higienizacao do controle de versao

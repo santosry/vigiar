@@ -165,7 +165,7 @@ vigiar_rj_resumo <- function(dados, agregacao = c("municipio", "macrorregiao", "
   }
 
   # Find numerical columns to summarise
-  num_cols <- names(merged)[sapply(merged, is.numeric)]
+  num_cols <- names(merged)[vapply(merged, is.numeric, logical(1))]
   num_cols <- setdiff(num_cols, c("cod_municipio", "ano", "mes"))
 
   if (length(num_cols) == 0) {

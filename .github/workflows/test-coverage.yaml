@@ -12,6 +12,7 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       VIGIAR_RUN_ONLINE_TESTS: false
+      NOT_CRAN: true
 
     steps:
       - uses: actions/checkout@v4
@@ -27,5 +28,11 @@ jobs:
 
       - name: Test coverage
         run: |
-          covr::package_coverage(type = "none", quiet = FALSE)
+          cov <- covr::package_coverage(type = "none", quiet = FALSE)
+          pct <- covr::percent_coverage(cov)
+          cat(sprintf("Coverage: %.1f%%\n", pct))
+          covr::report(cov, file = "coverage.html")
+          if (pct < 50) {
+            stop(sprintf("Coverage %.1f%% is below the 50%% threshold.", pct))
+          }
         shell: Rscript {0}

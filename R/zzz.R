@@ -1,6 +1,14 @@
 # Package: vigiar
 # Core constants, internal environment, and utility functions
 
+#' @description
+#'
+#' `r lifecycle::badge("stable")`
+#'
+#' O pacote **vigiar** baixa, processa, valida e diagnostica dados de
+#' vigilancia em saude ambiental do dashboard VIGIAR do Ministerio da
+#' Saude, com foco no estado do Rio de Janeiro. Consulte
+#' \code{vigiar_lifecycle()} para ver o status individual de cada funcao.
 #' @keywords internal
 "_PACKAGE"
 
@@ -18,7 +26,6 @@
 #' @importFrom tibble as_tibble
 #' @importFrom utils write.csv read.csv browseURL head packageVersion globalVariables
 #' @importFrom stats median sd quantile
-#' @importFrom magrittr %>%
 #' @importFrom rlang .data
 #' @importFrom checkmate assert_string assert_character assert_number
 #' @importFrom checkmate assert_flag assert_integerish assert_choice
@@ -56,7 +63,10 @@ VIGIAR_API_CLUSTER <- paste0(
 # .vigiar_env$client holds the vigiar_client object (set by vigiar_conectar)
 # .vigiar_env$status_verificado guarda se o schema ao vivo ja foi validado
 # por vigiar_status() (prerequisito para downloads em pipelines nao interativos).
-.vigiar_env$status_verificado <- FALSE
+
+.onLoad <- function(libname, pkgname) {
+  .vigiar_env$status_verificado <- FALSE
+}
 
 # -- NULL-coalesce operator ----------------------------------------------------
 
