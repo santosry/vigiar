@@ -11,7 +11,7 @@ library(vigiar)
 
 cat("\n")
 cat("============================================================\n")
-cat("  TESTES DO PACOTE vigiar v0.3.0\n")
+cat(sprintf("  TESTES DO PACOTE vigiar v%s\n", packageVersion("vigiar")))
 cat("============================================================\n")
 
 pass <- 0L
