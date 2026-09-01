@@ -1,4 +1,6 @@
-# vigiar (em desenvolvimento)
+# vigiar 0.7.2
+
+Esta e a versao estavel atual, distribuida via GitHub.
 
 ## Qualidade de codigo e ciclo de vida
 
@@ -8,15 +10,17 @@
 * Pipe padronizado no operador nativo `|>`; removidos o re-export de `%>%`
   e a dependencia de `magrittr` (arquivo `R/utils-pipe.R` removido).
 * `NEWS.md` agora e incluido no pacote (removido do `.Rbuildignore`).
-* `R/zzz.R`: estado interno inicializado em `.onLoad()`.
+* `R/zzz.R`: estado interno inicializado em `.onLoad()`, e `.vigiar_retry()`
+  reescrita sem `<<-`.
 * Novo registro de ciclo de vida da API publica: `R/lifecycle.R` com a funcao
   `vigiar_lifecycle()` e badges `lifecycle` na documentacao do pacote.
 * `tests`: adicionados snapshot tests para `print.vigiar_tbl` e
   `summary.vigiar_tbl`.
-* CI: piso de cobertura (50%) em `test-coverage.yaml` e `NOT_CRAN: true` nos
-  workflows para que os snapshot tests rodem de fato.
-
-# vigiar 0.7.2
+* CI: piso de cobertura (50%) em `test-coverage.yaml`.
+* `DESCRIPTION`: `withr` removido de `Suggests` (nao era usado diretamente)
+  e titular do copyright do arquivo `LICENSE` alinhado com `LICENSE.md`.
+* `R/dictionary.R`: `vigiar_variaveis()` agora tem `dominio = "all"` como
+  padrao (antes o `match.arg()` com vetor de default retornava `"pm25"`).
 
 ## Higienizacao do controle de versao
 

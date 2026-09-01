@@ -46,12 +46,12 @@ vigiar_dicionario <- function() {
 #'   \code{"exposicao_indoor"}, \code{"municipios"}, or \code{"all"}.
 #' @return A tibble subset of the dictionary.
 #' @export
-vigiar_variaveis <- function(dominio = c("pm25", "populacao_exposta",
-                                          "indicadores_saude",
-                                          "fracao_atribuivel",
-                                          "exposicao_indoor",
-                                          "municipios", "all")) {
-  dominio <- match.arg(dominio)
+vigiar_variaveis <- function(dominio = "all") {
+  dominio <- match.arg(
+    dominio,
+    c("pm25", "populacao_exposta", "indicadores_saude",
+      "fracao_atribuivel", "exposicao_indoor", "municipios", "all")
+  )
 
   dict <- vigiar_dicionario()
 

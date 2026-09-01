@@ -4,10 +4,7 @@
 \alias{vigiar_variaveis}
 \title{List variables for a specific data domain}
 \usage{
-vigiar_variaveis(
-  dominio = c("pm25", "populacao_exposta", "indicadores_saude", "fracao_atribuivel",
-    "exposicao_indoor", "municipios", "all")
-)
+vigiar_variaveis(dominio = "all")
 }
 \arguments{
 \item{dominio}{One of \code{"pm25"}, \code{"populacao_exposta"},

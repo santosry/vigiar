@@ -45,3 +45,5 @@ pkgdown/
 # E-book (Quarto)
 ebook_vigiar/_book/
 ebook_vigiar/*.html
+/doc/
+/Meta/

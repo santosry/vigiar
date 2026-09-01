@@ -23,3 +23,5 @@
 ^SECURITY\.md$
 ^codemeta\.json$
 ^data-raw$
+^doc$
+^Meta$

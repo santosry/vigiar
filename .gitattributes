@@ -1,0 +1,18 @@
+# Normalize line endings across Windows/macOS/Linux (keeps snapshots deterministic).
+* text=auto
+
+# Source, docs and data files should be committed with LF endings.
+*.R      text eol=lf
+*.Rmd    text eol=lf
+*.md     text eol=lf
+*.yaml   text eol=lf
+*.yml    text eol=lf
+*.csv    text eol=lf
+*.json   text eol=lf
+*.Rd     text eol=lf
+*.cff    text eol=lf
+*.Rbuildignore text eol=lf
+*.Rproj  text eol=lf
+LICENSE  text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf

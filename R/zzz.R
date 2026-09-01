@@ -171,32 +171,18 @@ uuid_v4 <- function() {
   last_error <- NULL
 
   for (attempt in seq_len(max_tries)) {
-    result <- tryCatch(
-      expr,
-      httr2_http_403 = function(e) {
-        # Session expired -- do not retry
-        stop(e)
-      },
-      httr2_http_429 = function(e) {
-        # Rate limited -- retry with longer delay
-        last_error <<- e
-        NULL
-      },
-      httr2_http_5xx = function(e) {
-        last_error <<- e
-        NULL
-      },
-      httr2_failure = function(e) {
-        last_error <<- e
-        NULL
-      },
-      error = function(e) {
-        last_error <<- e
-        NULL
-      }
-    )
+    result <- tryCatch(expr, error = identity)
 
-    if (!is.null(result)) return(result)
+    if (!inherits(result, "error")) {
+      return(result)
+    }
+
+    last_error <- result
+
+    # 403 means the session expired; retrying will not help.
+    if (inherits(result, "httr2_http_403")) {
+      stop(result)
+    }
 
     if (attempt < max_tries) {
       if (nzchar(context)) {
