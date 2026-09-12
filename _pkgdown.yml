@@ -163,4 +163,5 @@ reference:
   - starts_with("validate.vigiar")
 - title: Utilities
   contents:
+  - vigiar_lifecycle
   - null-coalesce

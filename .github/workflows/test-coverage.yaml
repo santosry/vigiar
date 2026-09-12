@@ -28,7 +28,7 @@ jobs:
 
       - name: Test coverage
         run: |
-          cov <- covr::package_coverage(type = "none", quiet = FALSE)
+          cov <- covr::package_coverage(type = "tests", quiet = FALSE)
           pct <- covr::percent_coverage(cov)
           cat(sprintf("Coverage: %.1f%%\n", pct))
           covr::report(cov, file = "coverage.html")
