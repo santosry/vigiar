@@ -101,4 +101,4 @@ jobs:
           upload-snapshots: true
           error-on: '"error"'
           build_args: '"--no-manual"'
-          args: '"--as-cran"'
+          args: '"--no-manual", "--as-cran"'
