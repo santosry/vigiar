@@ -111,8 +111,8 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
       col_muni <- intersect(c("muni", "cod_municipio", "ID_MUNI", "codigo_ibge", "MUN_COD"), names(dados))[1]
       if (!is.na(col_muni) && toupper(uf) == "RJ") {
         n_antes <- nrow(dados)
-        dados <- dados[as.integer(dados[[col_muni]]) >= 330010 &
-                       as.integer(dados[[col_muni]]) <= 330620, ]
+        dados <- dados[as.integer(dados[[col_muni]]) >= RJ_MUNI_RANGE[1] &
+                       as.integer(dados[[col_muni]]) <= RJ_MUNI_RANGE[2], ]
         cli::cli_alert_info("Filtro RJ (IBGE range via '{col_muni}'): {nrow(dados)} linhas (de {n_antes}).")
       }
     }

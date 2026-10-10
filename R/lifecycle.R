@@ -11,6 +11,7 @@
 # keep documentation badges in sync.
 
 VIGIAR_LIFECYCLE_STABLE <- c(
+  "%||%",
   "process_exposicao_indoor",
   "process_fracao_atribuivel",
   "process_indicadores_saude",
@@ -60,6 +61,7 @@ VIGIAR_LIFECYCLE_STABLE <- c(
   "vigiar_exportar_rds",
   "vigiar_historico_downloads",
   "vigiar_info",
+  "vigiar_lifecycle",
   "vigiar_limpar_cache",
   "vigiar_limpar_log",
   "vigiar_log",

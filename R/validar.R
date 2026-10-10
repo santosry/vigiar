@@ -16,7 +16,7 @@ vigiar_padronizar_colunas <- function(dados, tabela) {
     error = function(e) NULL
   )
 
-  if (is.null(dict)) {
+  if (is.null(dict) || nrow(dict) == 0) {
     # Fallback: basic snake_case transformation
     new_names <- tolower(names(dados))
     new_names <- gsub("[^a-z0-9]+", "_", new_names)

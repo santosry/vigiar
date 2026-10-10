@@ -99,7 +99,7 @@ RJ_CODIGOS_VALIDOS <- c(
   "RJ", "rj", "Rio de Janeiro", "RIO DE JANEIRO"
 )
 
-RJ_MUNI_RANGE <- c(330010L, 330630L)
+RJ_MUNI_RANGE <- range(RJ_MUNICIPIOS$codigo_ibge)
 
 # ---- RJ-specific functions ---------------------------------------------------
 
@@ -341,7 +341,8 @@ vigiar_baixar_rj <- function(tabela, strategy = c("auto", "direct", "year"), ...
 
   if (!is.na(col_muni)) {
     n_antes <- nrow(dados)
-    dados <- dados[dados[[col_muni]] >= 330010 & dados[[col_muni]] <= 330620, ]
+    dados <- dados[dados[[col_muni]] >= RJ_MUNI_RANGE[1] &
+                     dados[[col_muni]] <= RJ_MUNI_RANGE[2], ]
     message(sprintf("  Filtro RJ: %d -> %d linhas.", n_antes, nrow(dados)))
   } else if (!is.na(col_uf)) {
     n_antes <- nrow(dados)
@@ -349,8 +350,13 @@ vigiar_baixar_rj <- function(tabela, strategy = c("auto", "direct", "year"), ...
     message(sprintf("  Filtro RJ (UF): %d -> %d linhas.", n_antes, nrow(dados)))
   }
 
-  if (nrow(dados) > 0) {
+  if (nrow(dados) > 0 && !is.na(col_muni)) {
     vigiar_validar_rj(dados, col_muni)
+  } else if (nrow(dados) > 0) {
+    message(sprintf(
+      "  OK: %d linha(s) do RJ mantidas (sem coluna de codigo para validar).",
+      nrow(dados)
+    ))
   } else {
     message("  Nenhum municipio do RJ nesta consulta.")
   }
