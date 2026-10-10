@@ -1,3 +1,36 @@
+# vigiar (versao em desenvolvimento)
+
+## Qualidade de codigo, testes e infraestrutura
+
+* Exemplos adicionados a toda a API publica: 97 de 112 arquivos `.Rd`
+  agora tem exemplos (os demais sao internos ou de pacote).
+* Cobertura de testes elevada de 58.4% para 90.5%, com testes offline
+  deterministicos (mock de `httr2`) para conexao, schema, cache, snapshots,
+  downloads, benchmark, dicionario, auditoria e validacao.
+* Gate de cobertura agora e um ratchet versionado em
+  `.github/coverage-baseline.json`: falha se a cobertura global ou por
+  arquivo regredir. Execucao semanal com testes online habilitados.
+* Actions do GitHub fixadas por SHA, `dependabot` semanal, permissoes de
+  menor privilegio e `concurrency` em todos os workflows; novo job
+  `R CMD check --as-cran`.
+* `testthat` em modo paralelo; testes isolam o estado global com
+  `withr::defer` e nunca escrevem no repositorio.
+
+## Correcoes
+
+* `R/rj.R`: `RJ_MUNI_RANGE` passa a ser derivado do registro (antes havia
+  divergencia entre 330630 e 330620); `.vigiar_filtrar_rj()` nao quebra
+  mais quando os dados so tem coluna de UF.
+* `R/validar.R`: `vigiar_padronizar_colunas()` usa o fallback snake_case
+  quando a tabela nao consta no dicionario.
+* `R/lifecycle.R`: registro completo (`vigiar_lifecycle` e `%||%`) e teste
+  que amarra `NAMESPACE` ao registro.
+* Dicionario: `df_muni` documentado (o dominio `municipios` estava vazio).
+* `data/pm25_rj_sample.rda`: `cod_municipio`/`ano` como inteiro, batendo
+  com a documentacao.
+* Conexao: handshake e obtencao de schema unificados entre
+  `vigiar_conectar()` e `vigiar_client()`.
+
 # vigiar 0.7.2
 
 Esta e a versao estavel atual, distribuida via GitHub.
