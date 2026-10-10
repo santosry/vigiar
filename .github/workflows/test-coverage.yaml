@@ -3,32 +3,39 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  schedule:
+    # Weekly run with online tests enabled so the network code paths are also
+    # exercised by coverage.
+    - cron: '0 3 * * 0'
 
 name: test-coverage
 
 permissions:
   contents: read
 
+concurrency:
+  group: test-coverage-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test-coverage:
     runs-on: ubuntu-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      VIGIAR_RUN_ONLINE_TESTS: false
+      VIGIAR_RUN_ONLINE_TESTS: ${{ github.event_name == 'schedule' && 'true' || 'false' }}
       NOT_CRAN: true
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: r-lib/actions/setup-r@v2
+      - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
         with:
           use-public-rspm: true
 
-      - uses: r-lib/actions/setup-r-dependencies@v2
+      - uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
         with:
           # 'covr' measures coverage; 'xml2', 'DT' and 'htmltools' are optional
-          # dependencies of covr::to_cobertura() and covr::report(). They are
-          # installed explicitly so the reports are always produced.
+          # dependencies of covr::to_cobertura() and covr::report().
           extra-packages: |
             any::covr
             any::xml2
@@ -36,47 +43,22 @@ jobs:
             any::htmltools
           needs: coverage
 
-      - name: Test coverage
-        run: |
-          cov <- covr::package_coverage(type = "tests", quiet = FALSE)
-          pct <- covr::percent_coverage(cov)
-          cat(sprintf("Coverage: %.1f%%\n", pct))
+      - name: Test coverage (ratchet)
+        run: Rscript .github/coverage-check.R
+        shell: bash
 
-          # Best-effort machine-readable Cobertura report. It requires the
-          # optional 'xml2' package, so failure must never mask the gate.
-          if (requireNamespace("xml2", quietly = TRUE)) {
-            tryCatch(
-              covr::to_cobertura(cov, filename = "cobertura.xml"),
-              error = function(e) {
-                message("Could not write Cobertura report: ", conditionMessage(e))
-              }
-            )
-          } else {
-            message("Skipping Cobertura report: 'xml2' is not installed.")
-          }
-
-          # Best-effort interactive HTML report. It requires the optional
-          # 'DT' and 'htmltools' packages, so failure must never mask the gate.
-          if (requireNamespace("DT", quietly = TRUE) &&
-              requireNamespace("htmltools", quietly = TRUE)) {
-            tryCatch(
-              covr::report(cov, file = "coverage.html"),
-              error = function(e) {
-                message("Could not render HTML coverage report: ", conditionMessage(e))
-              }
-            )
-          } else {
-            message("Skipping HTML coverage report: 'DT' and/or 'htmltools' are not installed.")
-          }
-
-          if (pct < 50) {
-            stop(sprintf("Coverage %.1f%% is below the 50%% threshold.", pct))
-          }
-        shell: Rscript {0}
+      - name: Upload coverage to Codecov
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
+        with:
+          files: ./cobertura.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: coverage-report
           path: |

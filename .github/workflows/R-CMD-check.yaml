@@ -12,6 +12,13 @@ on:
 
 name: R-CMD-check
 
+permissions:
+  contents: read
+
+concurrency:
+  group: R-CMD-check-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
@@ -35,17 +42,17 @@ jobs:
       VIGIAR_RUN_ONLINE_TESTS: ${{ github.event_name == 'schedule' && 'true' || 'false' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: r-lib/actions/setup-pandoc@v2
+      - uses: r-lib/actions/setup-pandoc@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
 
-      - uses: r-lib/actions/setup-r@v2
+      - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
         with:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      - uses: r-lib/actions/setup-r-dependencies@v2
+      - uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
         with:
           extra-packages: |
             any::rcmdcheck
@@ -53,8 +60,45 @@ jobs:
             any::knitr
           needs: check
 
-      - uses: r-lib/actions/check-r-package@v2
+      - uses: r-lib/actions/check-r-package@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
         with:
           upload-snapshots: true
           error-on: '"error"'
           build_args: '"--no-manual"'
+
+  # Extra CRAN incoming check on release Linux. Runs with --as-cran but only
+  # fails the build on ERRORs (NOTEs/WARNINGs are surfaced, not enforced).
+  R-CMD-check-as-cran:
+    runs-on: ubuntu-latest
+    name: ubuntu-latest (release, --as-cran)
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+      NOT_CRAN: true
+      VIGIAR_RUN_ONLINE_TESTS: false
+      _R_CHECK_CRAN_INCOMING_REMOTE_: false
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: r-lib/actions/setup-pandoc@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
+
+      - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
+        with:
+          extra-packages: |
+            any::rcmdcheck
+            any::rmarkdown
+            any::knitr
+          needs: check
+
+      - uses: r-lib/actions/check-r-package@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
+        with:
+          upload-snapshots: true
+          error-on: '"error"'
+          build_args: '"--no-manual"'
+          args: '"--as-cran"'

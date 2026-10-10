@@ -33,6 +33,10 @@ coords <- data.frame(
 
 pm25_rj_sample <- merge(pm25_rj_sample, coords, by = "cod_municipio")
 
+# IBGE codes are documented as integers; keep the stored type consistent.
+pm25_rj_sample$cod_municipio <- as.integer(pm25_rj_sample$cod_municipio)
+pm25_rj_sample$ano <- as.integer(pm25_rj_sample$ano)
+
 # Ensure tibble is loaded
 library(tibble)
 pm25_rj_sample <- as_tibble(pm25_rj_sample)

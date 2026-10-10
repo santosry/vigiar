@@ -1,0 +1,20 @@
+{
+  "_comment": "Coverage ratchet baseline. Floors are the minimum acceptable line coverage (percentage). They are intentionally set a little below the last measured values. Bump them after improving coverage; never lower them.",
+  "overall_pct": 55,
+  "files": {
+    "R/classes.R": 98,
+    "R/compliance.R": 83,
+    "R/diagnostic.R": 82,
+    "R/exportar.R": 71,
+    "R/log.R": 92,
+    "R/parse.R": 83,
+    "R/process.R": 92,
+    "R/resumo.R": 91,
+    "R/series.R": 86,
+    "R/zzz.R": 65,
+    "R/api.R": 56,
+    "R/cache.R": 44,
+    "R/dictionary.R": 46,
+    "R/validar.R": 53
+  }
+}
