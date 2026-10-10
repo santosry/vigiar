@@ -25,29 +25,14 @@ vigiar_client <- function(timeout = 30, max_retries = 3) {
   checkmate::assert_number(timeout, lower = 5, upper = 300)
   checkmate::assert_integerish(max_retries, lower = 1, upper = 10)
 
-  # Step 1: fetch dashboard page for cookies + session token
-  resp <- .vigiar_retry({
-    httr2::request(VIGIAR_BASE_URL) |>
-      httr2::req_user_agent(.vigiar_ua()) |>
-      httr2::req_timeout(timeout) |>
-      httr2::req_perform()
-  }, max_tries = max_retries, context = "client")
-
-  html <- httr2::resp_body_string(resp)
-  sid <- regmatches(html, regexpr("(?<=telemetrySessionId = ')[^']+",
-                                   html, perl = TRUE))
-  if (length(sid) == 0) {
-    stop("Nao foi possivel obter o token de sessao do Power BI.")
-  }
-
-  # Extract cookies
-  hdrs <- httr2::resp_headers(resp)
-  raw <- hdrs[["set-cookie"]]
-  if (is.null(raw)) {
-    idx <- which(tolower(names(hdrs)) == "set-cookie")
-    if (length(idx) > 0) raw <- hdrs[[idx[1]]]
-  }
-  cookies <- paste(.vigiar_extrair_cookies(raw), collapse = "; ")
+  # Step 1: fetch dashboard page for cookies + session token (shared helper)
+  handshake <- .vigiar_obter_sessao_dashboard(
+    timeout     = timeout,
+    max_retries = max_retries,
+    context     = "client"
+  )
+  sid <- handshake$session_id
+  cookies <- paste(handshake$cookie_parts, collapse = "; ")
 
   # Step 2: fetch conceptual schema
   schema <- .vigiar_fetch_schema(sid, cookies, timeout)
@@ -86,40 +71,18 @@ print.vigiar_client <- function(x, ...) {
 
 # ---- Internal: fetch schema --------------------------------------------------
 
+# Thin wrapper kept for internal callers; delegates to the canonical schema
+# fetcher in conexao.R so the parsing logic exists in a single place.
 .vigiar_fetch_schema <- function(sid, cookies, timeout) {
-  url <- sprintf("%spublic/reports/%s/conceptualschema",
-                 VIGIAR_API_CLUSTER, VIGIAR_RESOURCE_KEY)
-
-  resp <- .vigiar_retry({
-    httr2::request(url) |>
-      httr2::req_headers(
-        "X-PowerBI-ResourceKey" = VIGIAR_RESOURCE_KEY,
-        ActivityId              = sid,
-        RequestId               = uuid_v4(),
-        Accept                  = "application/json",
-        Referer                 = "https://app.powerbi.com/",
-        Cookie                  = cookies
-      ) |>
-      httr2::req_user_agent(.vigiar_ua()) |>
-      httr2::req_timeout(timeout) |>
-      httr2::req_perform()
-  }, max_tries = 2, context = "schema")
-
-  raw <- httr2::resp_body_raw(resp)
-  raw <- .vigiar_gunzip(raw)
-  data <- jsonlite::fromJSON(rawToChar(raw), simplifyVector = FALSE)
-
-  entities <- data$schemas[[1]]$schema$Entities
-  tabelas <- list()
-  for (ent in entities) {
-    props <- ent$Properties
-    cols <- lapply(props, function(p) {
-      list(nome = p$Name, tipo = .vigiar_tipo_dado(p$DataType))
-    })
-    names(cols) <- vapply(props, `[[`, "", "Name", USE.NAMES = FALSE)
-    tabelas[[ent$Name]] <- cols
-  }
-  tabelas
+  .vigiar_obter_esquema(
+    list(
+      session_id   = sid,
+      cookies      = cookies,
+      resource_key = VIGIAR_RESOURCE_KEY,
+      api_url      = VIGIAR_API_CLUSTER
+    ),
+    timeout = timeout
+  )
 }
 
 # Keep backward compatibility: global session

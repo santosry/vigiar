@@ -38,43 +38,14 @@ vigiar_conectar <- function(refresh = FALSE, timeout = 30, max_retries = 3) {
   # Nova sessao: invalida qualquer verificacao de schema anterior.
   .vigiar_env$status_verificado <- FALSE
 
-  # Step 1 -- Fetch dashboard page
-  resp <- .vigiar_retry(
-    {
-      httr2::request(VIGIAR_BASE_URL) |>
-        httr2::req_user_agent(.vigiar_ua()) |>
-        httr2::req_timeout(timeout) |>
-        httr2::req_perform()
-    },
-    max_tries = max_retries,
-    context = "conectar"
+  # Step 1 -- Fetch dashboard page (shared with vigiar_client())
+  handshake <- .vigiar_obter_sessao_dashboard(
+    timeout     = timeout,
+    max_retries = max_retries,
+    context     = "conectar"
   )
-
-  html_content <- httr2::resp_body_string(resp)
-
-  # Extract telemetrySessionId from JavaScript
-  session_id <- regmatches(
-    html_content,
-    regexpr("(?<=telemetrySessionId = ')[^']+", html_content, perl = TRUE)
-  )
-  if (length(session_id) == 0) {
-    stop(
-      "Nao foi possivel extrair o telemetrySessionId do dashboard Power BI. ",
-      "O dashboard pode estar temporariamente indisponivel."
-    )
-  }
-
-  # Extract cookies from response headers
-  all_headers <- httr2::resp_headers(resp)
-  set_cookie_raw <- all_headers[["set-cookie"]]
-
-  if (is.null(set_cookie_raw)) {
-    names_lower <- tolower(names(all_headers))
-    idx <- which(names_lower == "set-cookie")
-    if (length(idx) > 0) set_cookie_raw <- all_headers[[idx[1]]]
-  }
-
-  cookie_parts <- .vigiar_extrair_cookies(set_cookie_raw)
+  session_id   <- handshake$session_id
+  cookie_parts <- handshake$cookie_parts
 
   if (length(cookie_parts) == 0) {
     warning(
@@ -142,6 +113,57 @@ vigiar_sessao_ativa <- function() {
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ",
     "AppleWebKit/537.36 (KHTML, like Gecko) ",
     "Chrome/131.0.0.0 Safari/537.36"
+  )
+}
+
+#' Fetch the dashboard page and extract the session token and cookies
+#'
+#' Shared handshake used by both \code{vigiar_conectar()} and
+#' \code{vigiar_client()} so the Power BI "Publish to Web" extraction logic
+#' lives in a single place.
+#'
+#' @param timeout Timeout in seconds.
+#' @param max_retries Maximum retry attempts on transient failures.
+#' @param context Label used in retry messages.
+#' @return A list with \code{session_id} and \code{cookie_parts}.
+#' @keywords internal
+.vigiar_obter_sessao_dashboard <- function(timeout = 30, max_retries = 3,
+                                           context = "conectar") {
+  resp <- .vigiar_retry(
+    {
+      httr2::request(VIGIAR_BASE_URL) |>
+        httr2::req_user_agent(.vigiar_ua()) |>
+        httr2::req_timeout(timeout) |>
+        httr2::req_perform()
+    },
+    max_tries = max_retries,
+    context   = context
+  )
+
+  html_content <- httr2::resp_body_string(resp)
+
+  session_id <- regmatches(
+    html_content,
+    regexpr("(?<=telemetrySessionId = ')[^']+", html_content, perl = TRUE)
+  )
+  if (length(session_id) == 0) {
+    stop(
+      "Nao foi possivel extrair o telemetrySessionId do dashboard Power BI. ",
+      "O dashboard pode estar temporariamente indisponivel."
+    )
+  }
+
+  all_headers <- httr2::resp_headers(resp)
+  set_cookie_raw <- all_headers[["set-cookie"]]
+  if (is.null(set_cookie_raw)) {
+    names_lower <- tolower(names(all_headers))
+    idx <- which(names_lower == "set-cookie")
+    if (length(idx) > 0) set_cookie_raw <- all_headers[[idx[1]]]
+  }
+
+  list(
+    session_id   = session_id,
+    cookie_parts = .vigiar_extrair_cookies(set_cookie_raw)
   )
 }
 
