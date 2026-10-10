@@ -6,6 +6,9 @@ on:
 
 name: test-coverage
 
+permissions:
+  contents: read
+
 jobs:
   test-coverage:
     runs-on: ubuntu-latest
@@ -23,7 +26,14 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::covr
+          # 'covr' measures coverage; 'xml2', 'DT' and 'htmltools' are optional
+          # dependencies of covr::to_cobertura() and covr::report(). They are
+          # installed explicitly so the reports are always produced.
+          extra-packages: |
+            any::covr
+            any::xml2
+            any::DT
+            any::htmltools
           needs: coverage
 
       - name: Test coverage
@@ -31,8 +41,46 @@ jobs:
           cov <- covr::package_coverage(type = "tests", quiet = FALSE)
           pct <- covr::percent_coverage(cov)
           cat(sprintf("Coverage: %.1f%%\n", pct))
-          covr::report(cov, file = "coverage.html")
+
+          # Best-effort machine-readable Cobertura report. It requires the
+          # optional 'xml2' package, so failure must never mask the gate.
+          if (requireNamespace("xml2", quietly = TRUE)) {
+            tryCatch(
+              covr::to_cobertura(cov, filename = "cobertura.xml"),
+              error = function(e) {
+                message("Could not write Cobertura report: ", conditionMessage(e))
+              }
+            )
+          } else {
+            message("Skipping Cobertura report: 'xml2' is not installed.")
+          }
+
+          # Best-effort interactive HTML report. It requires the optional
+          # 'DT' and 'htmltools' packages, so failure must never mask the gate.
+          if (requireNamespace("DT", quietly = TRUE) &&
+              requireNamespace("htmltools", quietly = TRUE)) {
+            tryCatch(
+              covr::report(cov, file = "coverage.html"),
+              error = function(e) {
+                message("Could not render HTML coverage report: ", conditionMessage(e))
+              }
+            )
+          } else {
+            message("Skipping HTML coverage report: 'DT' and/or 'htmltools' are not installed.")
+          }
+
           if (pct < 50) {
             stop(sprintf("Coverage %.1f%% is below the 50%% threshold.", pct))
           }
         shell: Rscript {0}
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage.html
+            cobertura.xml
+          if-no-files-found: ignore
+          retention-days: 14
