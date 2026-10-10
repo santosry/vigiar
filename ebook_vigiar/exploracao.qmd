@@ -130,7 +130,10 @@ O dashboard VIGIAR organiza os dados em **domínios temáticos**:
 
 ## Dicionário de variáveis
 
-O pacote inclui um dicionário documentado de variáveis:
+O pacote inclui um dicionário documentado de variáveis, cobrindo os domínios
+`pm25`, `populacao_exposta`, `indicadores_saude`, `fracao_atribuivel`,
+`exposicao_indoor` e `municipios` (incluindo o cadastro dos 92 municípios do
+RJ na tabela `df_muni`):
 
 ```{r}
 #| eval: false
@@ -140,7 +143,11 @@ dict <- vigiar_dicionario()
 # Variáveis de um domínio específico
 vigiar_variaveis("pm25")
 vigiar_variaveis("indicadores_saude")
-vigiar_variaveis("indoor")
+vigiar_variaveis("exposicao_indoor")
+vigiar_variaveis("municipios")
+
+# Esquema resumido de um domínio
+vigiar_schema("pm25")
 
 # Descrever uma variável específica
 vigiar_descrever_variavel("pm25", "pm25_media_anual")
@@ -193,6 +200,7 @@ Com as funções de exploração, você pode:
 
 1. **Listar tabelas** com `vigiar_tabelas()` e `vigiar_info()`
 2. **Inspecionar colunas** com `vigiar_esquema("tabela")`
-3. **Consultar o dicionário** com `vigiar_dicionario()` e `vigiar_variaveis()`
+3. **Consultar o dicionário** com `vigiar_dicionario()`, `vigiar_variaveis()` e `vigiar_schema()`
 4. **Detectar mudanças** no schema com `vigiar_esquema_verificar()`
 5. **Documentar variáveis** com `vigiar_descrever_variavel()`
+6. **Auditar a documentação** com `vigiar_variaveis_nao_documentadas()` e `vigiar_variaveis_orfas()`

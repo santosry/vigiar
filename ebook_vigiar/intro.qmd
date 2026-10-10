@@ -99,6 +99,7 @@ Usuário → vigiar_conectar() → Power BI Page → cookies + session
 | Logging | `log.R` | Log estruturado INFO/WARN/ERROR |
 | Classes | `classes.R` | S3: vigiar_tbl, print, summary |
 | Dicionário | `dictionary.R` | Documentação de variáveis |
+| Ciclo de vida | `lifecycle.R` | Registro de estabilidade da API pública |
 | Séries | `series.R` | Agregação temporal, tendências |
 | Exportação | `exportar.R` | CSV, RDS, Parquet, JSON |
 | Resumo | `resumo.R` | Resumos estatísticos por domínio |

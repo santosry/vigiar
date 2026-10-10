@@ -5,7 +5,7 @@ book:
   title: "VIGIAR: Vigilância em Saúde Ambiental"
   subtitle: "Guia prático para download, processamento e diagnóstico de dados de qualidade do ar e indicadores de saúde ambiental com o pacote vigiar"
   author: "Ryan Santos"
-  date: "2026-07-19"
+  date: "2026-10-10"
   chapters:
     - index.qmd
     - intro.qmd
@@ -20,6 +20,7 @@ book:
     - diagnostico.qmd
     - auditoria.qmd
     - cache_reprodutibilidade.qmd
+    - qualidade.qmd
     - exportacao.qmd
     - exemplos_praticos.qmd
     - faq.qmd

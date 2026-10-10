@@ -36,7 +36,32 @@ Ele disponibiliza:
 - população exposta por faixa de concentração;
 - indicadores de saúde (fração atribuível, desfechos);
 - exposição indoor a combustíveis sólidos;
-- cadastro oficial dos 92 municípios do Rio de Janeiro e das macrorregiões de saúde.
+- cadastro oficial dos 92 municípios do Rio de Janeiro e das macrorregiões de saúde;
+- dicionário de variáveis consultável, com auditoria de cobertura documental.
+
+## Qualidade e confiabilidade
+
+O pacote trata a qualidade dos dados — e do próprio código — como parte do
+resultado. Todos esses controles rodam no CI a cada alteração:
+
+| Controle | O que garante |
+|----------|---------------|
+| `R CMD check` | Linux (release, devel, oldrel-1), macOS e Windows, sem ERRORs. |
+| `R CMD check --as-cran` | Verificações adicionais de submissão (incoming). |
+| `test-coverage` | Cobertura de ~90%, com **ratchet** por arquivo que falha em regressões. |
+| `lint` | `lintr` **bloqueante** (0 lints tolerados). |
+| `pkgdown` | Site e e-book renderizam a cada push. |
+| `version-consistency` | `DESCRIPTION`, `CITATION.cff` e `codemeta.json` sempre em sincronia. |
+| testes online agendados | O contrato de conexão com o dashboard real é validado semanalmente. |
+
+Além disso:
+
+- **Toda a API pública tem exemplos executáveis** (`@examples`) — conexão/rede
+  usam `\dontrun{}`; o restante roda offline com o dado de exemplo embutido.
+- **`vigiar_lifecycle()`** informa o status (estável/experimental) de cada
+  função exportada, e um teste garante que todo export está registrado.
+- O **dicionário de variáveis** é auditável: `vigiar_variaveis_nao_documentadas()`
+  e `vigiar_variaveis_orfas()` comparam a documentação com o esquema ao vivo.
 
 ## Origem dos dados
 
@@ -87,24 +112,48 @@ vigiar_relatorio_diagnostico(diag)
 vigiar_desconectar()
 ```
 
-Para testar o pacote sem internet, use o dado de exemplo incluído:
+### Sem internet
+
+Para conhecer o pacote (e rodar os exemplos) sem conexão, use o dado sintético
+incluído:
 
 ```r
 library(vigiar)
 data(pm25_rj_sample)
+
 summary(pm25_rj_sample)
 
 diag <- vigiar_diagnosticar_serie(pm25_rj_sample, escopo = "rj")
 print(diag)
+
+# Quais funções são estáveis?
+vigiar_lifecycle()
 ```
 
 ## Documentação completa
 
-Toda a documentação — instalação, guia de uso, exemplos, auditoria,
-reprodutibilidade e limitações — está no
+Toda a documentação — instalação, guia de uso, qualidade/testes, exemplos,
+auditoria, reprodutibilidade e limitações — está no
 [e-book do vigiar](https://santosry.github.io/vigiar/ebook/).
 As vinhetas (`vignette(package = "vigiar")`) cobrem convenções de variáveis,
 fluxo de download/processamento e uso responsável dos dados.
+
+## Desenvolvimento
+
+```r
+# Carregar e rodar os testes (offline, determinísticos)
+devtools::load_all()
+devtools::test()
+
+# Cobertura (a mesma checagem do CI, com ratchet)
+# Rscript .github/coverage-check.R
+
+# Estilo e lint
+lintr::lint_package()
+```
+
+O CI fixa as GitHub Actions por SHA e usa `dependabot` para mantê-las
+atualizadas.
 
 ## Limitações
 

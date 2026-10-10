@@ -1,0 +1,165 @@
+# Qualidade, Testes e Desenvolvimento
+
+```{r}
+#| include: false
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+Um pacote que audita dados também precisa ser auditável. Neste capítulo
+descrevemos como o **vigiar** garante que o próprio código seja confiável:
+testes determinísticos, cobertura monitorada, análise estática bloqueante e
+integração contínua em várias plataformas.
+
+> **Princípio:** a confiança no resultado depende da confiança no código que o
+> produziu. Por isso testar e validar fazem parte do produto, não do bastidor.
+
+## Testes offline e determinísticos
+
+A maior parte da suíte de testes **não acessa a internet**. As chamadas ao
+Power BI são substituídas por respostas sintéticas (`httr2::req_perform`
+mockado), e o estado global do pacote é isolado a cada teste. Isso torna a
+suíte rápida e reprodutível: o mesmo resultado em qualquer máquina, com ou sem
+rede.
+
+Os testes cobrem, entre outros:
+
+- conexão, sessão e obtenção de esquema (com `httr2` mockado);
+- construção e execução de queries da API;
+- download, filtro de UF/RJ e catálogo;
+- cache local, snapshots e schema lock;
+- dicionário, auditoria de cobertura documental e validação de campos;
+- diagnóstico de séries, resumos e classes S3;
+- contrato do mecanismo de conexão (executado semanalmente, online).
+
+```{r}
+#| eval: false
+# Rodando os testes localmente (sem internet)
+devtools::load_all()
+devtools::test()
+```
+
+## Cobertura de testes
+
+A cobertura de linhas é medida com `covr` e monitorada por um **ratchet**
+versionado em `.github/coverage-baseline.json`. O build falha se:
+
+1. a cobertura **global** cair abaixo do piso; ou
+2. qualquer arquivo de `R/` cair abaixo do seu piso individual.
+
+Os pisos são recalculados a cada ganho real de cobertura e nunca abaixados sem
+justificativa. O CI publica um relatório HTML e um arquivo **Cobertura XML**
+como artefatos, e envia o resultado para o [Codecov](https://codecov.io/gh/santosry/vigiar).
+
+```{r}
+#| eval: false
+# Mesma verificação executada no CI
+# Rscript .github/coverage-check.R
+```
+
+## Análise estática (lint) e formatação
+
+O código é verificado com `lintr` em modo **bloqueante**: qualquer lint novo
+interrompe o build. A formatação segue o `styler`, aplicado de forma
+consistente ao pacote.
+
+```{r}
+#| eval: false
+lintr::lint_package()
+```
+
+## Integração contínua
+
+Todos os controles rodam automaticamente no GitHub Actions:
+
+| Workflow | O que verifica |
+|----------|----------------|
+| `R-CMD-check` | Linux (release, devel, oldrel-1), macOS e Windows, sem ERRORs |
+| `R-CMD-check-as-cran` | Verificações adicionais de submissão (`--as-cran`) |
+| `test-coverage` | Cobertura com ratchet (semanal com testes online) |
+| `lint` | Estilo e boas práticas (bloqueante) |
+| `pkgdown` | Renderização do site e deste e-book |
+| `version-consistency` | `DESCRIPTION`, `CITATION.cff` e `codemeta.json` em sincronia |
+
+As ações são fixadas por **SHA** (redução de risco de supply chain) e mantidas
+atualizadas por `dependabot`.
+
+## Estabilidade da API
+
+Para saber em que se pode confiar em scripts e publicações, consulte o registro
+de ciclo de vida:
+
+```{r}
+#| eval: false
+# Visão completa
+vigiar_lifecycle()
+
+# Status de funções específicas
+vigiar_lifecycle(c("vigiar_conectar", "vigiar_benchmark"))
+```
+
+O retorno classifica cada função exportada como **estável** ou
+**experimental**. Um teste automatizado garante que *toda* função exportada
+tem um status registrado — não há API pública sem classificação.
+
+## Guardas de reprodutibilidade
+
+Várias funções trabalham em conjunto para congelar o estado dos dados:
+
+| Função | Papel |
+|--------|-------|
+| `vigiar_status()` | Confere se o dashboard está online e se o esquema mudou |
+| `vigiar_esquema_lock()` / `vigiar_esquema_verificar()` | Congela e compara o esquema |
+| `vigiar_snapshot()` / `vigiar_salvar_snapshot()` | Fotografa os dados com proveniência |
+| `vigiar_checksum()` | SHA256 determinístico de um data frame |
+| `vigiar_baixar_com_cache()` | Reaproveita downloads anteriores |
+
+Em pipelines não interativos (`Rscript`, CI), `vigiar_baixar()` exige que o
+esquema ao vivo tenha sido validado com `vigiar_status()` antes do download —
+assim, uma mudança silenciosa de schema não produz dados truncados sem aviso.
+
+Detalhes em [Cache e Reprodutibilidade](cache_reprodutibilidade.qmd).
+
+## Dado de exemplo embutido
+
+Nem toda checagem precisa de rede. O pacote inclui `pm25_rj_sample`, um
+`tibble` sintético com cinco municípios do RJ (2020–2022), usado nos exemplos,
+testes e na documentação:
+
+```{r}
+#| eval: false
+data(pm25_rj_sample)
+summary(pm25_rj_sample)
+print(pm25_rj_sample)
+```
+
+## Reproduzindo a verificação localmente
+
+```{r}
+#| eval: false
+# 1. Testes
+devtools::test()
+
+# 2. Cobertura (com reports)
+# Rscript .github/coverage-check.R
+
+# 3. Lint
+lintr::lint_package()
+
+# 4. Documentação
+devtools::document()
+```
+
+## Resumo
+
+- A suíte é **offline e determinística** por padrão.
+- A cobertura (~90%) é protegida por um **ratchet** por arquivo.
+- O `lint` é **bloqueante** e a formatação é padronizada com `styler`.
+- O CI testa em cinco combinações de SO/versão do R, mais `--as-cran`.
+- `vigiar_lifecycle()` documenta a estabilidade de toda a API pública.
+- Schema lock, snapshots e checksums tornam a análise reprodutível de ponta a ponta.

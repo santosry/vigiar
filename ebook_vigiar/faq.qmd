@@ -178,7 +178,7 @@ Sim. Configure o cache no workflow:
 
 ```yaml
 - name: Cache VIGIAR data
-  uses: actions/cache@v3
+  uses: actions/cache@v4
   with:
     path: ~/vigiar_cache
     key: vigiar-${{ hashFiles('schema_lock.json') }}
@@ -212,3 +212,29 @@ vigiar_baixar("df_anual", timeout = 300)
 ### Erro 403 Forbidden
 
 Sessão expirada. Execute `vigiar_conectar(refresh = TRUE)`.
+
+## Qualidade, testes e API
+
+### Como rodar os testes sem internet?
+
+A suíte é offline por padrão. As chamadas ao Power BI são substituídas por
+respostas sintéticas e há um dado de exemplo embutido:
+
+```{r}
+#| eval: false
+devtools::test()
+data(pm25_rj_sample)
+```
+
+Veja o capítulo [Qualidade, Testes e Desenvolvimento](qualidade.qmd).
+
+### Como saber se uma função é estável?
+
+```{r}
+#| eval: false
+# Status de uma função específica
+vigiar_lifecycle("vigiar_conectar")
+
+# Registro completo (estável x experimental)
+vigiar_lifecycle()
+```

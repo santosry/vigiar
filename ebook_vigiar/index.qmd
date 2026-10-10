@@ -46,6 +46,9 @@ O **vigiar** é um pacote R que automatiza o download dos dados públicos do das
 - ✅ Cache local, snapshots e reprodutibilidade
 - ✅ Logging estruturado de todas as operações
 - ✅ Exportação: CSV, RDS, Parquet, JSON
+- ✅ Dicionário de variáveis consultável e auditável
+- ✅ `vigiar_lifecycle()`: status de estabilidade de toda a API pública
+- ✅ Testes offline determinísticos, cobertura monitorada e `lint` bloqueante
 
 ## Como este guia está organizado
 
@@ -62,6 +65,7 @@ O **vigiar** é um pacote R que automatiza o download dos dados públicos do das
 | [Diagnóstico](diagnostico.qmd) | Diagnosticando qualidade das séries temporais |
 | [Auditoria](auditoria.qmd) | Auditoria completa e compliance |
 | [Cache e Reprodutibilidade](cache_reprodutibilidade.qmd) | Cache local, snapshots e schema locking |
+| [Qualidade, Testes e Desenvolvimento](qualidade.qmd) | Testes offline, cobertura, lint, CI e ciclo de vida da API |
 | [Exportação](exportacao.qmd) | Exportando dados em múltiplos formatos |
 | [Exemplos Práticos](exemplos_praticos.qmd) | Análises completas passo a passo |
 | [FAQ](faq.qmd) | Perguntas frequentes e solução de problemas |

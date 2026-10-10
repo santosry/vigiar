@@ -89,6 +89,30 @@ Warning: Dashboard VIGIAR online, mas o esquema de dados mudou!
 Execute vigiar_conectar(refresh = TRUE) para atualizar.
 ```
 
+## Cliente de sessão (`vigiar_client()`)
+
+Além da sessão global usada por `vigiar_conectar()`, o pacote oferece
+`vigiar_client()`, que devolve um objeto de sessão **autocontido** (sem estado
+global). É útil quando você quer controlar explicitamente o ciclo de vida da
+conexão ou manter mais de um cliente no mesmo processo.
+
+```{r}
+#| eval: false
+cliente <- vigiar_client(timeout = 30, max_retries = 3)
+print(cliente)
+#> Cliente VIGIAR -- 28 tabelas
+#>   Criado em: 2026-01-01 00:00:00
+#>   Tabelas:   df_anual, df_mensal, df_muni, pop, ...
+```
+
+Internamente, `vigiar_client()` e `vigiar_conectar()` compartilham o mesmo
+handshake (token de sessão + cookies) e a mesma obtenção de esquema, de modo
+que o comportamento de extração do dashboard é único e testado.
+
+`vigiar_client()` é classificado como **experimental**; consulte o status com
+`vigiar_lifecycle("vigiar_client")`. A sessão criada por `vigiar_conectar()`
+permanece a interface **estável** recomendada para uso geral.
+
 ## Encerrando a sessão
 
 ```{r}
