@@ -56,18 +56,21 @@ if (length(overall_floor) == 1 && !is.na(overall_floor)) {
 # --- Per-file floors ----------------------------------------------------------
 df <- covr::tally_coverage(cov, by = "line")
 per_file <- tapply(df$value, df$filename, function(x) 100 * sum(x > 0) / length(x))
+# Normalise to basename so the lookup is independent of covr's path format.
+names(per_file) <- basename(names(per_file))
 
 failed <- character(0)
 checked <- 0L
 for (nm in names(baseline$files)) {
   floor <- as.numeric(baseline$files[[nm]])
-  current <- per_file[[nm]]
+  key <- basename(nm)
+  current <- per_file[[key]]
   if (is.null(current) || is.na(floor)) next
   checked <- checked + 1L
   status <- if (current + tolerance < floor) "FAIL" else "ok"
-  cat(sprintf("  [%s] %-24s %5.1f%% (floor %.1f%%)\n", status, nm, current, floor))
+  cat(sprintf("  [%s] %-24s %5.1f%% (floor %.1f%%)\n", status, key, current, floor))
   if (status == "FAIL") {
-    failed <- c(failed, sprintf("%s: %.1f%% < %.1f%%", nm, current, floor))
+    failed <- c(failed, sprintf("%s: %.1f%% < %.1f%%", key, current, floor))
   }
 }
 
