@@ -17,3 +17,6 @@ The cache directory path (invisibly if setting).
 Returns or sets the cache directory. When set, \code{vigiar_baixar_com_cache()}
 stores downloads and reuses them on subsequent calls.
 }
+\examples{
+vigiar_cache_dir()
+}

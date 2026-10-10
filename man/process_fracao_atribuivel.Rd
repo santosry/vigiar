@@ -17,3 +17,7 @@ A \code{vigiar_attributable_fraction} tibble.
 \description{
 Process attributable fraction data
 }
+\examples{
+bruto <- data.frame(Indicador = "infeccoes", est = 0.12, desfecho = "obito")
+process_fracao_atribuivel(bruto)
+}

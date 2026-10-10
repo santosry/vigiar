@@ -19,3 +19,7 @@ x \%||\% y
 Returns the left-hand value unless it is NULL, in which case
 the right-hand value is returned.
 }
+\examples{
+NULL \%||\% "padrao"
+"valor" \%||\% "padrao"
+}

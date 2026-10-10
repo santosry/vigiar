@@ -7,6 +7,8 @@
 #' List all documented tables
 #'
 #' @return Character vector of table IDs present in the dictionary.
+#' @examples
+#' vigiar_tabelas_documentadas()
 #' @export
 vigiar_tabelas_documentadas <- function() {
   dict <- vigiar_dicionario()
@@ -19,6 +21,11 @@ vigiar_tabelas_documentadas <- function() {
 #' any variables present in the data but missing from the dictionary.
 #'
 #' @return A tibble of undocumented variables (empty if all covered).
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' vigiar_variaveis_nao_documentadas()
+#' }
 #' @export
 vigiar_variaveis_nao_documentadas <- function() {
   if (is.null(.vigiar_env$esquema)) {
@@ -57,6 +64,11 @@ vigiar_variaveis_nao_documentadas <- function() {
 #' Find documented variables that don't exist in the live schema
 #'
 #' @return A tibble of orphan variables (empty if none).
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' vigiar_variaveis_orfas()
+#' }
 #' @export
 vigiar_variaveis_orfas <- function() {
   if (is.null(.vigiar_env$esquema)) {
@@ -108,6 +120,11 @@ vigiar_variaveis_orfas <- function() {
 #'
 #' @return Invisibly, a list with \code{undocumented}, \code{orfas},
 #'   \code{coverage_pct}.
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' vigiar_validar_dicionario()
+#' }
 #' @export
 vigiar_validar_dicionario <- function() {
   if (is.null(.vigiar_env$esquema)) {
@@ -149,6 +166,11 @@ vigiar_validar_dicionario <- function() {
 #' Compare live schema with dictionary
 #'
 #' @return A tibble comparing live vs documented columns per table.
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' vigiar_comparar_schema()
+#' }
 #' @export
 vigiar_comparar_schema <- function() {
   if (is.null(.vigiar_env$esquema)) {

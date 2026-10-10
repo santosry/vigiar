@@ -17,3 +17,6 @@ Invisibly, the dictionary row for the variable.
 \description{
 Describe a single VIGIAR variable
 }
+\examples{
+vigiar_descrever_variavel("pm25", "pm25_media_anual")
+}

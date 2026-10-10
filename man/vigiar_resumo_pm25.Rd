@@ -29,3 +29,6 @@ A tibble with descriptive statistics.
 \description{
 Summarise PM2.5 data
 }
+\examples{
+vigiar_resumo_pm25(pm25_rj_sample)
+}

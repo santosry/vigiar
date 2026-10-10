@@ -18,3 +18,8 @@ Invisibly, a list of differences.
 Compares two snapshots (e.g., old vs new) and reports
 differences in dimensions, columns, and checksums.
 }
+\examples{
+antigo <- vigiar_snapshot(dados = pm25_rj_sample, tabela = "df_anual")
+novo <- vigiar_snapshot(dados = pm25_rj_sample, tabela = "df_anual")
+vigiar_comparar_snapshots(antigo, novo)
+}

@@ -131,6 +131,9 @@ rm(stable, experimental)
 #'   registry.
 #' @return A tibble with columns `fun` and `status` when `fun` is `NULL`;
 #'   otherwise a named character vector with the requested statuses.
+#' @examples
+#' head(vigiar_lifecycle())
+#' vigiar_lifecycle(c("vigiar_conectar", "vigiar_benchmark"))
 #' @export
 vigiar_lifecycle <- function(fun = NULL) {
   if (is.null(fun)) {

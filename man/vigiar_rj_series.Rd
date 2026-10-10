@@ -17,3 +17,10 @@ A tibble with aggregated data.
 \description{
 Aggregate Rio de Janeiro data by health region
 }
+\examples{
+dados <- data.frame(
+  cod_municipio = c(330455L, 330170L),
+  pm25_media = c(12.3, 18.9)
+)
+vigiar_rj_series(dados, agregacao = "macrorregiao")
+}

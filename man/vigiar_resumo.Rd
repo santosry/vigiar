@@ -17,3 +17,6 @@ A tibble with summary statistics.
 \description{
 Summarise a VIGIAR tibble -- generic dispatcher
 }
+\examples{
+vigiar_resumo(pm25_rj_sample)
+}

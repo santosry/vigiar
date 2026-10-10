@@ -12,3 +12,6 @@ Invisibly, a list with log statistics.
 \description{
 Shows counts by log level, table, and time range.
 }
+\examples{
+vigiar_resumo_log()
+}

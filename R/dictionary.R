@@ -15,6 +15,9 @@
 #' @return A tibble with columns: table_id, table_name, original_name,
 #'   standard_name, type_raw, type_processed, description, unit,
 #'   allowed_values, notes.
+#' @examples
+#' dict <- vigiar_dicionario()
+#' head(dict)
 #' @export
 vigiar_dicionario <- function() {
   path <- system.file("extdata", "vigiar_variable_dictionary.csv",
@@ -45,6 +48,9 @@ vigiar_dicionario <- function() {
 #'   \code{"indicadores_saude"}, \code{"fracao_atribuivel"},
 #'   \code{"exposicao_indoor"}, \code{"municipios"}, or \code{"all"}.
 #' @return A tibble subset of the dictionary.
+#' @examples
+#' vigiar_variaveis("pm25")
+#' vigiar_variaveis("municipios")
 #' @export
 vigiar_variaveis <- function(dominio = "all") {
   dominio <- match.arg(
@@ -75,6 +81,8 @@ vigiar_variaveis <- function(dominio = "all") {
 #' @param dominio Data domain (see \code{vigiar_variaveis}).
 #' @param variavel Standard variable name.
 #' @return Invisibly, the dictionary row for the variable.
+#' @examples
+#' vigiar_descrever_variavel("pm25", "pm25_media_anual")
 #' @export
 vigiar_descrever_variavel <- function(dominio, variavel) {
   vars <- vigiar_variaveis(dominio)
@@ -113,6 +121,10 @@ vigiar_descrever_variavel <- function(dominio, variavel) {
 #' "Convencoes SIH-RD").
 #'
 #' @export
+#' @examples
+#' \dontrun{
+#' vigiar_convencoes()
+#' }
 vigiar_convencoes <- function() {
   url <- "https://santosry.github.io/vigiar/articles/convencoes-vigiar.html"
   utils::browseURL(url)
@@ -125,6 +137,8 @@ vigiar_convencoes <- function() {
 #'
 #' @param dominio Data domain name.
 #' @return A tibble with schema information.
+#' @examples
+#' vigiar_schema("pm25")
 #' @export
 vigiar_schema <- function(dominio = "all") {
   vars <- vigiar_variaveis(dominio)

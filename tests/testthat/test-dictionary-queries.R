@@ -23,6 +23,14 @@ test_that("vigiar_variaveis filters by domain", {
   expect_error(vigiar_variaveis("dominio_invalido"), "arg")
 })
 
+test_that("every advertised domain is populated in the dictionary", {
+  for (dom in c("pm25", "populacao_exposta", "indicadores_saude",
+                "fracao_atribuivel", "exposicao_indoor", "municipios")) {
+    expect_true(nrow(vigiar_variaveis(dom)) > 0,
+                info = paste("dominio vazio:", dom))
+  }
+})
+
 test_that("vigiar_descrever_variavel prints a known variable and errors on unknown", {
   pm <- vigiar_variaveis("pm25")
   variavel <- pm$standard_name[!is.na(pm$standard_name) & nzchar(pm$standard_name)][1]

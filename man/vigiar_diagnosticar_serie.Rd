@@ -40,3 +40,7 @@ Checks temporal coverage, spatial coverage, PM2.5 values,
 IBGE codes, duplicates, series breaks, and outliers.
 Returns a structured diagnostic object with severity levels.
 }
+\examples{
+diag <- vigiar_diagnosticar_serie(pm25_rj_sample)
+summary(diag)
+}

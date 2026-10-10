@@ -15,3 +15,7 @@ Invisibly, the diagnostic object.
 \description{
 Prints a formatted diagnostic report to the console.
 }
+\examples{
+diag <- vigiar_diagnosticar_serie(pm25_rj_sample)
+vigiar_relatorio_diagnostico(diag)
+}

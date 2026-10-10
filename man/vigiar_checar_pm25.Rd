@@ -21,3 +21,9 @@ Validates PM2.5 values: detects negative values, impossible
 concentrations (>1000 ug/m3), extreme outliers, and excess
 missing values.
 }
+\examples{
+\dontrun{
+diag <- vigiar_diagnosticar_serie(pm25_rj_sample)
+vigiar_checar_pm25(diag, pm25_rj_sample, "pm25_media_anual")
+}
+}

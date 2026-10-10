@@ -26,3 +26,7 @@ metadata: checksums, session info, timestamps, parameters.
 Snapshots enable perfect reproducibility -- the same parameters
 always produce the same checksum.
 }
+\examples{
+snap <- vigiar_snapshot(dados = pm25_rj_sample, tabela = "df_anual")
+snap$n_rows
+}

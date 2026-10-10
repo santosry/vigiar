@@ -19,3 +19,7 @@ Invisibly, the file path.
 \description{
 Preserves all attributes (metadata, classes).
 }
+\examples{
+tmp <- tempfile(fileext = ".rds")
+vigiar_exportar_rds(pm25_rj_sample, tmp)
+}

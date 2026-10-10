@@ -17,3 +17,6 @@ Invisibly, a list of validation issues (empty if valid).
 \description{
 Checks for required metadata attributes and empty data.
 }
+\examples{
+validate.vigiar_tbl(pm25_rj_sample)
+}

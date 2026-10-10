@@ -12,3 +12,6 @@ Character vector of health regions.
 \description{
 List Rio de Janeiro health regions
 }
+\examples{
+vigiar_rj_regioes_saude()
+}

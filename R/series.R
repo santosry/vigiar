@@ -20,6 +20,9 @@
 #' @param funcoes Named list of summary functions. Default:
 #'   \code{list(media = mean, n = length)}.
 #' @return A tibble with grouping columns and summary columns.
+#' @examples
+#' vigiar_agregar_tempo(pm25_rj_sample, agregar_por = "ano")
+#' vigiar_agregar_tempo(pm25_rj_sample, agregar_por = c("ano", "sigla_uf"))
 #' @export
 vigiar_agregar_tempo <- function(dados,
                                   agregar_por = c("ano"),
@@ -75,6 +78,8 @@ vigiar_agregar_tempo <- function(dados,
 #' @param janela_media_movel Window size for moving average (default 3).
 #' @return A tibble with columns: ano, media, variacao_anual,
 #'   media_movel.
+#' @examples
+#' vigiar_tendencia_descritiva(pm25_rj_sample)
 #' @export
 vigiar_tendencia_descritiva <- function(dados, variavel = NULL,
                                          janela_media_movel = 3) {
@@ -121,6 +126,9 @@ vigiar_tendencia_descritiva <- function(dados, variavel = NULL,
 #'   \code{"uf"}, or \code{"municipio"}.
 #' @return A tibble with columns: ano, media, n, and spatial
 #'   identifier columns if \code{nivel != "nacional"}.
+#' @examples
+#' vigiar_serie_temporal(pm25_rj_sample)
+#' vigiar_serie_temporal(pm25_rj_sample, nivel = "uf")
 #' @export
 vigiar_serie_temporal <- function(dados,
                                    nivel = c("nacional", "uf", "municipio")) {

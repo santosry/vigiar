@@ -21,3 +21,7 @@ Automatically detects the table type and applies the appropriate
 processing pipeline: standardises column names, converts types,
 validates IBGE codes, and adds metadata attributes.
 }
+\examples{
+bruto <- data.frame(muni = 330455L, UF = "RJ", ano = 2022L, Media_pm25 = 12.3)
+process_vigiar(bruto, tabela = "df_anual")
+}

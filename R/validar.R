@@ -9,6 +9,9 @@
 #' @param dados A data frame.
 #' @param tabela Table name (used to look up the dictionary).
 #' @return A data frame with standardised column names.
+#' @examples
+#' dados <- data.frame(muni = 330455L, UF = "RJ", Media_pm25 = 12.3)
+#' names(vigiar_padronizar_colunas(dados, "df_anual"))
 #' @export
 vigiar_padronizar_colunas <- function(dados, tabela) {
   dict <- tryCatch(
@@ -45,6 +48,8 @@ vigiar_padronizar_colunas <- function(dados, tabela) {
 #' @param dados A data frame.
 #' @param col_codigo Name of the column containing IBGE codes.
 #' @return The data frame (unchanged), with a warning on invalid codes.
+#' @examples
+#' vigiar_validar_ibge(data.frame(cod_municipio = c(330455L, 355030L)))
 #' @export
 vigiar_validar_ibge <- function(dados, col_codigo = "cod_municipio") {
   if (!col_codigo %in% names(dados)) return(dados)
@@ -70,6 +75,8 @@ vigiar_validar_ibge <- function(dados, col_codigo = "cod_municipio") {
 #'
 #' @param dados A data frame.
 #' @return The data frame (unchanged), with warnings on invalid values.
+#' @examples
+#' vigiar_validar_datas(data.frame(ano = 2022L, mes = 6L))
 #' @export
 vigiar_validar_datas <- function(dados) {
   current_year <- as.integer(format(Sys.Date(), "%Y"))
@@ -105,6 +112,8 @@ vigiar_validar_datas <- function(dados) {
 #' @param dados A data frame.
 #' @param col_pm25 Name of the PM2.5 column.
 #' @return The data frame (unchanged), with a warning on implausible values.
+#' @examples
+#' vigiar_validar_unidades(data.frame(pm25_media = c(12.3, 18.9)))
 #' @export
 vigiar_validar_unidades <- function(dados, col_pm25 = "pm25_media") {
   if (!col_pm25 %in% names(dados)) return(dados)

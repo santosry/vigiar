@@ -12,3 +12,6 @@ A tibble with download history since package load.
 \description{
 Show download history
 }
+\examples{
+vigiar_historico_downloads()
+}

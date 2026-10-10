@@ -12,3 +12,6 @@ vigiar_sessao_ativa()
 \description{
 Check if a VIGIAR session is active
 }
+\examples{
+vigiar_sessao_ativa()
+}

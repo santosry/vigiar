@@ -26,3 +26,7 @@ A \code{vigiar_health} tibble.
 \description{
 Process health indicators data
 }
+\examples{
+bruto <- data.frame(Indicador = "infeccoes", est = 42, desfecho = "obito", ano = 2022L)
+process_indicadores_saude(bruto, agregacao = "brasil")
+}

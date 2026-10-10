@@ -16,3 +16,6 @@ The data frame (unchanged), with warnings on invalid values.
 Checks that \code{ano} is between 2000 and the current year,
 and \code{mes} is between 1 and 12.
 }
+\examples{
+vigiar_validar_datas(data.frame(ano = 2022L, mes = 6L))
+}

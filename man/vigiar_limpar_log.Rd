@@ -9,3 +9,6 @@ vigiar_limpar_log()
 \description{
 Clear the operation log
 }
+\examples{
+vigiar_limpar_log()
+}

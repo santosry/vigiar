@@ -20,3 +20,7 @@ identifier columns if \code{nivel != "nacional"}.
 Returns a tibble with year and aggregated values, suitable
 for plotting or further descriptive analysis. No model is fitted.
 }
+\examples{
+vigiar_serie_temporal(pm25_rj_sample)
+vigiar_serie_temporal(pm25_rj_sample, nivel = "uf")
+}

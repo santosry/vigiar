@@ -31,3 +31,9 @@ Evaluates spatial coverage by municipality count, health
 macro-region representation, and flags regions with few
 observed municipalities.
 }
+\examples{
+\dontrun{
+diag <- vigiar_diagnosticar_serie(pm25_rj_sample)
+vigiar_checar_cobertura_espacial(diag, pm25_rj_sample, "cod_municipio")
+}
+}

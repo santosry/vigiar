@@ -22,3 +22,9 @@ The modified diagnostic object.
 Detects missing months, incomplete years, and dates outside
 the expected range (2000 to current year).
 }
+\examples{
+\dontrun{
+diag <- vigiar_diagnosticar_serie(pm25_rj_sample)
+vigiar_checar_cobertura_temporal(diag, pm25_rj_sample, "ano")
+}
+}

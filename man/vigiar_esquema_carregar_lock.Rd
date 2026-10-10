@@ -15,3 +15,10 @@ A \code{vigiar_schema_lock} object.
 \description{
 Load a schema lock
 }
+\examples{
+\dontrun{
+vigiar_conectar()
+path <- vigiar_esquema_lock(tempfile(fileext = ".json"))
+vigiar_esquema_carregar_lock(path)
+}
+}

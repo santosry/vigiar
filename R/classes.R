@@ -24,6 +24,13 @@ new_vigiar_tbl <- function(x, subclass = character(0), tabela = NULL,
 
 # -- Print method --------------------------------------------------------------
 
+#' Print method for vigiar_tbl
+#'
+#' @param x A \code{vigiar_tbl} object.
+#' @param ... Additional arguments (ignored).
+#' @return Invisibly, \code{x}.
+#' @examples
+#' print(pm25_rj_sample)
 #' @export
 print.vigiar_tbl <- function(x, ...) {
   tabela <- attr(x, "vigiar_tabela") %||% "desconhecida"
@@ -44,6 +51,13 @@ print.vigiar_tbl <- function(x, ...) {
 
 # -- Summary method ------------------------------------------------------------
 
+#' Summary method for vigiar_tbl
+#'
+#' @param object A \code{vigiar_tbl} object.
+#' @param ... Additional arguments (ignored).
+#' @return Invisibly, \code{object}.
+#' @examples
+#' summary(pm25_rj_sample)
 #' @export
 summary.vigiar_tbl <- function(object, ...) {
   tabela <- attr(object, "vigiar_tabela") %||% "desconhecida"
@@ -76,6 +90,8 @@ summary.vigiar_tbl <- function(object, ...) {
 #' @param x A vigiar_tbl object.
 #' @param ... Additional arguments (ignored).
 #' @return Invisibly, a list of validation issues (empty if valid).
+#' @examples
+#' validate.vigiar_tbl(pm25_rj_sample)
 #' @export
 validate.vigiar_tbl <- function(x, ...) {
   issues <- list()

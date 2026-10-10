@@ -24,3 +24,9 @@ The modified diagnostic object.
 Identifies abrupt changes in PM2.5 values within municipalities
 that may indicate data issues or real environmental changes.
 }
+\examples{
+\dontrun{
+diag <- vigiar_diagnosticar_serie(pm25_rj_sample)
+vigiar_checar_quebra_serie(diag, pm25_rj_sample, "cod_municipio", col_pm25 = "pm25_media_anual")
+}
+}

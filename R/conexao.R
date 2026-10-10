@@ -17,6 +17,12 @@
 #' @param timeout Maximum time in seconds to establish the connection.
 #' @param max_retries Maximum number of retry attempts on transient failures.
 #' @return Invisibly, a list with session data.
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' vigiar_sessao_ativa()
+#' vigiar_desconectar()
+#' }
 #' @export
 vigiar_conectar <- function(refresh = FALSE, timeout = 30, max_retries = 3) {
   # Validate arguments (checkmate — microdatasus pattern)
@@ -106,6 +112,11 @@ vigiar_conectar <- function(refresh = FALSE, timeout = 30, max_retries = 3) {
 #' Disconnect and clear VIGIAR session
 #'
 #' @return Invisibly, `NULL`.
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' vigiar_desconectar()
+#' }
 #' @export
 vigiar_desconectar <- function() {
   .vigiar_env$sessao  <- NULL
@@ -117,6 +128,8 @@ vigiar_desconectar <- function() {
 #' Check if a VIGIAR session is active
 #'
 #' @return `TRUE` if a session exists, `FALSE` otherwise.
+#' @examples
+#' vigiar_sessao_ativa()
 #' @export
 vigiar_sessao_ativa <- function() {
   !is.null(.vigiar_env$sessao)
@@ -193,6 +206,11 @@ vigiar_sessao_ativa <- function() {
 #' conceptual schema is unchanged from the cached version.
 #'
 #' @return Invisibly, a list with status information.
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' vigiar_status()
+#' }
 #' @export
 vigiar_status <- function() {
   if (is.null(.vigiar_env$sessao)) {

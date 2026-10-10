@@ -25,3 +25,7 @@ A list of per-profile audit results.
 \description{
 Run a batch audit across multiple compliance profiles
 }
+\examples{
+vigiar_compliance_check(pm25_rj_sample, tabela = "df_anual",
+                        profiles = c("basico", "rigoroso"))
+}

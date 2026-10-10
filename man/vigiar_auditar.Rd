@@ -22,3 +22,7 @@ Performs a comprehensive audit of a VIGIAR data table against
 the expected schema, IBGE standards, and data quality rules.
 Returns a structured report suitable for regulatory compliance.
 }
+\examples{
+audit <- vigiar_auditar(pm25_rj_sample, tabela = "df_anual", verbose = FALSE)
+audit$schema
+}

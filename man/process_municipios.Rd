@@ -17,3 +17,7 @@ A \code{vigiar_municipios} tibble.
 \description{
 Process municipality registry data
 }
+\examples{
+bruto <- data.frame(MUN_COD = 330455L, MUN_NOME = "Rio de Janeiro", UF_SIGLA = "RJ")
+process_municipios(bruto)
+}

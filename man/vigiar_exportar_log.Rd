@@ -17,3 +17,7 @@ Invisibly, the file path.
 \description{
 Export the operation log to a file
 }
+\examples{
+tmp <- tempfile(fileext = ".csv")
+vigiar_exportar_log(tmp)
+}

@@ -19,3 +19,7 @@ Invisibly, the file path.
 \description{
 Save a snapshot to disk (RDS)
 }
+\examples{
+snap <- vigiar_snapshot(dados = pm25_rj_sample, tabela = "df_anual")
+vigiar_salvar_snapshot(snap, tempfile(fileext = ".rds"))
+}

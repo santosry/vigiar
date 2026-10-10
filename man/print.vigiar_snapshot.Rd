@@ -14,3 +14,7 @@
 \description{
 Print method for vigiar_snapshot
 }
+\examples{
+snap <- vigiar_snapshot(dados = pm25_rj_sample, tabela = "df_anual")
+print(snap)
+}

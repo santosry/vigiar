@@ -13,3 +13,9 @@ A tibble of undocumented variables (empty if all covered).
 Compares the live schema against the dictionary and reports
 any variables present in the data but missing from the dictionary.
 }
+\examples{
+\dontrun{
+vigiar_conectar()
+vigiar_variaveis_nao_documentadas()
+}
+}

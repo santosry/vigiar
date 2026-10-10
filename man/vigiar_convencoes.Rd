@@ -10,3 +10,8 @@ vigiar_convencoes()
 Opens the online conventions page (equivalent to microdatasus
 "Convencoes SIH-RD").
 }
+\examples{
+\dontrun{
+vigiar_convencoes()
+}
+}

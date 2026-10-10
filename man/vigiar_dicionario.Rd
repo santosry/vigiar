@@ -14,3 +14,7 @@ allowed_values, notes.
 \description{
 Returns the complete variable dictionary as a tibble.
 }
+\examples{
+dict <- vigiar_dicionario()
+head(dict)
+}

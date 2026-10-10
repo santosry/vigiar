@@ -16,3 +16,8 @@ Invisibly, a list with health metrics.
 Connects, validates schema, benchmarks downloads, and checks
 data quality. Returns a comprehensive health report.
 }
+\examples{
+\dontrun{
+vigiar_health_check()
+}
+}

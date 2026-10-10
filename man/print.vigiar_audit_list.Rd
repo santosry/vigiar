@@ -11,6 +11,12 @@
 
 \item{...}{Additional arguments (ignored).}
 }
+\value{
+Invisibly, \code{x}.
+}
 \description{
 Print method for vigiar_audit_list
+}
+\examples{
+print(vigiar_auditar_tudo(list(df_anual = pm25_rj_sample), verbose = FALSE))
 }

@@ -19,3 +19,9 @@ Returns an S3 object that holds session state and provides
 methods for data download.  All state is self-contained;
 no global variables are used.
 }
+\examples{
+\dontrun{
+client <- vigiar_client()
+client
+}
+}

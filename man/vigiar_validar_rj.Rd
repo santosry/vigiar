@@ -17,3 +17,7 @@ Invisibly, a list with validation results.
 \description{
 Checks IBGE codes, flags non-RJ municipalities, and reports issues.
 }
+\examples{
+dados <- data.frame(cod_municipio = c(330455L, 355030L))
+vigiar_validar_rj(dados)
+}

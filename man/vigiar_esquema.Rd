@@ -15,3 +15,9 @@ Invisibly, the schema list.
 \description{
 Shows column names and R types for one or all tables.
 }
+\examples{
+\dontrun{
+vigiar_conectar()
+vigiar_esquema("df_anual")
+}
+}

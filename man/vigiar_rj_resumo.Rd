@@ -20,3 +20,10 @@ A tibble with summary statistics.
 \description{
 Summarise Rio de Janeiro VIGIAR data
 }
+\examples{
+dados <- data.frame(
+  cod_municipio = c(330455L, 330170L),
+  pm25_media = c(12.3, 18.9)
+)
+vigiar_rj_resumo(dados, agregacao = "municipio")
+}

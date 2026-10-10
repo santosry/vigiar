@@ -13,3 +13,9 @@ Invisibly, a list with status information.
 Verifies that the Power BI dashboard is reachable and the
 conceptual schema is unchanged from the cached version.
 }
+\examples{
+\dontrun{
+vigiar_conectar()
+vigiar_status()
+}
+}

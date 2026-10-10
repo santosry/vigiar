@@ -17,3 +17,7 @@ A \code{vigiar_population} tibble.
 \description{
 Process population exposure data
 }
+\examples{
+bruto <- data.frame(muni = 330455L, ano = 2022L, pop = 1000, UF = "RJ")
+process_populacao_exposta(bruto)
+}

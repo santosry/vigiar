@@ -16,3 +16,6 @@ A SHA256 hex string.
 Uses SHA256 on a canonical JSON representation. Same data always
 produces the same hash -- enabling cross-environment reproducibility.
 }
+\examples{
+vigiar_checksum(pm25_rj_sample)
+}

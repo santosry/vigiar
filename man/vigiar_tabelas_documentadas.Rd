@@ -12,3 +12,6 @@ Character vector of table IDs present in the dictionary.
 \description{
 List all documented tables
 }
+\examples{
+vigiar_tabelas_documentadas()
+}

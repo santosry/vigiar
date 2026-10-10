@@ -16,6 +16,9 @@
 #' @param verbose If \code{TRUE}, prints detailed audit results.
 #' @return A list with audit sections: \code{schema}, \code{ibge},
 #'   \code{temporal}, \code{units}, \code{coverage}, \code{checksums}.
+#' @examples
+#' audit <- vigiar_auditar(pm25_rj_sample, tabela = "df_anual", verbose = FALSE)
+#' audit$schema
 #' @export
 vigiar_auditar <- function(dados, tabela = NULL, verbose = TRUE) {
   tabela <- tabela %||% attr(dados, "vigiar_tabela") %||% "desconhecida"
@@ -78,6 +81,9 @@ vigiar_auditar <- function(dados, tabela = NULL, verbose = TRUE) {
 #' Print method for vigiar_audit
 #' @param x A vigiar_audit object.
 #' @param ... Additional arguments (ignored).
+#' @return Invisibly, \code{x}.
+#' @examples
+#' print(vigiar_auditar(pm25_rj_sample, tabela = "df_anual", verbose = FALSE))
 #' @export
 print.vigiar_audit <- function(x, ...) {
   cli::cli_h1("Relatorio de Auditoria VIGIAR")
@@ -125,6 +131,12 @@ print.vigiar_audit <- function(x, ...) {
 #' @param dados_list Named list of data frames.
 #' @param verbose If \code{TRUE}, prints progress.
 #' @return A named list of audit reports.
+#' @examples
+#' auditar_tudo <- vigiar_auditar_tudo(
+#'   list(df_anual = pm25_rj_sample),
+#'   verbose = FALSE
+#' )
+#' names(auditar_tudo)
 #' @export
 vigiar_auditar_tudo <- function(dados_list, verbose = TRUE) {
   if (!is.list(dados_list) || is.null(names(dados_list))) {
@@ -160,6 +172,9 @@ vigiar_auditar_tudo <- function(dados_list, verbose = TRUE) {
 #' Print method for vigiar_audit_list
 #' @param x A vigiar_audit_list object.
 #' @param ... Additional arguments (ignored).
+#' @return Invisibly, \code{x}.
+#' @examples
+#' print(vigiar_auditar_tudo(list(df_anual = pm25_rj_sample), verbose = FALSE))
 #' @export
 print.vigiar_audit_list <- function(x, ...) {
   n <- length(x)
@@ -183,6 +198,9 @@ print.vigiar_audit_list <- function(x, ...) {
 #'   \code{"basico"} (default), \code{"rigoroso"}, \code{"rj"},
 #'   \code{"corrupcao"}. Use \code{"all"} for everything.
 #' @return A list of per-profile audit results.
+#' @examples
+#' vigiar_compliance_check(pm25_rj_sample, tabela = "df_anual",
+#'                         profiles = c("basico", "rigoroso"))
 #' @export
 vigiar_compliance_check <- function(dados, tabela = NULL,
                                      profiles = c("basico", "rigoroso", "rj")) {
@@ -255,6 +273,9 @@ vigiar_compliance_check <- function(dados, tabela = NULL,
 #' Print method for vigiar_compliance
 #' @param x A vigiar_compliance object.
 #' @param ... Additional arguments (ignored).
+#' @return Invisibly, \code{x}.
+#' @examples
+#' print(vigiar_compliance_check(pm25_rj_sample, tabela = "df_anual"))
 #' @export
 print.vigiar_compliance <- function(x, ...) {
   cli::cli_h1("Relatorio de Compliance VIGIAR")
@@ -639,6 +660,8 @@ print.vigiar_compliance <- function(x, ...) {
 #'
 #' @param dados A data frame.
 #' @return A SHA256 hex string.
+#' @examples
+#' vigiar_checksum(pm25_rj_sample)
 #' @export
 vigiar_checksum <- function(dados) {
   .vigiar_data_checksum(dados)
@@ -683,6 +706,9 @@ vigiar_checksum <- function(dados) {
 #' @param audit An audit object.
 #' @param caminho File path to write JSON.
 #' @return Invisibly, the file path.
+#' @examples
+#' audit <- vigiar_auditar(pm25_rj_sample, tabela = "df_anual", verbose = FALSE)
+#' vigiar_exportar_auditoria(audit, tempfile(fileext = ".json"))
 #' @export
 vigiar_exportar_auditoria <- function(audit, caminho) {
   dir.create(dirname(caminho), showWarnings = FALSE, recursive = TRUE)

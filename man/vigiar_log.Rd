@@ -14,3 +14,6 @@ table, metadata_json.
 Returns a tibble with all logged operations since package load
 or last \code{vigiar_limpar_log()}.
 }
+\examples{
+vigiar_log()
+}

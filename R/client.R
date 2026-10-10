@@ -14,6 +14,11 @@
 #' @param timeout Seconds before HTTP timeout.
 #' @param max_retries Maximum retry attempts on transient failures.
 #' @return An object of class \code{vigiar_client}.
+#' @examples
+#' \dontrun{
+#' client <- vigiar_client()
+#' client
+#' }
 #' @export
 vigiar_client <- function(timeout = 30, max_retries = 3) {
   # Validate arguments (checkmate — microdatasus pattern)
@@ -64,6 +69,13 @@ vigiar_client <- function(timeout = 30, max_retries = 3) {
 }
 
 #' @export
+#' @param x A \code{vigiar_client} object.
+#' @param ... Additional arguments (ignored).
+#' @return Invisibly, \code{x}.
+#' @examples
+#' \dontrun{
+#' print(vigiar_client())
+#' }
 print.vigiar_client <- function(x, ...) {
   cat(sprintf("VIGIAR client -- %d tabelas\n", length(x$schema)))
   cat(sprintf("  Criado em: %s\n", format(x$created)))

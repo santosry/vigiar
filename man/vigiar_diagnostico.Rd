@@ -16,3 +16,10 @@ Invisibly, a list of diagnostics per table.
 Downloads a small sample from every table and reports basic
 diagnostics to detect schema changes or data issues.
 }
+\examples{
+\dontrun{
+vigiar_conectar()
+vigiar_status()
+vigiar_diagnostico(amostra = 10)
+}
+}

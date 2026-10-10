@@ -16,3 +16,6 @@ A tibble with schema information.
 Returns a summary of all variables in a domain: names, types,
 descriptions, and units.
 }
+\examples{
+vigiar_schema("pm25")
+}

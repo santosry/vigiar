@@ -11,6 +11,12 @@
 
 \item{...}{Additional arguments (ignored).}
 }
+\value{
+Invisibly, \code{object}.
+}
 \description{
 Summary method for vigiar_diagnostic
+}
+\examples{
+summary(vigiar_diagnosticar_serie(pm25_rj_sample))
 }

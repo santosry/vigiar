@@ -35,3 +35,10 @@ A \code{\link[tibble:tibble]{tibble::tibble()}} with the downloaded data.
 \description{
 Download data from a single table
 }
+\examples{
+\dontrun{
+vigiar_conectar()
+vigiar_status()
+dados <- vigiar_baixar("df_anual")
+}
+}

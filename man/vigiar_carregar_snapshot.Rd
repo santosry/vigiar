@@ -15,3 +15,8 @@ A \code{vigiar_snapshot} object.
 \description{
 Load a snapshot from disk
 }
+\examples{
+snap <- vigiar_snapshot(dados = pm25_rj_sample, tabela = "df_anual")
+path <- vigiar_salvar_snapshot(snap, tempfile(fileext = ".rds"))
+vigiar_carregar_snapshot(path)
+}

@@ -20,3 +20,8 @@ A tibble with RJ-only data.
 \description{
 Shortcut that downloads a table and filters for RJ municipalities.
 }
+\examples{
+\dontrun{
+dados <- vigiar_baixar_rj("df_muni")
+}
+}

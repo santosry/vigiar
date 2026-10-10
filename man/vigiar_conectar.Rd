@@ -22,3 +22,10 @@ dashboard, obtaining the cookies and session token required for
 subsequent data queries. Also fetches the conceptual schema
 (table and column metadata).
 }
+\examples{
+\dontrun{
+vigiar_conectar()
+vigiar_sessao_ativa()
+vigiar_desconectar()
+}
+}

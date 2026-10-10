@@ -4,6 +4,11 @@
 #' List available tables
 #'
 #' @return Character vector of table names.
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' vigiar_tabelas()
+#' }
 #' @export
 vigiar_tabelas <- function() {
   if (is.null(.vigiar_env$esquema)) {
@@ -18,6 +23,11 @@ vigiar_tabelas <- function() {
 #'
 #' @param tabela Table name (optional). If `NULL`, lists all tables.
 #' @return Invisibly, the schema list.
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' vigiar_esquema("df_anual")
+#' }
 #' @export
 vigiar_esquema <- function(tabela = NULL) {
   if (is.null(.vigiar_env$esquema)) {
@@ -54,6 +64,12 @@ vigiar_esquema <- function(tabela = NULL) {
 #' @param uf UF filter. Filters data client-side. Use `NULL` for no filter. Default `"RJ"`.
 #' @param direcao Sort direction: `"asc"` (ascending) or `"desc"` (descending).
 #' @return A [tibble::tibble()] with the downloaded data.
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' vigiar_status()
+#' dados <- vigiar_baixar("df_anual")
+#' }
 #' @export
 vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
                            limite = NULL, timeout = 120, uf = "RJ",
@@ -152,6 +168,12 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
 #' @param progress Show progress messages.
 #' @param delay Seconds to wait between downloads (rate limiting). Default 0.5.
 #' @return Named list of tibbles.
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' vigiar_status()
+#' tudo <- vigiar_baixar_tudo(c("df_anual", "df_muni"))
+#' }
 #' @export
 vigiar_baixar_tudo <- function(tabelas = NULL, progress = TRUE, delay = 0.5) {
   # Validate arguments (checkmate — microdatasus pattern)
@@ -208,6 +230,12 @@ vigiar_baixar_tudo <- function(tabelas = NULL, progress = TRUE, delay = 0.5) {
 #' Downloads 14 key tables covering all data categories.
 #'
 #' @return Named list of tibbles.
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' vigiar_status()
+#' principais <- vigiar_baixar_principais()
+#' }
 #' @export
 vigiar_baixar_principais <- function() {
   principais <- c(
@@ -227,6 +255,11 @@ vigiar_baixar_principais <- function() {
 #' and thematic categories.
 #'
 #' @return A tibble with columns: `tabela`, `colunas`, `descricao`, `categoria`.
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' vigiar_info()
+#' }
 #' @export
 vigiar_info <- function() {
   if (is.null(.vigiar_env$esquema)) {
@@ -263,6 +296,8 @@ vigiar_info <- function() {
 #' @param dados A data frame (or tibble) returned by `vigiar_baixar()`.
 #' @param tabela Table name (for messages).
 #' @return Invisibly, a list of diagnostics.
+#' @examples
+#' vigiar_checar_dados(pm25_rj_sample, tabela = "df_anual")
 #' @export
 vigiar_checar_dados <- function(dados, tabela = NULL) {
   checks <- list()
@@ -311,6 +346,12 @@ vigiar_checar_dados <- function(dados, tabela = NULL) {
 #'
 #' @param amostra Number of rows to sample per table.
 #' @return Invisibly, a list of diagnostics per table.
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' vigiar_status()
+#' vigiar_diagnostico(amostra = 10)
+#' }
 #' @export
 vigiar_diagnostico <- function(amostra = 100) {
   if (is.null(.vigiar_env$sessao)) {

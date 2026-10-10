@@ -15,3 +15,9 @@ Invisibly, a list of differences (empty if identical).
 \description{
 Compares the live schema against a lock file and reports differences.
 }
+\examples{
+\dontrun{
+vigiar_conectar()
+vigiar_esquema_verificar()
+}
+}

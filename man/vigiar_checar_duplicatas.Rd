@@ -30,3 +30,9 @@ The modified diagnostic object.
 Detects rows that share the same municipality, year, and
 optionally month.
 }
+\examples{
+\dontrun{
+diag <- vigiar_diagnosticar_serie(pm25_rj_sample)
+vigiar_checar_duplicatas(diag, pm25_rj_sample, "cod_municipio")
+}
+}

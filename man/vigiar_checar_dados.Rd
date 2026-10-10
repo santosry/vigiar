@@ -18,3 +18,6 @@ Invisibly, a list of diagnostics.
 Performs basic sanity checks on a downloaded table:
 reports missing values, duplicate rows, and type consistency.
 }
+\examples{
+vigiar_checar_dados(pm25_rj_sample, tabela = "df_anual")
+}

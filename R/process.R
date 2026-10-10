@@ -17,6 +17,9 @@
 #' @param tabela Table name (auto-detected if \code{dados} has the attribute).
 #' @param ... Additional arguments passed to specific processors.
 #' @return A \code{vigiar_tbl} with standardised columns and metadata.
+#' @examples
+#' bruto <- data.frame(muni = 330455L, UF = "RJ", ano = 2022L, Media_pm25 = 12.3)
+#' process_vigiar(bruto, tabela = "df_anual")
 #' @export
 process_vigiar <- function(dados, tabela = NULL, ...) {
   tabela <- tabela %||% attr(dados, "vigiar_tabela") %||%
@@ -53,6 +56,9 @@ process_vigiar <- function(dados, tabela = NULL, ...) {
 #'   or \code{"dias_conama"}.
 #' @param ... Additional arguments (ignored).
 #' @return A \code{vigiar_pm25} tibble.
+#' @examples
+#' bruto <- data.frame(muni = 330455L, UF = "RJ", ano = 2022L, Media_pm25 = 12.3)
+#' process_pm25(bruto, tipo = "anual")
 #' @export
 process_pm25 <- function(dados, tipo = c("anual", "mensal", "dias", "dias_conama"), ...) {
   tipo <- match.arg(tipo)
@@ -145,6 +151,9 @@ process_pm25 <- function(dados, tipo = c("anual", "mensal", "dias", "dias_conama
 #' @param dados Raw data frame from \code{vigiar_baixar("pop")}.
 #' @param ... Additional arguments (ignored).
 #' @return A \code{vigiar_population} tibble.
+#' @examples
+#' bruto <- data.frame(muni = 330455L, ano = 2022L, pop = 1000, UF = "RJ")
+#' process_populacao_exposta(bruto)
 #' @export
 process_populacao_exposta <- function(dados, ...) {
   dados <- tibble::as_tibble(dados)
@@ -198,6 +207,9 @@ process_populacao_exposta <- function(dados, ...) {
 #'   \code{"municipio"}, or \code{"quartis"}.
 #' @param ... Additional arguments (ignored).
 #' @return A \code{vigiar_health} tibble.
+#' @examples
+#' bruto <- data.frame(Indicador = "infeccoes", est = 42, desfecho = "obito", ano = 2022L)
+#' process_indicadores_saude(bruto, agregacao = "brasil")
 #' @export
 process_indicadores_saude <- function(dados,
                                        agregacao = c("brasil", "uf",
@@ -268,6 +280,9 @@ process_indicadores_saude <- function(dados,
 #' @param dados Raw data frame from \code{vigiar_baixar("tb_fracao")}.
 #' @param ... Additional arguments (ignored).
 #' @return A \code{vigiar_attributable_fraction} tibble.
+#' @examples
+#' bruto <- data.frame(Indicador = "infeccoes", est = 0.12, desfecho = "obito")
+#' process_fracao_atribuivel(bruto)
 #' @export
 process_fracao_atribuivel <- function(dados, ...) {
   dados <- tibble::as_tibble(dados)
@@ -315,6 +330,9 @@ process_fracao_atribuivel <- function(dados, ...) {
 #' @param tipo One of \code{"exposicao"} or \code{"desfecho"}.
 #' @param ... Additional arguments (ignored).
 #' @return A \code{vigiar_indoor} tibble.
+#' @examples
+#' bruto <- data.frame(Code = 33, Ano = 2022L, comb_sol_perc = 15.2)
+#' process_exposicao_indoor(bruto)
 #' @export
 process_exposicao_indoor <- function(dados, tipo = c("exposicao", "desfecho"), ...) {
   tipo <- match.arg(tipo)
@@ -380,6 +398,9 @@ process_exposicao_indoor <- function(dados, tipo = c("exposicao", "desfecho"), .
 #' @param dados Raw data frame from \code{vigiar_baixar("df_muni")}.
 #' @param ... Additional arguments (ignored).
 #' @return A \code{vigiar_municipios} tibble.
+#' @examples
+#' bruto <- data.frame(MUN_COD = 330455L, MUN_NOME = "Rio de Janeiro", UF_SIGLA = "RJ")
+#' process_municipios(bruto)
 #' @export
 process_municipios <- function(dados, ...) {
   dados <- tibble::as_tibble(dados)
@@ -440,6 +461,9 @@ process_municipios <- function(dados, ...) {
 #' @param dados Raw data frame.
 #' @param contexto Description of the data context.
 #' @return A \code{vigiar_tbl}.
+#' @examples
+#' bruto <- data.frame(UF = "RJ", ano = 2022L, valor = 10)
+#' process_ufs(bruto)
 #' @export
 process_ufs <- function(dados, contexto = "uf") {
   dados <- tibble::as_tibble(dados)

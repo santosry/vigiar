@@ -15,3 +15,6 @@ vigiar_limpar_cache(tabelas = NULL, max_age = NULL)
 \description{
 Clear the local cache
 }
+\examples{
+vigiar_limpar_cache()
+}

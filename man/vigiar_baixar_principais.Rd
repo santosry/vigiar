@@ -12,3 +12,10 @@ Named list of tibbles.
 \description{
 Downloads 14 key tables covering all data categories.
 }
+\examples{
+\dontrun{
+vigiar_conectar()
+vigiar_status()
+principais <- vigiar_baixar_principais()
+}
+}

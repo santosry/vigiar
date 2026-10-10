@@ -20,6 +20,12 @@
 #' @return A tibble with columns: estrategia, tempo_medio,
 #'   tempo_min, tempo_max, n_linhas, n_colunas, n_ausentes,
 #'   taxa_sucesso.
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' vigiar_status()
+#' vigiar_benchmark("df_anual", repeticoes = 1)
+#' }
 #' @export
 vigiar_benchmark <- function(tabela,
                               strategies = c("direct", "year_asc_desc",
@@ -141,6 +147,12 @@ vigiar_benchmark <- function(tabela,
 #' @param repeticoes Number of repetitions per table.
 #' @param timeout Timeout per download.
 #' @return A tibble with per-table performance metrics.
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' vigiar_status()
+#' vigiar_benchmark_tabelas(c("df_anual", "df_muni"), repeticoes = 1)
+#' }
 #' @export
 vigiar_benchmark_tabelas <- function(tabelas = NULL, repeticoes = 2L,
                                       timeout = 120) {
@@ -217,6 +229,10 @@ vigiar_benchmark_tabelas <- function(tabelas = NULL, repeticoes = 2L,
 #'
 #' @param timeout Timeout per operation.
 #' @return Invisibly, a list with health metrics.
+#' @examples
+#' \dontrun{
+#' vigiar_health_check()
+#' }
 #' @export
 vigiar_health_check <- function(timeout = 120) {
   cli::cli_h1("VIGIAR Health Check")

@@ -33,3 +33,7 @@ Groups data by time variables (ano, mes) and optional spatial
 variables (UF, municipio, regiao) and computes descriptive
 summaries of key numeric columns.
 }
+\examples{
+vigiar_agregar_tempo(pm25_rj_sample, agregar_por = "ano")
+vigiar_agregar_tempo(pm25_rj_sample, agregar_por = c("ano", "sigla_uf"))
+}

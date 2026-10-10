@@ -15,3 +15,7 @@ vigiar_verificar_snapshot(snapshot)
 \description{
 Recomputes the checksum and compares to the stored value.
 }
+\examples{
+snap <- vigiar_snapshot(dados = pm25_rj_sample, tabela = "df_anual")
+vigiar_verificar_snapshot(snap)
+}

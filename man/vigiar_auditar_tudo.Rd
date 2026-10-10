@@ -18,3 +18,10 @@ A named list of audit reports.
 Runs \code{vigiar_auditar()} on every table in a named list
 (e.g., the result of \code{vigiar_baixar_tudo()}).
 }
+\examples{
+auditar_tudo <- vigiar_auditar_tudo(
+  list(df_anual = pm25_rj_sample),
+  verbose = FALSE
+)
+names(auditar_tudo)
+}

@@ -20,3 +20,7 @@ A \code{vigiar_indoor} tibble.
 \description{
 Process indoor exposure data
 }
+\examples{
+bruto <- data.frame(Code = 33, Ano = 2022L, comb_sol_perc = 15.2)
+process_exposicao_indoor(bruto)
+}

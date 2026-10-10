@@ -13,3 +13,9 @@ Invisibly, a list with \code{undocumented}, \code{orfas},
 \description{
 Runs all dictionary checks and returns a report.
 }
+\examples{
+\dontrun{
+vigiar_conectar()
+vigiar_validar_dicionario()
+}
+}

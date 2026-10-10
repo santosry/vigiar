@@ -23,3 +23,9 @@ A tibble (cached or freshly downloaded).
 Downloads a table, storing the result in the local cache directory.
 Subsequent calls with the same table return the cached copy.
 }
+\examples{
+\dontrun{
+vigiar_conectar()
+dados <- vigiar_baixar_com_cache("df_anual")
+}
+}

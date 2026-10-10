@@ -12,3 +12,9 @@ Invisibly, \code{NULL}.
 \description{
 Disconnect and clear VIGIAR session
 }
+\examples{
+\dontrun{
+vigiar_conectar()
+vigiar_desconectar()
+}
+}

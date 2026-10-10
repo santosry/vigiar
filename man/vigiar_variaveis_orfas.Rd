@@ -12,3 +12,9 @@ A tibble of orphan variables (empty if none).
 \description{
 Find documented variables that don't exist in the live schema
 }
+\examples{
+\dontrun{
+vigiar_conectar()
+vigiar_variaveis_orfas()
+}
+}

@@ -18,3 +18,7 @@ A data frame with standardised column names.
 Applies a standard naming convention to raw VIGIAR data.
 Uses the internal variable dictionary when available.
 }
+\examples{
+dados <- data.frame(muni = 330455L, UF = "RJ", Media_pm25 = 12.3)
+names(vigiar_padronizar_colunas(dados, "df_anual"))
+}

@@ -12,3 +12,6 @@ A tibble with cache contents: tabela, linhas, colunas, idade, checksum.
 \description{
 List cached tables
 }
+\examples{
+vigiar_cache_info()
+}

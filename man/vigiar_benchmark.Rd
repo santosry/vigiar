@@ -32,3 +32,10 @@ Tests different download strategies (direct, year-partitioned,
 column-restricted) on a given table and reports timing,
 row counts, and data quality metrics.
 }
+\examples{
+\dontrun{
+vigiar_conectar()
+vigiar_status()
+vigiar_benchmark("df_anual", repeticoes = 1)
+}
+}

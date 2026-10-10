@@ -18,3 +18,7 @@ Invisibly, the file path.
 Serializes a \code{vigiar_audit} or \code{vigiar_compliance}
 report to JSON for long-term archiving.
 }
+\examples{
+audit <- vigiar_auditar(pm25_rj_sample, tabela = "df_anual", verbose = FALSE)
+vigiar_exportar_auditoria(audit, tempfile(fileext = ".json"))
+}

@@ -55,6 +55,9 @@ new_vigiar_diagnostic <- function(tabela, dados) {
 #' @param uf Expected UF (default \code{"RJ"}). Use \code{NULL} for any.
 #' @param escopo Scope for spatial checks: \code{"rj"}, \code{"uf"}, or \code{"nacional"}.
 #' @return A \code{vigiar_diagnostic} object.
+#' @examples
+#' diag <- vigiar_diagnosticar_serie(pm25_rj_sample)
+#' summary(diag)
 #' @export
 vigiar_diagnosticar_serie <- function(dados,
                                        col_muni = NULL,
@@ -140,6 +143,11 @@ vigiar_diagnosticar_serie <- function(dados,
 #' @param uf Expected UF.
 #' @param escopo Scope for checks.
 #' @return The modified diagnostic object.
+#' @examples
+#' \dontrun{
+#' diag <- vigiar_diagnosticar_serie(pm25_rj_sample)
+#' vigiar_checar_ibge(diag, pm25_rj_sample, "cod_municipio")
+#' }
 #' @export
 vigiar_checar_ibge <- function(diag, dados, col_muni, uf = "RJ",
                                 escopo = "rj") {
@@ -212,6 +220,11 @@ vigiar_checar_ibge <- function(diag, dados, col_muni, uf = "RJ",
 #' @param col_ano Year column name.
 #' @param col_mes Month column name (optional).
 #' @return The modified diagnostic object.
+#' @examples
+#' \dontrun{
+#' diag <- vigiar_diagnosticar_serie(pm25_rj_sample)
+#' vigiar_checar_cobertura_temporal(diag, pm25_rj_sample, "ano")
+#' }
 #' @export
 vigiar_checar_cobertura_temporal <- function(diag, dados,
                                               col_ano = "ano",
@@ -315,6 +328,11 @@ vigiar_checar_cobertura_temporal <- function(diag, dados,
 #' @param uf Expected UF.
 #' @param escopo Scope: "rj", "uf", or "nacional".
 #' @return The modified diagnostic object.
+#' @examples
+#' \dontrun{
+#' diag <- vigiar_diagnosticar_serie(pm25_rj_sample)
+#' vigiar_checar_cobertura_espacial(diag, pm25_rj_sample, "cod_municipio")
+#' }
 #' @export
 vigiar_checar_cobertura_espacial <- function(diag, dados,
                                               col_muni, uf = "RJ",
@@ -401,6 +419,11 @@ vigiar_checar_cobertura_espacial <- function(diag, dados,
 #' @param dados Data frame.
 #' @param col_pm25 PM2.5 column name.
 #' @return The modified diagnostic object.
+#' @examples
+#' \dontrun{
+#' diag <- vigiar_diagnosticar_serie(pm25_rj_sample)
+#' vigiar_checar_pm25(diag, pm25_rj_sample, "pm25_media_anual")
+#' }
 #' @export
 vigiar_checar_pm25 <- function(diag, dados, col_pm25) {
   if (!col_pm25 %in% names(dados)) {
@@ -481,6 +504,11 @@ vigiar_checar_pm25 <- function(diag, dados, col_pm25) {
 #' @param col_ano Year column.
 #' @param col_mes Month column (optional).
 #' @return The modified diagnostic object.
+#' @examples
+#' \dontrun{
+#' diag <- vigiar_diagnosticar_serie(pm25_rj_sample)
+#' vigiar_checar_duplicatas(diag, pm25_rj_sample, "cod_municipio")
+#' }
 #' @export
 vigiar_checar_duplicatas <- function(diag, dados, col_muni,
                                       col_ano = "ano", col_mes = "mes") {
@@ -522,6 +550,11 @@ vigiar_checar_duplicatas <- function(diag, dados, col_muni,
 #' @param col_ano Year column.
 #' @param col_pm25 PM2.5 column.
 #' @return The modified diagnostic object.
+#' @examples
+#' \dontrun{
+#' diag <- vigiar_diagnosticar_serie(pm25_rj_sample)
+#' vigiar_checar_quebra_serie(diag, pm25_rj_sample, "cod_municipio", col_pm25 = "pm25_media_anual")
+#' }
 #' @export
 vigiar_checar_quebra_serie <- function(diag, dados, col_muni,
                                         col_ano = "ano", col_pm25) {
@@ -576,6 +609,9 @@ vigiar_checar_quebra_serie <- function(diag, dados, col_muni,
 #'
 #' @param diag A vigiar_diagnostic object.
 #' @return The modified diagnostic object with \code{severidade} set.
+#' @examples
+#' diag <- vigiar_classificar_alertas(vigiar_diagnosticar_serie(pm25_rj_sample))
+#' diag$severidade
 #' @export
 vigiar_classificar_alertas <- function(diag) {
   results <- diag$resultados
@@ -597,6 +633,9 @@ vigiar_classificar_alertas <- function(diag) {
 #'
 #' @param diag A vigiar_diagnostic object.
 #' @return Invisibly, the diagnostic object.
+#' @examples
+#' diag <- vigiar_diagnosticar_serie(pm25_rj_sample)
+#' vigiar_relatorio_diagnostico(diag)
 #' @export
 vigiar_relatorio_diagnostico <- function(diag) {
   stopifnot(inherits(diag, "vigiar_diagnostic"))
@@ -666,6 +705,9 @@ vigiar_relatorio_diagnostico <- function(diag) {
 #' Print a vigiar_diagnostic object
 #' @param x A vigiar_diagnostic object.
 #' @param ... Additional arguments (ignored).
+#' @return Invisibly, \code{x}.
+#' @examples
+#' print(vigiar_diagnosticar_serie(pm25_rj_sample))
 #' @export
 print.vigiar_diagnostic <- function(x, ...) {
   vigiar_relatorio_diagnostico(x)
@@ -674,6 +716,9 @@ print.vigiar_diagnostic <- function(x, ...) {
 #' Summary method for vigiar_diagnostic
 #' @param object A vigiar_diagnostic object.
 #' @param ... Additional arguments (ignored).
+#' @return Invisibly, \code{object}.
+#' @examples
+#' summary(vigiar_diagnosticar_serie(pm25_rj_sample))
 #' @export
 summary.vigiar_diagnostic <- function(object, ...) {
   cat(sprintf("VIGIAR Diagnostic: %s\n", object$tabela))

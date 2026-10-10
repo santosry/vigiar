@@ -18,3 +18,6 @@ The data frame (unchanged), with a warning on invalid codes.
 Checks that municipality codes are 6- or 7-digit integers
 within the valid Brazilian range (110001-530010).
 }
+\examples{
+vigiar_validar_ibge(data.frame(cod_municipio = c(330455L, 355030L)))
+}

@@ -18,3 +18,6 @@ The data frame (unchanged), with a warning on implausible values.
 Checks that PM2.5 values are within a plausible range
 (0-1000 ug/m3).
 }
+\examples{
+vigiar_validar_unidades(data.frame(pm25_media = c(12.3, 18.9)))
+}

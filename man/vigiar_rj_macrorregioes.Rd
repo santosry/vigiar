@@ -12,3 +12,6 @@ Character vector of the 9 macro-regions.
 \description{
 List Rio de Janeiro health macro-regions
 }
+\examples{
+vigiar_rj_macrorregioes()
+}

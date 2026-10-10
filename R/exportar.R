@@ -10,6 +10,9 @@
 #' @param overwrite If \code{FALSE}, errors if file exists.
 #' @param ... Additional arguments passed to \code{utils::write.csv()}.
 #' @return Invisibly, the file path.
+#' @examples
+#' tmp <- tempfile(fileext = ".csv")
+#' vigiar_exportar_csv(pm25_rj_sample, tmp)
 #' @export
 vigiar_exportar_csv <- function(dados, caminho, overwrite = FALSE, ...) {
   if (file.exists(caminho) && !overwrite) {
@@ -29,6 +32,9 @@ vigiar_exportar_csv <- function(dados, caminho, overwrite = FALSE, ...) {
 #' @param caminho File path.
 #' @param overwrite If \code{FALSE}, errors if file exists.
 #' @return Invisibly, the file path.
+#' @examples
+#' tmp <- tempfile(fileext = ".rds")
+#' vigiar_exportar_rds(pm25_rj_sample, tmp)
 #' @export
 vigiar_exportar_rds <- function(dados, caminho, overwrite = FALSE) {
   if (file.exists(caminho) && !overwrite) {
@@ -48,6 +54,10 @@ vigiar_exportar_rds <- function(dados, caminho, overwrite = FALSE) {
 #' @param caminho File path.
 #' @param overwrite If \code{FALSE}, errors if file exists.
 #' @return Invisibly, the file path.
+#' @examples
+#' \dontrun{
+#' vigiar_exportar_parquet(pm25_rj_sample, tempfile(fileext = ".parquet"))
+#' }
 #' @export
 vigiar_exportar_parquet <- function(dados, caminho, overwrite = FALSE) {
   if (!requireNamespace("arrow", quietly = TRUE)) {

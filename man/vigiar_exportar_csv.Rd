@@ -21,3 +21,7 @@ Invisibly, the file path.
 \description{
 Export VIGIAR data to CSV
 }
+\examples{
+tmp <- tempfile(fileext = ".csv")
+vigiar_exportar_csv(pm25_rj_sample, tmp)
+}

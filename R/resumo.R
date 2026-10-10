@@ -9,6 +9,8 @@
 #' @param x A processed VIGIAR tibble.
 #' @param ... Additional arguments passed to specific summarisers.
 #' @return A tibble with summary statistics.
+#' @examples
+#' vigiar_resumo(pm25_rj_sample)
 #' @export
 vigiar_resumo <- function(x, ...) {
   stopifnot(inherits(x, "vigiar_tbl"))
@@ -52,6 +54,8 @@ vigiar_resumo.default <- function(x, ...) {
 #' @param x A \code{vigiar_pm25} tibble.
 #' @param ... Ignored.
 #' @return A tibble with descriptive statistics.
+#' @examples
+#' vigiar_resumo_pm25(pm25_rj_sample)
 #' @export
 vigiar_resumo_pm25 <- function(x, ...) {
   pm25_col <- intersect(

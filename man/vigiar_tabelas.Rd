@@ -12,3 +12,9 @@ Character vector of table names.
 \description{
 List available tables
 }
+\examples{
+\dontrun{
+vigiar_conectar()
+vigiar_tabelas()
+}
+}

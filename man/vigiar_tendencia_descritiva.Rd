@@ -21,3 +21,6 @@ media_movel.
 Calculates year-over-year changes and simple moving averages.
 This is purely descriptive -- no model is fitted.
 }
+\examples{
+vigiar_tendencia_descritiva(pm25_rj_sample)
+}

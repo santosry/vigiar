@@ -12,3 +12,9 @@ A tibble comparing live vs documented columns per table.
 \description{
 Compare live schema with dictionary
 }
+\examples{
+\dontrun{
+vigiar_conectar()
+vigiar_comparar_schema()
+}
+}

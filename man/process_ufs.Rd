@@ -17,3 +17,7 @@ A \code{vigiar_tbl}.
 \description{
 Generic processor for any UF-level VIGIAR data.
 }
+\examples{
+bruto <- data.frame(UF = "RJ", ano = 2022L, valor = 10)
+process_ufs(bruto)
+}

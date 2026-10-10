@@ -78,6 +78,9 @@ VIGIAR_API_CLUSTER <- paste0(
 #' @param x A value.
 #' @param y Fallback value if \code{x} is NULL.
 #' @return \code{x} unless \code{x} is NULL, then \code{y}.
+#' @examples
+#' NULL %||% "padrao"
+#' "valor" %||% "padrao"
 #' @name null-coalesce
 #' @rdname null-coalesce
 #' @aliases %||%

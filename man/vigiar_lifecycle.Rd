@@ -22,3 +22,7 @@ Returns the lifecycle status of one or more exported functions, or a tibble
 with the full public API registry when \code{fun} is \code{NULL}. Use this to
 determine whether a function is safe to rely on in scripts and publications.
 }
+\examples{
+head(vigiar_lifecycle())
+vigiar_lifecycle(c("vigiar_conectar", "vigiar_benchmark"))
+}

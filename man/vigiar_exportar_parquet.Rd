@@ -19,3 +19,8 @@ Invisibly, the file path.
 \description{
 Requires the \code{arrow} package (Suggests).
 }
+\examples{
+\dontrun{
+vigiar_exportar_parquet(pm25_rj_sample, tempfile(fileext = ".parquet"))
+}
+}

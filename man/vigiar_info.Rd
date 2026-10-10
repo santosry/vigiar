@@ -13,3 +13,9 @@ A tibble with columns: \code{tabela}, \code{colunas}, \code{descricao}, \code{ca
 Returns a tibble with all tables, column counts, descriptions,
 and thematic categories.
 }
+\examples{
+\dontrun{
+vigiar_conectar()
+vigiar_info()
+}
+}

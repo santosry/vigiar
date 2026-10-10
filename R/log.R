@@ -48,6 +48,8 @@
 #'
 #' @return A tibble with columns: timestamp, level, message,
 #'   table, metadata_json.
+#' @examples
+#' vigiar_log()
 #' @export
 vigiar_log <- function() {
   if (is.null(.vigiar_env$log) || length(.vigiar_env$log) == 0) {
@@ -83,6 +85,8 @@ vigiar_log <- function() {
 
 #' Clear the operation log
 #'
+#' @examples
+#' vigiar_limpar_log()
 #' @export
 vigiar_limpar_log <- function() {
   n <- length(.vigiar_env$log %||% list())
@@ -96,6 +100,9 @@ vigiar_limpar_log <- function() {
 #' @param caminho File path (JSON or CSV based on extension).
 #' @param overwrite If \code{FALSE}, errors if file exists.
 #' @return Invisibly, the file path.
+#' @examples
+#' tmp <- tempfile(fileext = ".csv")
+#' vigiar_exportar_log(tmp)
 #' @export
 vigiar_exportar_log <- function(caminho, overwrite = FALSE) {
   if (file.exists(caminho) && !overwrite) {
@@ -120,6 +127,8 @@ vigiar_exportar_log <- function(caminho, overwrite = FALSE) {
 #' Shows counts by log level, table, and time range.
 #'
 #' @return Invisibly, a list with log statistics.
+#' @examples
+#' vigiar_resumo_log()
 #' @export
 vigiar_resumo_log <- function() {
   log_df <- vigiar_log()
@@ -194,6 +203,8 @@ vigiar_resumo_log <- function() {
 #' Show download history
 #'
 #' @return A tibble with download history since package load.
+#' @examples
+#' vigiar_historico_downloads()
 #' @export
 vigiar_historico_downloads <- function() {
   if (is.null(.vigiar_env$download_history) ||
@@ -222,6 +233,8 @@ vigiar_historico_downloads <- function() {
 
 #' Summary of download history
 #'
+#' @examples
+#' vigiar_resumo_downloads()
 #' @export
 vigiar_resumo_downloads <- function() {
   hist <- vigiar_historico_downloads()

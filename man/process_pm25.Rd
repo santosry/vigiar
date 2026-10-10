@@ -21,3 +21,7 @@ A \code{vigiar_pm25} tibble.
 Standardises PM2.5 data from any VIGIAR air quality table
 (annual, monthly, or critical days).
 }
+\examples{
+bruto <- data.frame(muni = 330455L, UF = "RJ", ano = 2022L, Media_pm25 = 12.3)
+process_pm25(bruto, tipo = "anual")
+}

@@ -16,3 +16,7 @@ The modified diagnostic object with \code{severidade} set.
 Aggregates all diagnostic findings into a final severity
 classification: ok, aviso, problema, or critico.
 }
+\examples{
+diag <- vigiar_classificar_alertas(vigiar_diagnosticar_serie(pm25_rj_sample))
+diag$severidade
+}

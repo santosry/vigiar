@@ -25,3 +25,9 @@ Validates that municipality codes are within the valid Brazilian range
 (110001-530010), flags non-RJ codes when scope is RJ, and reports
 missing or invalid codes.
 }
+\examples{
+\dontrun{
+diag <- vigiar_diagnosticar_serie(pm25_rj_sample)
+vigiar_checar_ibge(diag, pm25_rj_sample, "cod_municipio")
+}
+}

@@ -17,3 +17,7 @@ A tibble subset of the dictionary.
 \description{
 List variables for a specific data domain
 }
+\examples{
+vigiar_variaveis("pm25")
+vigiar_variaveis("municipios")
+}

@@ -9,3 +9,6 @@ vigiar_resumo_downloads()
 \description{
 Summary of download history
 }
+\examples{
+vigiar_resumo_downloads()
+}

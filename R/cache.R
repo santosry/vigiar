@@ -19,6 +19,9 @@
 #' @param congelar_esquema If \code{TRUE}, also snapshots the
 #'   conceptual schema.
 #' @return A \code{vigiar_snapshot} object (list subclass).
+#' @examples
+#' snap <- vigiar_snapshot(dados = pm25_rj_sample, tabela = "df_anual")
+#' snap$n_rows
 #' @export
 vigiar_snapshot <- function(dados = NULL, tabela = NULL, ...,
                              congelar_esquema = FALSE) {
@@ -67,6 +70,9 @@ vigiar_snapshot <- function(dados = NULL, tabela = NULL, ...,
 #' Print method for vigiar_snapshot
 #' @param x A vigiar_snapshot object.
 #' @param ... Additional arguments (ignored).
+#' @examples
+#' snap <- vigiar_snapshot(dados = pm25_rj_sample, tabela = "df_anual")
+#' print(snap)
 #' @export
 print.vigiar_snapshot <- function(x, ...) {
   cli::cli_h1("VIGIAR Snapshot")
@@ -86,6 +92,9 @@ print.vigiar_snapshot <- function(x, ...) {
 #'
 #' @param snapshot A \code{vigiar_snapshot} object.
 #' @return \code{TRUE} if checksums match, \code{FALSE} otherwise.
+#' @examples
+#' snap <- vigiar_snapshot(dados = pm25_rj_sample, tabela = "df_anual")
+#' vigiar_verificar_snapshot(snap)
 #' @export
 vigiar_verificar_snapshot <- function(snapshot) {
   stopifnot(inherits(snapshot, "vigiar_snapshot"))
@@ -113,6 +122,9 @@ vigiar_verificar_snapshot <- function(snapshot) {
 #' @param caminho File path (will add .rds if absent).
 #' @param overwrite If \code{FALSE}, errors if file exists.
 #' @return Invisibly, the file path.
+#' @examples
+#' snap <- vigiar_snapshot(dados = pm25_rj_sample, tabela = "df_anual")
+#' vigiar_salvar_snapshot(snap, tempfile(fileext = ".rds"))
 #' @export
 vigiar_salvar_snapshot <- function(snapshot, caminho, overwrite = FALSE) {
   stopifnot(inherits(snapshot, "vigiar_snapshot"))
@@ -134,6 +146,10 @@ vigiar_salvar_snapshot <- function(snapshot, caminho, overwrite = FALSE) {
 #'
 #' @param caminho File path to an .rds snapshot.
 #' @return A \code{vigiar_snapshot} object.
+#' @examples
+#' snap <- vigiar_snapshot(dados = pm25_rj_sample, tabela = "df_anual")
+#' path <- vigiar_salvar_snapshot(snap, tempfile(fileext = ".rds"))
+#' vigiar_carregar_snapshot(path)
 #' @export
 vigiar_carregar_snapshot <- function(caminho) {
   if (!file.exists(caminho)) {
@@ -155,6 +171,10 @@ vigiar_carregar_snapshot <- function(caminho) {
 #' @param snapshot1 A vigiar_snapshot object.
 #' @param snapshot2 Another vigiar_snapshot object to compare against.
 #' @return Invisibly, a list of differences.
+#' @examples
+#' antigo <- vigiar_snapshot(dados = pm25_rj_sample, tabela = "df_anual")
+#' novo <- vigiar_snapshot(dados = pm25_rj_sample, tabela = "df_anual")
+#' vigiar_comparar_snapshots(antigo, novo)
 #' @export
 vigiar_comparar_snapshots <- function(snapshot1, snapshot2) {
   stopifnot(inherits(snapshot1, "vigiar_snapshot"))
@@ -221,6 +241,8 @@ vigiar_comparar_snapshots <- function(snapshot1, snapshot2) {
 #' @param dir Path to cache directory. If \code{NULL}, returns current.
 #'   Use \code{"auto"} for platform-appropriate default.
 #' @return The cache directory path (invisibly if setting).
+#' @examples
+#' vigiar_cache_dir()
 #' @export
 vigiar_cache_dir <- function(dir = NULL) {
   if (is.null(dir)) {
@@ -252,6 +274,11 @@ vigiar_cache_dir <- function(dir = NULL) {
 #' @param refresh If \code{TRUE}, forces a new download.
 #' @param ... Additional arguments passed to \code{vigiar_baixar()}.
 #' @return A tibble (cached or freshly downloaded).
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' dados <- vigiar_baixar_com_cache("df_anual")
+#' }
 #' @export
 vigiar_baixar_com_cache <- function(tabela, max_age = 86400,
                                      refresh = FALSE, ...) {
@@ -312,6 +339,8 @@ vigiar_baixar_com_cache <- function(tabela, max_age = 86400,
 #' List cached tables
 #'
 #' @return A tibble with cache contents: tabela, linhas, colunas, idade, checksum.
+#' @examples
+#' vigiar_cache_info()
 #' @export
 vigiar_cache_info <- function() {
   cache_dir <- .vigiar_env$cache_dir
@@ -359,6 +388,8 @@ vigiar_cache_info <- function() {
 #' @param tabelas Character vector of table names. \code{NULL} = all.
 #' @param max_age Maximum age to keep (e.g., \code{86400} for 1 day).
 #'   \code{NULL} = no age filter.
+#' @examples
+#' vigiar_limpar_cache()
 #' @export
 vigiar_limpar_cache <- function(tabelas = NULL, max_age = NULL) {
   cache_dir <- .vigiar_env$cache_dir
@@ -410,6 +441,11 @@ vigiar_limpar_cache <- function(tabelas = NULL, max_age = NULL) {
 #'
 #' @param caminho File path (JSON).
 #' @return Invisibly, the lock data.
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' vigiar_esquema_lock(tempfile(fileext = ".json"))
+#' }
 #' @export
 vigiar_esquema_lock <- function(caminho = "vigiar_schema_lock.json") {
   if (is.null(.vigiar_env$esquema)) {
@@ -440,6 +476,12 @@ vigiar_esquema_lock <- function(caminho = "vigiar_schema_lock.json") {
 #'
 #' @param caminho Path to a lock file.
 #' @return A \code{vigiar_schema_lock} object.
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' path <- vigiar_esquema_lock(tempfile(fileext = ".json"))
+#' vigiar_esquema_carregar_lock(path)
+#' }
 #' @export
 vigiar_esquema_carregar_lock <- function(caminho = "vigiar_schema_lock.json") {
   if (!file.exists(caminho)) {
@@ -462,6 +504,11 @@ vigiar_esquema_carregar_lock <- function(caminho = "vigiar_schema_lock.json") {
 #'
 #' @param lock_path Path to lock file, or a \code{vigiar_schema_lock} object.
 #' @return Invisibly, a list of differences (empty if identical).
+#' @examples
+#' \dontrun{
+#' vigiar_conectar()
+#' vigiar_esquema_verificar()
+#' }
 #' @export
 vigiar_esquema_verificar <- function(lock_path = "vigiar_schema_lock.json") {
   if (is.null(.vigiar_env$esquema)) {

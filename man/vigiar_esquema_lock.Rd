@@ -17,3 +17,9 @@ Saves the entire conceptual schema (table names, column names,
 types) as a lock file. Later, \code{vigiar_esquema_verificar()}
 compares against this lock to detect changes.
 }
+\examples{
+\dontrun{
+vigiar_conectar()
+vigiar_esquema_lock(tempfile(fileext = ".json"))
+}
+}

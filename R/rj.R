@@ -107,6 +107,9 @@ RJ_MUNI_RANGE <- range(RJ_MUNICIPIOS$codigo_ibge)
 #'
 #' @return A data.frame with columns: codigo_ibge, municipio,
 #'   macrorregiao_saude, regiao_saude.
+#' @examples
+#' head(vigiar_rj_municipios())
+#' nrow(vigiar_rj_municipios())
 #' @export
 vigiar_rj_municipios <- function() {
   RJ_MUNICIPIOS
@@ -115,6 +118,8 @@ vigiar_rj_municipios <- function() {
 #' List Rio de Janeiro health macro-regions
 #'
 #' @return Character vector of the 9 macro-regions.
+#' @examples
+#' vigiar_rj_macrorregioes()
 #' @export
 vigiar_rj_macrorregioes <- function() {
   sort(unique(RJ_MUNICIPIOS$macrorregiao_saude))
@@ -123,6 +128,8 @@ vigiar_rj_macrorregioes <- function() {
 #' List Rio de Janeiro health regions
 #'
 #' @return Character vector of health regions.
+#' @examples
+#' vigiar_rj_regioes_saude()
 #' @export
 vigiar_rj_regioes_saude <- function() {
   sort(unique(RJ_MUNICIPIOS$regiao_saude))
@@ -133,6 +140,12 @@ vigiar_rj_regioes_saude <- function() {
 #' @param dados A processed VIGIAR tibble.
 #' @param agregacao One of "municipio", "macrorregiao", or "regiao_saude".
 #' @return A tibble with summary statistics.
+#' @examples
+#' dados <- data.frame(
+#'   cod_municipio = c(330455L, 330170L),
+#'   pm25_media = c(12.3, 18.9)
+#' )
+#' vigiar_rj_resumo(dados, agregacao = "municipio")
 #' @export
 vigiar_rj_resumo <- function(dados, agregacao = c("municipio", "macrorregiao", "regiao_saude")) {
   agregacao <- match.arg(agregacao)
@@ -192,6 +205,12 @@ vigiar_rj_resumo <- function(dados, agregacao = c("municipio", "macrorregiao", "
 #' @param dados A processed VIGIAR tibble with cod_municipio.
 #' @param agregacao "macrorregiao" or "regiao_saude".
 #' @return A tibble with aggregated data.
+#' @examples
+#' dados <- data.frame(
+#'   cod_municipio = c(330455L, 330170L),
+#'   pm25_media = c(12.3, 18.9)
+#' )
+#' vigiar_rj_series(dados, agregacao = "macrorregiao")
 #' @export
 vigiar_rj_series <- function(dados, agregacao = c("macrorregiao", "regiao_saude")) {
   agregacao <- match.arg(agregacao)
@@ -205,6 +224,9 @@ vigiar_rj_series <- function(dados, agregacao = c("macrorregiao", "regiao_saude"
 #' @param dados A data frame with a municipality code column.
 #' @param col_muni Name of the municipality code column (auto-detected).
 #' @return Invisibly, a list with validation results.
+#' @examples
+#' dados <- data.frame(cod_municipio = c(330455L, 355030L))
+#' vigiar_validar_rj(dados)
 #' @export
 vigiar_validar_rj <- function(dados, col_muni = NULL) {
   if (is.null(col_muni)) {
@@ -265,6 +287,10 @@ vigiar_validar_rj <- function(dados, col_muni = NULL) {
 #'   \code{"direct"} (single download), or \code{"year"} (ASC+DESC partition).
 #' @param ... Additional arguments passed to vigiar_baixar().
 #' @return A tibble with RJ-only data.
+#' @examples
+#' \dontrun{
+#' dados <- vigiar_baixar_rj("df_muni")
+#' }
 #' @export
 vigiar_baixar_rj <- function(tabela, strategy = c("auto", "direct", "year"), ...) {
   strategy <- match.arg(strategy)

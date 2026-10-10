@@ -19,3 +19,10 @@ Named list of tibbles.
 \description{
 Download multiple tables
 }
+\examples{
+\dontrun{
+vigiar_conectar()
+vigiar_status()
+tudo <- vigiar_baixar_tudo(c("df_anual", "df_muni"))
+}
+}

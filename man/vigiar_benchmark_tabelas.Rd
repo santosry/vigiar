@@ -20,3 +20,10 @@ A tibble with per-table performance metrics.
 Runs benchmarks on multiple tables and compares download performance.
 Useful for monitoring API health and choosing strategies.
 }
+\examples{
+\dontrun{
+vigiar_conectar()
+vigiar_status()
+vigiar_benchmark_tabelas(c("df_anual", "df_muni"), repeticoes = 1)
+}
+}

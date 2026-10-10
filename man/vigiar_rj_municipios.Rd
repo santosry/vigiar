@@ -13,3 +13,7 @@ macrorregiao_saude, regiao_saude.
 \description{
 List all 92 Rio de Janeiro municipalities
 }
+\examples{
+head(vigiar_rj_municipios())
+nrow(vigiar_rj_municipios())
+}
