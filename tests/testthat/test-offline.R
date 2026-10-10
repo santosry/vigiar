@@ -36,8 +36,8 @@ test_that(".vigiar_tipo_dado maps Power BI types to R types", {
   expect_equal(.vigiar_tipo_dado(5), "logical")
   expect_equal(.vigiar_tipo_dado(6), "Date")
   expect_equal(.vigiar_tipo_dado(7), "POSIXct")
-  expect_equal(.vigiar_tipo_dado(8), "numeric")  # Int64 → numeric
-  expect_equal(.vigiar_tipo_dado(999), "character")  # fallback
+  expect_equal(.vigiar_tipo_dado(8), "numeric") # Int64 → numeric
+  expect_equal(.vigiar_tipo_dado(999), "character") # fallback
 })
 
 # ── Cookie extraction ─────────────────────────────────────────────────────────
@@ -91,7 +91,9 @@ test_that(".vigiar_construir_query builds correct structure", {
       col2 = list(nome = "col2", tipo = "character")
     )
   )
-  on.exit({ .vigiar_env$esquema <- old_esquema })
+  on.exit({
+    .vigiar_env$esquema <- old_esquema
+  })
 
   q <- .vigiar_construir_query("teste", modelo_id = 123)
 
@@ -115,10 +117,14 @@ test_that(".vigiar_construir_query handles order_by", {
       x = list(nome = "x", tipo = "integer")
     )
   )
-  on.exit({ .vigiar_env$esquema <- old_esquema })
+  on.exit({
+    .vigiar_env$esquema <- old_esquema
+  })
 
-  q <- .vigiar_construir_query("teste", colunas = "x",
-                                 ordenar_por = "x", modelo_id = 1)
+  q <- .vigiar_construir_query("teste",
+    colunas = "x",
+    ordenar_por = "x", modelo_id = 1
+  )
   cmd <- q$queries[[1]]$Query$Commands[[1]]$SemanticQueryDataShapeCommand
   expect_equal(cmd$Query$OrderBy[[1]]$Expression$Column$Property, "x")
 })
@@ -134,9 +140,9 @@ test_that(".vigiar_construir_query handles order_by", {
           descriptor = list(
             Select = lapply(seq_along(schema), function(i) {
               list(
-                Name  = schema[[i]]$Name %||% paste0("col", i),
-                Type  = schema[[i]]$T %||% 1L,
-                Kind  = 1L, Depth = 0L,
+                Name = schema[[i]]$Name %||% paste0("col", i),
+                Type = schema[[i]]$T %||% 1L,
+                Kind = 1L, Depth = 0L,
                 Value = paste0("G", i - 1L)
               )
             })
@@ -156,14 +162,14 @@ test_that(".vigiar_construir_query handles order_by", {
 
 test_that(".vigiar_parse_dados handles simple flat table", {
   schema <- list(
-    list(N = "G0", T = 4L),          # integer
-    list(N = "G1", T = 1L),          # text
-    list(N = "G2", T = 3L)           # double
+    list(N = "G0", T = 4L), # integer
+    list(N = "G1", T = 1L), # text
+    list(N = "G2", T = 3L) # double
   )
   dm0 <- list(
     list(S = schema, C = list(2020L, "SP", 25.5)),
-    list(R = 3L, C = list(30.1)),              # bitmask: cols 0,1 repeat, col 2 new
-    list(R = 1L, C = list("RJ", 18.2))          # bitmask: col 0 repeats, cols 1,2 new
+    list(R = 3L, C = list(30.1)), # bitmask: cols 0,1 repeat, col 2 new
+    list(R = 1L, C = list("RJ", 18.2)) # bitmask: col 0 repeats, cols 1,2 new
   )
   names(schema) <- c("ano", "uf", "pm25")
   for (i in seq_along(schema)) schema[[i]]$Name <- names(schema)[i]
@@ -173,8 +179,8 @@ test_that(".vigiar_parse_dados handles simple flat table", {
 
   expect_equal(nrow(df), 3)
   expect_equal(ncol(df), 3)
-  expect_equal(df$ano,  c(2020, 2020, 2020))
-  expect_equal(df$uf,   c("SP", "SP", "RJ"))
+  expect_equal(df$ano, c(2020, 2020, 2020))
+  expect_equal(df$uf, c("SP", "SP", "RJ"))
   expect_equal(df$pm25, c(25.5, 30.1, 18.2))
 })
 
@@ -188,8 +194,8 @@ test_that(".vigiar_parse_dados resolves ValueDicts", {
 
   dm0 <- list(
     list(S = schema, C = list(1L, 0L)),
-    list(R = 1L, C = list(1L)),               # bitmask: col 0 repeats, col 1 new -> "Rio de Janeiro"
-    list(R = 1L, C = list(2L))                # bitmask: col 0 repeats, col 1 new -> "Minas Gerais"
+    list(R = 1L, C = list(1L)), # bitmask: col 0 repeats, col 1 new -> "Rio de Janeiro"
+    list(R = 1L, C = list(2L)) # bitmask: col 0 repeats, col 1 new -> "Minas Gerais"
   )
   vd <- list(D0 = c("Sao Paulo", "Rio de Janeiro", "Minas Gerais"))
 
@@ -211,7 +217,7 @@ test_that(".vigiar_parse_dados warns on DM0 with R but no previous row", {
   schema[[1]]$Name <- "x"
 
   dm0 <- list(
-    list(R = 1L, C = list(1L))  # bitmask: col 0 repeats; first row triggers warning
+    list(R = 1L, C = list(1L)) # bitmask: col 0 repeats; first row triggers warning
   )
 
   resp <- .make_dsr_response(schema, dm0)
@@ -233,7 +239,7 @@ test_that(".vigiar_parse_dados pads short rows", {
 
   dm0 <- list(
     list(S = schema, C = list(1L, 2L, 3L)),
-    list(R = 1L, C = list(5L))  # bitmask: col 0 repeats, cols 1,2 new; col 2 padded with NA
+    list(R = 1L, C = list(5L)) # bitmask: col 0 repeats, cols 1,2 new; col 2 padded with NA
   )
 
   resp <- .make_dsr_response(schema, dm0)
@@ -369,7 +375,7 @@ test_that("vigiar_dicionario returns tibble", {
 test_that("vigiar_variaveis filters by domain", {
   pm25_vars <- vigiar_variaveis("pm25")
   expect_true(all(pm25_vars$table_id %in%
-    c("df_anual", "df_mensal", "df_dias", "df_dias_conama")))
+                    c("df_anual", "df_mensal", "df_dias", "df_dias_conama")))
 })
 
 test_that("vigiar_descrever_variavel errors on missing variable", {

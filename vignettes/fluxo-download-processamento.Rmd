@@ -82,11 +82,11 @@ pm25 <- vigiar_baixar("df_anual") |>
   process_pm25()
 
 # Indicadores de saúde — Brasil
-saúde_brasil <- vigiar_baixar("tb_brasil") |>
+saude_brasil <- vigiar_baixar("tb_brasil") |>
   process_indicadores_saude(agregacao = "brasil")
 
 # Indicadores de saúde — UF
-saúde_uf <- vigiar_baixar("tb_uf") |>
+saude_uf <- vigiar_baixar("tb_uf") |>
   process_indicadores_saude(agregacao = "uf")
 
 # Fração atribuível

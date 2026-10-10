@@ -18,16 +18,19 @@ test_that("vigiar_variaveis filters by domain", {
   pm <- vigiar_variaveis("pm25")
   expect_true(nrow(pm) > 0)
   expect_true(all(pm$table_id %in%
-    c("df_anual", "df_mensal", "df_dias", "df_dias_conama")))
+                    c("df_anual", "df_mensal", "df_dias", "df_dias_conama")))
 
   expect_error(vigiar_variaveis("dominio_invalido"), "arg")
 })
 
 test_that("every advertised domain is populated in the dictionary", {
-  for (dom in c("pm25", "populacao_exposta", "indicadores_saude",
-                "fracao_atribuivel", "exposicao_indoor", "municipios")) {
+  for (dom in c(
+    "pm25", "populacao_exposta", "indicadores_saude",
+    "fracao_atribuivel", "exposicao_indoor", "municipios"
+  )) {
     expect_true(nrow(vigiar_variaveis(dom)) > 0,
-                info = paste("dominio vazio:", dom))
+      info = paste("dominio vazio:", dom)
+    )
   }
 })
 
@@ -46,8 +49,10 @@ test_that("vigiar_descrever_variavel prints a known variable and errors on unkno
 test_that("vigiar_schema returns the documentation summary", {
   schema <- vigiar_schema("municipios")
   expect_s3_class(schema, "tbl_df")
-  expect_named(schema, c("table_id", "standard_name", "type_processed",
-                         "description", "unit"))
+  expect_named(schema, c(
+    "table_id", "standard_name", "type_processed",
+    "description", "unit"
+  ))
 })
 
 test_that("vigiar_convencoes opens the documentation URL", {

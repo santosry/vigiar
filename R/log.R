@@ -68,14 +68,16 @@ vigiar_log <- function() {
 
   df <- tibble::tibble(
     timestamp = vapply(entries, `[[`, "", "timestamp", USE.NAMES = FALSE),
-    level     = vapply(entries, `[[`, "", "level", USE.NAMES = FALSE),
-    message   = vapply(entries, `[[`, "", "message", USE.NAMES = FALSE),
-    table     = vapply(entries, function(e) {
+    level = vapply(entries, `[[`, "", "level", USE.NAMES = FALSE),
+    message = vapply(entries, `[[`, "", "message", USE.NAMES = FALSE),
+    table = vapply(entries, function(e) {
       t <- e$table %||% NA_character_
       if (length(t) == 0) NA_character_ else t
     }, "", USE.NAMES = FALSE),
     metadata_json = vapply(entries, function(e) {
-      if (length(e$metadata) == 0) return("{}")
+      if (length(e$metadata) == 0) {
+        return("{}")
+      }
       jsonlite::toJSON(e$metadata, auto_unbox = TRUE, null = "null")
     }, "", USE.NAMES = FALSE)
   )
@@ -184,7 +186,7 @@ vigiar_resumo_log <- function() {
     n_cols    = n_cols,
     elapsed   = elapsed,
     url       = url,
-    checksum  = NULL  # filled later if data is available
+    checksum  = NULL # filled later if data is available
   )
 
   if (is.null(.vigiar_env$download_history)) {
@@ -192,10 +194,13 @@ vigiar_resumo_log <- function() {
   }
   .vigiar_env$download_history[[length(.vigiar_env$download_history) + 1L]] <- entry
 
-  .vigiar_log("INFO", sprintf("Download: %s (%d linhas x %d colunas, %.1fs)",
-                               tabela, n_rows, n_cols, elapsed),
-               table = tabela,
-               metadata = list(n_rows = n_rows, n_cols = n_cols, elapsed = elapsed))
+  .vigiar_log("INFO", sprintf(
+    "Download: %s (%d linhas x %d colunas, %.1fs)",
+    tabela, n_rows, n_cols, elapsed
+  ),
+  table = tabela,
+  metadata = list(n_rows = n_rows, n_cols = n_cols, elapsed = elapsed)
+  )
 
   invisible(entry)
 }
@@ -208,7 +213,7 @@ vigiar_resumo_log <- function() {
 #' @export
 vigiar_historico_downloads <- function() {
   if (is.null(.vigiar_env$download_history) ||
-      length(.vigiar_env$download_history) == 0) {
+        length(.vigiar_env$download_history) == 0) {
     cli::cli_alert_info("Nenhum download registrado nesta sessao.")
     return(tibble::tibble(
       timestamp = character(0),
@@ -238,7 +243,9 @@ vigiar_historico_downloads <- function() {
 #' @export
 vigiar_resumo_downloads <- function() {
   hist <- vigiar_historico_downloads()
-  if (nrow(hist) == 0) return(invisible())
+  if (nrow(hist) == 0) {
+    return(invisible())
+  }
 
   cli::cli_h1("Resumo de Downloads")
   cli::cli_text("Total de downloads: {nrow(hist)}")

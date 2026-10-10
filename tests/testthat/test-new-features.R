@@ -113,8 +113,10 @@ test_that("vigiar_compliance_check runs all profiles", {
     ano = c(2022L, 2022L),
     stringsAsFactors = FALSE
   )
-  result <- vigiar_compliance_check(dados, tabela = "test",
-                                     profiles = c("basico", "rigoroso", "rj", "corrupcao"))
+  result <- vigiar_compliance_check(dados,
+    tabela = "test",
+    profiles = c("basico", "rigoroso", "rj", "corrupcao")
+  )
   expect_s3_class(result, "vigiar_compliance")
   expect_equal(names(result), c("basico", "rigoroso", "rj", "corrupcao"))
 })
@@ -242,7 +244,7 @@ test_that("vigiar_verificar_snapshot confirms integrity", {
 test_that("vigiar_verificar_snapshot detects corruption", {
   dados <- data.frame(x = 1:3)
   snap <- vigiar_snapshot(dados = dados, tabela = "test")
-  snap$dados$x[1] <- 999  # corrupt
+  snap$dados$x[1] <- 999 # corrupt
   expect_false(vigiar_verificar_snapshot(snap))
 })
 
@@ -285,7 +287,9 @@ test_that("vigiar_comparar_snapshots detects column changes", {
 
 test_that("vigiar_cache_dir sets and gets directory", {
   old_cache <- .vigiar_env$cache_dir
-  on.exit({ .vigiar_env$cache_dir <- old_cache })
+  on.exit({
+    .vigiar_env$cache_dir <- old_cache
+  })
 
   tmp <- file.path(tempdir(), "vigiar_test_cache")
   on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
@@ -301,7 +305,9 @@ test_that("vigiar_cache_dir sets and gets directory", {
 
 test_that("vigiar_cache_info returns tibble when empty", {
   old_cache <- .vigiar_env$cache_dir
-  on.exit({ .vigiar_env$cache_dir <- old_cache })
+  on.exit({
+    .vigiar_env$cache_dir <- old_cache
+  })
 
   tmp <- file.path(tempdir(), "vigiar_empty_cache")
   dir.create(tmp, showWarnings = FALSE)
@@ -315,7 +321,9 @@ test_that("vigiar_cache_info returns tibble when empty", {
 
 test_that("vigiar_limpar_cache handles empty cache", {
   old_cache <- .vigiar_env$cache_dir
-  on.exit({ .vigiar_env$cache_dir <- old_cache })
+  on.exit({
+    .vigiar_env$cache_dir <- old_cache
+  })
 
   tmp <- file.path(tempdir(), "vigiar_clear_cache")
   dir.create(tmp, showWarnings = FALSE)
@@ -460,8 +468,10 @@ test_that("vigiar_compliance_check invalid profile errors", {
 
 test_that(".vigiar_log metadata is preserved in log", {
   .vigiar_env$log <- list()
-  .vigiar_log("INFO", "Test with meta", table = "test",
-              metadata = list(key1 = "val1", key2 = 42))
+  .vigiar_log("INFO", "Test with meta",
+    table = "test",
+    metadata = list(key1 = "val1", key2 = 42)
+  )
   df <- vigiar_log()
   expect_equal(nrow(df), 1)
   meta_json <- df$metadata_json[1]

@@ -40,7 +40,7 @@ vigiar_esquema <- function(tabela = NULL) {
     col_info <- .vigiar_env$esquema[[tabela]]
     df <- data.frame(
       coluna = names(col_info),
-      tipo   = vapply(col_info, `[[`, "", "tipo", USE.NAMES = FALSE),
+      tipo = vapply(col_info, `[[`, "", "tipo", USE.NAMES = FALSE),
       stringsAsFactors = FALSE
     )
     print(df, row.names = FALSE)
@@ -72,8 +72,8 @@ vigiar_esquema <- function(tabela = NULL) {
 #' }
 #' @export
 vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
-                           limite = NULL, timeout = 120, uf = "RJ",
-                           direcao = c("asc", "desc")) {
+                          limite = NULL, timeout = 120, uf = "RJ",
+                          direcao = c("asc", "desc")) {
   # Validate arguments (checkmate — microdatasus pattern)
   checkmate::assert_string(tabela, null.ok = FALSE)
   checkmate::assert_character(colunas, null.ok = TRUE, any.missing = FALSE)
@@ -110,7 +110,8 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
   )
 
   resposta <- .vigiar_executar_query(
-    .vigiar_env$sessao, query, timeout = timeout
+    .vigiar_env$sessao, query,
+    timeout = timeout
   )
   dados <- .vigiar_parse_dados(resposta, tabela)
 
@@ -128,7 +129,7 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
       if (!is.na(col_muni) && toupper(uf) == "RJ") {
         n_antes <- nrow(dados)
         dados <- dados[as.integer(dados[[col_muni]]) >= RJ_MUNI_RANGE[1] &
-                       as.integer(dados[[col_muni]]) <= RJ_MUNI_RANGE[2], ]
+                         as.integer(dados[[col_muni]]) <= RJ_MUNI_RANGE[2], ]
         cli::cli_alert_info("Filtro RJ (IBGE range via '{col_muni}'): {nrow(dados)} linhas (de {n_antes}).")
       }
     }
@@ -137,7 +138,8 @@ vigiar_baixar <- function(tabela, colunas = NULL, ordenar_por = NULL,
   # Warn if data might be truncated by API limit
   if (is.null(limite) && nrow(dados) >= 29000) {
     .vigiar_log("WARN", sprintf("Possivel truncamento: %d linhas (limite API ~30K)", nrow(dados)),
-                table = tabela)
+      table = tabela
+    )
     warning(
       "A API do Power BI limitou a resposta a ", nrow(dados), " linhas. ",
       "Para tabelas grandes (df_anual, df_mensal), os dados podem estar ",
@@ -267,11 +269,11 @@ vigiar_info <- function() {
   }
 
   catalogo <- .vigiar_catalogo()
-  tabelas  <- names(.vigiar_env$esquema)
-  n_cols   <- vapply(.vigiar_env$esquema, length, integer(1))
+  tabelas <- names(.vigiar_env$esquema)
+  n_cols <- vapply(.vigiar_env$esquema, length, integer(1))
 
   result <- data.frame(
-    tabela  = tabelas,
+    tabela = tabelas,
     colunas = n_cols,
     stringsAsFactors = FALSE
   )
@@ -328,9 +330,11 @@ vigiar_checar_dados <- function(dados, tabela = NULL) {
     cat("\nValores ausentes por coluna:\n")
     na_info <- na_count[na_count > 0]
     for (nm in names(na_info)) {
-      cat(sprintf("  %-30s %d (%.1f%%)\n",
-                  nm, na_info[[nm]],
-                  100 * na_info[[nm]] / checks$n_rows))
+      cat(sprintf(
+        "  %-30s %d (%.1f%%)\n",
+        nm, na_info[[nm]],
+        100 * na_info[[nm]] / checks$n_rows
+      ))
     }
   } else {
     cat("Valores ausentes: 0\n")
@@ -364,13 +368,16 @@ vigiar_diagnostico <- function(amostra = 100) {
 
   for (tab in tabelas) {
     message(sprintf("Amostrando '%s' (%d linhas)...", tab, amostra))
-    resultados[[tab]] <- tryCatch({
-      dados <- vigiar_baixar(tab, limite = amostra)
-      vigiar_checar_dados(dados, tabela = tab)
-    }, error = function(e) {
-      warning(sprintf("Falha em '%s': %s", tab, e$message))
-      list(error = e$message)
-    })
+    resultados[[tab]] <- tryCatch(
+      {
+        dados <- vigiar_baixar(tab, limite = amostra)
+        vigiar_checar_dados(dados, tabela = tab)
+      },
+      error = function(e) {
+        warning(sprintf("Falha em '%s': %s", tab, e$message))
+        list(error = e$message)
+      }
+    )
   }
 
   invisible(resultados)

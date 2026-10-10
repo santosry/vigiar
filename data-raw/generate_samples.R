@@ -3,18 +3,19 @@ set.seed(2026)
 
 pm25_rj_sample <- expand.grid(
   cod_municipio = c(
-    330455,  # Rio de Janeiro - Metropolitana I
-    330170,  # Duque de Caxias - Metropolitana I
-    330330,  # Niteroi - Metropolitana II
-    330350,  # Nova Iguacu - Metropolitana I
-    330490   # Sao Goncalo - Metropolitana II
+    330455, # Rio de Janeiro - Metropolitana I
+    330170, # Duque de Caxias - Metropolitana I
+    330330, # Niteroi - Metropolitana II
+    330350, # Nova Iguacu - Metropolitana I
+    330490 # Sao Goncalo - Metropolitana II
   ),
   ano = 2020:2022,
   stringsAsFactors = FALSE
 )
 
 pm25_rj_sample$pm25_media_anual <- round(abs(rnorm(
-  nrow(pm25_rj_sample), mean = 11.5, sd = 2.8
+  nrow(pm25_rj_sample),
+  mean = 11.5, sd = 2.8
 )), 1)
 
 pm25_rj_sample$sigla_uf <- "RJ"
@@ -27,7 +28,7 @@ pm25_rj_sample$pm25_categoria <- cut(
 
 coords <- data.frame(
   cod_municipio = c(330455, 330170, 330330, 330350, 330490),
-  latitude  = c(-22.91, -22.79, -22.88, -22.76, -22.83),
+  latitude = c(-22.91, -22.79, -22.88, -22.76, -22.83),
   longitude = c(-43.20, -43.31, -43.10, -43.45, -43.05)
 )
 

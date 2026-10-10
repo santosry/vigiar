@@ -31,11 +31,11 @@ vigiar_auditar <- function(dados, tabela = NULL, verbose = TRUE) {
   }
 
   audit <- list(
-    tabela     = tabela,
-    timestamp  = Sys.time(),
-    r_version  = R.version.string,
+    tabela = tabela,
+    timestamp = Sys.time(),
+    r_version = R.version.string,
     vigiar_version = as.character(utils::packageVersion("vigiar")),
-    session_info  = .vigiar_session_info()
+    session_info = .vigiar_session_info()
   )
 
   # 1. Schema compliance
@@ -199,11 +199,13 @@ print.vigiar_audit_list <- function(x, ...) {
 #'   \code{"corrupcao"}. Use \code{"all"} for everything.
 #' @return A list of per-profile audit results.
 #' @examples
-#' vigiar_compliance_check(pm25_rj_sample, tabela = "df_anual",
-#'                         profiles = c("basico", "rigoroso"))
+#' vigiar_compliance_check(pm25_rj_sample,
+#'   tabela = "df_anual",
+#'   profiles = c("basico", "rigoroso")
+#' )
 #' @export
 vigiar_compliance_check <- function(dados, tabela = NULL,
-                                     profiles = c("basico", "rigoroso", "rj")) {
+                                    profiles = c("basico", "rigoroso", "rj")) {
   tabela <- tabela %||% attr(dados, "vigiar_tabela") %||% "desconhecida"
 
   all_profiles <- c("basico", "rigoroso", "rj", "corrupcao")
@@ -222,7 +224,7 @@ vigiar_compliance_check <- function(dados, tabela = NULL,
           schema   = .vigiar_auditar_schema(dados, tabela, TRUE),
           ibge     = .vigiar_auditar_ibge(dados, TRUE),
           temporal = .vigiar_auditar_temporal(dados, TRUE),
-          ok       = TRUE  # evaluated below
+          ok       = TRUE # evaluated below
         )
       },
       rigoroso = {
@@ -299,8 +301,12 @@ print.vigiar_compliance <- function(x, ...) {
   issues <- character(0)
 
   if (n_rows == 0) issues <- c(issues, "Tabela vazia (0 linhas)")
-  if (n_dup > 0) issues <- c(issues, sprintf("%d linhas duplicadas (%.1f%%)",
-                                              n_dup, 100 * n_dup / n_rows))
+  if (n_dup > 0) {
+    issues <- c(issues, sprintf(
+      "%d linhas duplicadas (%.1f%%)",
+      n_dup, 100 * n_dup / n_rows
+    ))
+  }
   if (na_pct > 20) issues <- c(issues, sprintf("Alta taxa de NAs: %.1f%%", na_pct))
 
   # Check against schema if we have one
@@ -310,13 +316,17 @@ print.vigiar_compliance <- function(x, ...) {
     missing <- setdiff(expected_cols, col_names)
     extra <- setdiff(col_names, expected_cols)
     if (length(missing) > 0) {
-      issues <- c(issues, sprintf("Colunas esperadas ausentes: %s",
-                                  paste(missing, collapse = ", ")))
+      issues <- c(issues, sprintf(
+        "Colunas esperadas ausentes: %s",
+        paste(missing, collapse = ", ")
+      ))
       schema_ok <- FALSE
     }
     if (length(extra) > 0) {
-      issues <- c(issues, sprintf("Colunas extras inesperadas: %s",
-                                  paste(extra, collapse = ", ")))
+      issues <- c(issues, sprintf(
+        "Colunas extras inesperadas: %s",
+        paste(extra, collapse = ", ")
+      ))
       schema_ok <- FALSE
     }
   }
@@ -341,8 +351,10 @@ print.vigiar_compliance <- function(x, ...) {
 
 .vigiar_auditar_ibge <- function(dados, verbose) {
   col_muni <- intersect(
-    c("cod_municipio", "muni", "id_muni", "ID_MUNI", "codigo_ibge",
-      "cod_ibge", "codigo_municipio", "MUN_COD"),
+    c(
+      "cod_municipio", "muni", "id_muni", "ID_MUNI", "codigo_ibge",
+      "cod_ibge", "codigo_municipio", "MUN_COD"
+    ),
     names(dados)
   )[1]
 
@@ -376,12 +388,12 @@ print.vigiar_compliance <- function(x, ...) {
   }
 
   list(
-    ok        = ok,
-    n_total   = length(codigos),
+    ok = ok,
+    n_total = length(codigos),
     n_validos = length(validos),
     n_invalidos = length(invalidos),
     codigos_invalidos = invalidos,
-    details   = details
+    details = details
   )
 }
 
@@ -525,10 +537,10 @@ print.vigiar_compliance <- function(x, ...) {
   }
 
   list(
-    ok                 = length(faltantes) == 0,
-    n_presentes        = length(presentes),
-    n_faltantes        = length(faltantes),
-    pct_cobertura      = pct,
+    ok = length(faltantes) == 0,
+    n_presentes = length(presentes),
+    n_faltantes = length(faltantes),
+    pct_cobertura = pct,
     municipios_faltantes = faltantes
   )
 }
@@ -545,13 +557,17 @@ print.vigiar_compliance <- function(x, ...) {
 
   # Check for constant-value columns
   constant <- vapply(dados, function(x) {
-    if (all(is.na(x))) return(FALSE)
+    if (all(is.na(x))) {
+      return(FALSE)
+    }
     length(unique(x[!is.na(x)])) == 1L
   }, logical(1))
   if (any(constant)) {
     const_cols <- names(dados)[constant]
-    issues <- c(issues, sprintf("Colunas com valor unico: %s",
-                                paste(const_cols, collapse = ", ")))
+    issues <- c(issues, sprintf(
+      "Colunas com valor unico: %s",
+      paste(const_cols, collapse = ", ")
+    ))
   }
 
   # Check for mixed types per column (raw list columns)
@@ -559,8 +575,10 @@ print.vigiar_compliance <- function(x, ...) {
     if (is.list(dados[[col]]) && !inherits(dados[[col]], "POSIXct")) {
       types <- unique(vapply(dados[[col]], typeof, ""))
       if (length(types) > 1) {
-        issues <- c(issues, sprintf("Coluna '%s' tem tipos mistos: %s",
-                                    col, paste(types, collapse = ", ")))
+        issues <- c(issues, sprintf(
+          "Coluna '%s' tem tipos mistos: %s",
+          col, paste(types, collapse = ", ")
+        ))
       }
     }
   }
@@ -569,8 +587,10 @@ print.vigiar_compliance <- function(x, ...) {
   if (!is.null(.vigiar_env$esquema) && tabela %in% names(.vigiar_env$esquema)) {
     expected_ncols <- length(.vigiar_env$esquema[[tabela]])
     if (ncol(dados) != expected_ncols) {
-      issues <- c(issues,
-        sprintf("Numero de colunas: %d (esperado: %d)", ncol(dados), expected_ncols))
+      issues <- c(
+        issues,
+        sprintf("Numero de colunas: %d (esperado: %d)", ncol(dados), expected_ncols)
+      )
     }
   }
 
@@ -685,11 +705,11 @@ vigiar_checksum <- function(dados) {
 
 .vigiar_session_info <- function() {
   list(
-    r_version   = R.version.string,
-    platform    = R.version$platform,
-    locale      = Sys.getlocale("LC_COLLATE"),
-    timezone    = Sys.timezone(),
-    packages    = c(
+    r_version = R.version.string,
+    platform = R.version$platform,
+    locale = Sys.getlocale("LC_COLLATE"),
+    timezone = Sys.timezone(),
+    packages = c(
       httr2 = as.character(utils::packageVersion("httr2")),
       jsonlite = as.character(utils::packageVersion("jsonlite")),
       tibble = as.character(utils::packageVersion("tibble")),
@@ -712,8 +732,10 @@ vigiar_checksum <- function(dados) {
 #' @export
 vigiar_exportar_auditoria <- function(audit, caminho) {
   dir.create(dirname(caminho), showWarnings = FALSE, recursive = TRUE)
-  json <- jsonlite::toJSON(audit, auto_unbox = TRUE, pretty = TRUE,
-                            null = "null", force = TRUE)
+  json <- jsonlite::toJSON(audit,
+    auto_unbox = TRUE, pretty = TRUE,
+    null = "null", force = TRUE
+  )
   writeLines(json, caminho)
   cli::cli_alert_success("Auditoria exportada: {caminho}")
   invisible(caminho)

@@ -17,8 +17,10 @@ test_that("vigiar_conectar builds a session and loads the schema", {
   expect_equal(sess$cookies, "ARRAffinity=abc")
   expect_true(vigiar_sessao_ativa())
   expect_setequal(names(.vigiar_env$esquema), c("df_anual", "df_muni"))
-  expect_setequal(names(.vigiar_env$esquema$df_anual),
-                  c("ano", "muni", "Media_pm25"))
+  expect_setequal(
+    names(.vigiar_env$esquema$df_anual),
+    c("ano", "muni", "Media_pm25")
+  )
 })
 
 test_that("vigiar_conectar reuses an active session unless refreshed", {
@@ -123,7 +125,7 @@ test_that("vigiar_client returns a self-contained client", {
   expect_s3_class(cli, "vigiar_client")
   expect_equal(cli$session_id, "sess-test")
   expect_setequal(names(cli$schema), c("df_anual", "df_muni"))
-  expect_output(print(cli), "VIGIAR client")
+  expect_output(print(cli), "Cliente VIGIAR")
 })
 
 test_that("vigiar_client validates its arguments", {

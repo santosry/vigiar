@@ -25,10 +25,12 @@
 #' vigiar_agregar_tempo(pm25_rj_sample, agregar_por = c("ano", "sigla_uf"))
 #' @export
 vigiar_agregar_tempo <- function(dados,
-                                  agregar_por = c("ano"),
-                                  variavel = NULL,
-                                  funcoes = list(media = function(x) mean(x, na.rm = TRUE),
-                                                 n     = length)) {
+                                 agregar_por = c("ano"),
+                                 variavel = NULL,
+                                 funcoes = list(
+                                   media = function(x) mean(x, na.rm = TRUE),
+                                   n = length
+                                 )) {
   if (!"ano" %in% names(dados)) {
     stop("A coluna 'ano' e obrigatoria para agregacao temporal.")
   }
@@ -82,7 +84,7 @@ vigiar_agregar_tempo <- function(dados,
 #' vigiar_tendencia_descritiva(pm25_rj_sample)
 #' @export
 vigiar_tendencia_descritiva <- function(dados, variavel = NULL,
-                                         janela_media_movel = 3) {
+                                        janela_media_movel = 3) {
   if (is.null(variavel)) {
     variavel <- .vigiar_detectar_variavel_numerica(dados)
   }
@@ -131,7 +133,7 @@ vigiar_tendencia_descritiva <- function(dados, variavel = NULL,
 #' vigiar_serie_temporal(pm25_rj_sample, nivel = "uf")
 #' @export
 vigiar_serie_temporal <- function(dados,
-                                   nivel = c("nacional", "uf", "municipio")) {
+                                  nivel = c("nacional", "uf", "municipio")) {
   nivel <- match.arg(nivel)
 
   agrupar <- switch(nivel,
@@ -148,8 +150,8 @@ vigiar_serie_temporal <- function(dados,
   vigiar_agregar_tempo(
     dados,
     agregar_por = agrupar,
-    variavel    = variavel,
-    funcoes     = list(
+    variavel = variavel,
+    funcoes = list(
       media = function(x) mean(x, na.rm = TRUE),
       dp    = function(x) stats::sd(x, na.rm = TRUE),
       n     = length,
@@ -173,7 +175,9 @@ vigiar_serie_temporal <- function(dados,
   if (length(found) == 0) {
     # Pick first numeric column
     for (col in names(dados)) {
-      if (is.numeric(dados[[col]])) return(col)
+      if (is.numeric(dados[[col]])) {
+        return(col)
+      }
     }
     return(NULL)
   }

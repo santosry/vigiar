@@ -31,6 +31,16 @@
 * Conexao: handshake e obtencao de schema unificados entre
   `vigiar_conectar()` e `vigiar_client()`.
 
+## Estilo, lint e idioma
+
+* `.lintr`: corrigido para o lintr 3.x (`ALL_CAPS` -> `SNAKE_CASE`) e
+  desabilitado `object_usage_linter`, que gerava ~170 falsos positivos para
+  referencias internas entre arquivos (o `R CMD check` ja cobre isso).
+* Codigo formatado com `styler`; o workflow de `lint` agora **falha** se
+  houver qualquer lint (antes apenas imprimia o resultado e sempre passava).
+* Mensagens ao usuario padronizadas em pt-BR (metodos `print.vigiar_client`
+  e `summary.vigiar_diagnostic`, antes com termos em ingles).
+
 # vigiar 0.7.2
 
 Esta e a versao estavel atual, distribuida via GitHub.

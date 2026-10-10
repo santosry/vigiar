@@ -68,13 +68,13 @@ vigiar_resumo_pm25 <- function(x, ...) {
 
   if (length(pm25_col) == 1) {
     vals <- x[[pm25_col]]
-    res$media     <- mean(vals, na.rm = TRUE)
-    res$mediana   <- median(vals, na.rm = TRUE)
-    res$min       <- min(vals, na.rm = TRUE)
-    res$max       <- max(vals, na.rm = TRUE)
+    res$media <- mean(vals, na.rm = TRUE)
+    res$mediana <- median(vals, na.rm = TRUE)
+    res$min <- min(vals, na.rm = TRUE)
+    res$max <- max(vals, na.rm = TRUE)
     res$desvio_padrao <- sd(vals, na.rm = TRUE)
-    res$p25       <- quantile(vals, 0.25, na.rm = TRUE)
-    res$p75       <- quantile(vals, 0.75, na.rm = TRUE)
+    res$p25 <- quantile(vals, 0.25, na.rm = TRUE)
+    res$p75 <- quantile(vals, 0.75, na.rm = TRUE)
     res$n_fora_faixa <- sum(!is.na(vals) & (vals < 0 | vals > 1000))
   }
 
@@ -91,10 +91,10 @@ vigiar_resumo_saude <- function(x, ...) {
 
   if ("estimativa" %in% names(x)) {
     vals <- x$estimativa
-    res$media     <- mean(vals, na.rm = TRUE)
-    res$mediana   <- median(vals, na.rm = TRUE)
-    res$min       <- min(vals, na.rm = TRUE)
-    res$max       <- max(vals, na.rm = TRUE)
+    res$media <- mean(vals, na.rm = TRUE)
+    res$mediana <- median(vals, na.rm = TRUE)
+    res$min <- min(vals, na.rm = TRUE)
+    res$max <- max(vals, na.rm = TRUE)
   }
 
   if ("indicador" %in% names(x)) {
@@ -125,9 +125,9 @@ vigiar_resumo_fracao_atribuivel <- function(x, ...) {
   res <- .vigiar_resumo_generico(x)
   if ("fracao_atribuivel" %in% names(x)) {
     vals <- x$fracao_atribuivel
-    res$media  <- mean(vals, na.rm = TRUE)
-    res$min    <- min(vals, na.rm = TRUE)
-    res$max    <- max(vals, na.rm = TRUE)
+    res$media <- mean(vals, na.rm = TRUE)
+    res$min <- min(vals, na.rm = TRUE)
+    res$max <- max(vals, na.rm = TRUE)
   }
   res$tabela_original <- attr(x, "vigiar_tabela") %||% NA_character_
   res
@@ -139,9 +139,9 @@ vigiar_resumo_indoor <- function(x, ...) {
   res <- .vigiar_resumo_generico(x)
   if ("perc_combustiveis_solidos" %in% names(x)) {
     vals <- x$perc_combustiveis_solidos
-    res$media  <- mean(vals, na.rm = TRUE)
-    res$min    <- min(vals, na.rm = TRUE)
-    res$max    <- max(vals, na.rm = TRUE)
+    res$media <- mean(vals, na.rm = TRUE)
+    res$min <- min(vals, na.rm = TRUE)
+    res$max <- max(vals, na.rm = TRUE)
   }
   res$tabela_original <- attr(x, "vigiar_tabela") %||% NA_character_
   res
@@ -152,8 +152,8 @@ vigiar_resumo_indoor <- function(x, ...) {
 .vigiar_resumo_generico <- function(x) {
   n_rows <- nrow(x)
   n_cols <- ncol(x)
-  n_na   <- sum(is.na(x))
-  n_dup  <- sum(duplicated(x))
+  n_na <- sum(is.na(x))
+  n_dup <- sum(duplicated(x))
 
   # Temporal range
   ano_min <- if ("ano" %in% names(x)) min(x$ano, na.rm = TRUE) else NA_integer_

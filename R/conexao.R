@@ -44,7 +44,7 @@ vigiar_conectar <- function(refresh = FALSE, timeout = 30, max_retries = 3) {
     max_retries = max_retries,
     context     = "conectar"
   )
-  session_id   <- handshake$session_id
+  session_id <- handshake$session_id
   cookie_parts <- handshake$cookie_parts
 
   if (length(cookie_parts) == 0) {
@@ -90,7 +90,7 @@ vigiar_conectar <- function(refresh = FALSE, timeout = 30, max_retries = 3) {
 #' }
 #' @export
 vigiar_desconectar <- function() {
-  .vigiar_env$sessao  <- NULL
+  .vigiar_env$sessao <- NULL
   .vigiar_env$esquema <- NULL
   message("Sessao VIGIAR encerrada.")
   invisible(NULL)
@@ -137,7 +137,7 @@ vigiar_sessao_ativa <- function() {
         httr2::req_perform()
     },
     max_tries = max_retries,
-    context   = context
+    context = context
   )
 
   html_content <- httr2::resp_body_string(resp)
@@ -195,7 +195,7 @@ vigiar_sessao_ativa <- function() {
         httr2::req_perform()
     },
     max_tries = 2,
-    context   = "esquema"
+    context = "esquema"
   )
 
   raw_body <- httr2::resp_body_raw(resp)
@@ -246,21 +246,24 @@ vigiar_status <- function() {
   missing_tables <- character(0)
   tables_ok <- FALSE
 
-  tryCatch({
-    esquema <- .vigiar_obter_esquema(.vigiar_env$sessao, timeout = 10)
-    online <- TRUE
-    cached_tables <- names(.vigiar_env$esquema)
-    live_tables   <- names(esquema)
-    new_tables    <- setdiff(live_tables, cached_tables)
-    missing_tables <- setdiff(cached_tables, live_tables)
+  tryCatch(
+    {
+      esquema <- .vigiar_obter_esquema(.vigiar_env$sessao, timeout = 10)
+      online <- TRUE
+      cached_tables <- names(.vigiar_env$esquema)
+      live_tables <- names(esquema)
+      new_tables <- setdiff(live_tables, cached_tables)
+      missing_tables <- setdiff(cached_tables, live_tables)
 
-    tables_ok <- length(new_tables) == 0 && length(missing_tables) == 0
-  }, error = function(e) NULL)
+      tables_ok <- length(new_tables) == 0 && length(missing_tables) == 0
+    },
+    error = function(e) NULL
+  )
 
   status <- list(
-    online        = online,
-    tables_ok     = tables_ok,
-    new_tables    = new_tables,
+    online = online,
+    tables_ok = tables_ok,
+    new_tables = new_tables,
     missing_tables = missing_tables
   )
 

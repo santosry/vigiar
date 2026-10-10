@@ -48,14 +48,15 @@ cat("\n--- 1. Utilitarios internos ---\n\n")
 })
 .check(".vigiar_tipo_dado mapeia tipos", {
   .vigiar_tipo_dado(1) == "character" &&
-  .vigiar_tipo_dado(3) == "numeric"   &&
-  .vigiar_tipo_dado(4) == "integer"   &&
-  .vigiar_tipo_dado(7) == "POSIXct"
+    .vigiar_tipo_dado(3) == "numeric" &&
+    .vigiar_tipo_dado(4) == "integer" &&
+    .vigiar_tipo_dado(7) == "POSIXct"
 })
 .check(".vigiar_gunzip descomprime", {
   tmp <- tempfile(fileext = ".gz")
   con <- gzfile(tmp, "wb")
-  writeLines("teste vigiar", con); close(con)
+  writeLines("teste vigiar", con)
+  close(con)
   raw_in <- readBin(tmp, raw(), file.info(tmp)$size)
   unlink(tmp)
   rawToChar(.vigiar_gunzip(raw_in)) == "teste vigiar\n"
@@ -88,58 +89,72 @@ cat("\n--- 2. Classes S3 ---\n\n")
   out <- new_vigiar_tbl(df, tabela = "test")
   attr(out, "vigiar_tabela") <- NULL
   saida <- capture.output(validate(out), type = "message")
-  TRUE  # validate emite warning, nao erro
+  TRUE # validate emite warning, nao erro
 })
 
 cat("\n--- 3. Processamento ---\n\n")
 .check("process_pm25 renomeia colunas", {
-  raw <- data.frame(muni = 355030L, UF = "SP", ano = 2022L,
-                    Media_pm25 = 22.5, Categoria_pm25 = "> 35",
-                    stringsAsFactors = FALSE)
+  raw <- data.frame(
+    muni = 355030L, UF = "SP", ano = 2022L,
+    Media_pm25 = 22.5, Categoria_pm25 = "> 35",
+    stringsAsFactors = FALSE
+  )
   res <- process_pm25(raw, tipo = "anual")
   "cod_municipio" %in% names(res) && "sigla_uf" %in% names(res) &&
-  "pm25_media_anual" %in% names(res)
+    "pm25_media_anual" %in% names(res)
 })
 .check("process_pm25 lowercase regiao/municipio", {
-  raw <- data.frame(muni = 355030L, UF = "SP", ano = 2022L,
-                    Media_pm25 = 22.5, regiao = "Sudeste",
-                    municipio = "Sao Paulo", stringsAsFactors = FALSE)
+  raw <- data.frame(
+    muni = 355030L, UF = "SP", ano = 2022L,
+    Media_pm25 = 22.5, regiao = "Sudeste",
+    municipio = "Sao Paulo", stringsAsFactors = FALSE
+  )
   res <- process_pm25(raw, tipo = "anual")
   "regiao" %in% names(res) && "nome_municipio" %in% names(res)
 })
 .check("process_populacao_exposta renomeia", {
-  raw <- data.frame(muni = 355030L, ano = 2022L, pop = 12e6,
-                    categoria = "> 35", UF = "SP",
-                    stringsAsFactors = FALSE)
+  raw <- data.frame(
+    muni = 355030L, ano = 2022L, pop = 12e6,
+    categoria = "> 35", UF = "SP",
+    stringsAsFactors = FALSE
+  )
   res <- process_populacao_exposta(raw)
   "cod_municipio" %in% names(res) && "populacao" %in% names(res)
 })
 .check("process_indicadores_saude renomeia", {
-  raw <- data.frame(Indicador = "Fracao (%)", n = 5e7, est = 4.5,
-                    low = 2.5, high = 6.8, desfecho = "Mortalidade",
-                    ano = 2022L, stringsAsFactors = FALSE)
+  raw <- data.frame(
+    Indicador = "Fracao (%)", n = 5e7, est = 4.5,
+    low = 2.5, high = 6.8, desfecho = "Mortalidade",
+    ano = 2022L, stringsAsFactors = FALSE
+  )
   res <- process_indicadores_saude(raw, agregacao = "brasil")
   "indicador" %in% names(res) && "estimativa" %in% names(res) &&
-  "ic_inferior" %in% names(res)
+    "ic_inferior" %in% names(res)
 })
 .check("process_fracao_atribuivel renomeia", {
-  raw <- data.frame(Indicador = "Fracao", n = 1e6, est = 12.3,
-                    low = 8.1, high = 16.5, desfecho = "Cancer",
-                    ano = 2022L, stringsAsFactors = FALSE)
+  raw <- data.frame(
+    Indicador = "Fracao", n = 1e6, est = 12.3,
+    low = 8.1, high = 16.5, desfecho = "Cancer",
+    ano = 2022L, stringsAsFactors = FALSE
+  )
   res <- process_fracao_atribuivel(raw)
   "fracao_atribuivel" %in% names(res)
 })
 .check("process_exposicao_indoor renomeia", {
-  raw <- data.frame(Code = 35L, Ano = 2022L, comb_sol = 0.194,
-                    pop_exposta = 186256, percent_comb = 19.4,
-                    Quartis = "Q2", stringsAsFactors = FALSE)
+  raw <- data.frame(
+    Code = 35L, Ano = 2022L, comb_sol = 0.194,
+    pop_exposta = 186256, percent_comb = 19.4,
+    Quartis = "Q2", stringsAsFactors = FALSE
+  )
   res <- process_exposicao_indoor(raw)
   "cod_uf" %in% names(res) && "prop_combustiveis_solidos" %in% names(res)
 })
 .check("process_municipios renomeia", {
-  raw <- data.frame(UF_COD = 35L, UF_SIGLA = "SP", UF_NOME = "Sao Paulo",
-                    REGIAO = "Sudeste", LAT = -23.5, LON = -46.6,
-                    stringsAsFactors = FALSE)
+  raw <- data.frame(
+    UF_COD = 35L, UF_SIGLA = "SP", UF_NOME = "Sao Paulo",
+    REGIAO = "Sudeste", LAT = -23.5, LON = -46.6,
+    stringsAsFactors = FALSE
+  )
   res <- process_municipios(raw)
   "cod_uf" %in% names(res) && "latitude" %in% names(res)
 })
@@ -149,9 +164,11 @@ cat("\n--- 3. Processamento ---\n\n")
   inherits(res, "vigiar_uf") && "sigla_uf" %in% names(res)
 })
 .check("process_vigiar dispatcher", {
-  dados <- data.frame(muni = 355030L, UF = "SP", ano = 2022L,
-                      Media_pm25 = 22.5, Categoria_pm25 = "> 35",
-                      stringsAsFactors = FALSE)
+  dados <- data.frame(
+    muni = 355030L, UF = "SP", ano = 2022L,
+    Media_pm25 = 22.5, Categoria_pm25 = "> 35",
+    stringsAsFactors = FALSE
+  )
   res <- process_vigiar(dados, tabela = "df_anual")
   inherits(res, "vigiar_pm25")
 })
@@ -185,20 +202,26 @@ cat("\n--- 4. Validacao ---\n\n")
 
 cat("\n--- 5. Series temporais ---\n\n")
 .check("vigiar_agregar_tempo agrega por ano", {
-  dados <- data.frame(ano = c(2020L, 2020L, 2021L),
-                      pm25_media_anual = c(18, 22, 20))
-  res <- vigiar_agregar_tempo(dados, agregar_por = "ano",
-                               variavel = "pm25_media_anual")
+  dados <- data.frame(
+    ano = c(2020L, 2020L, 2021L),
+    pm25_media_anual = c(18, 22, 20)
+  )
+  res <- vigiar_agregar_tempo(dados,
+    agregar_por = "ano",
+    variavel = "pm25_media_anual"
+  )
   nrow(res) == 2
 })
 .check("vigiar_tendencia_descritiva retorna colunas", {
-  dados <- data.frame(ano = 2018:2022, pm25_media_anual = c(20,19,22,21,18))
+  dados <- data.frame(ano = 2018:2022, pm25_media_anual = c(20, 19, 22, 21, 18))
   res <- vigiar_tendencia_descritiva(dados, variavel = "pm25_media_anual")
-  all(c("ano","media","variacao_anual","media_movel") %in% names(res))
+  all(c("ano", "media", "variacao_anual", "media_movel") %in% names(res))
 })
 .check("vigiar_serie_temporal nivel nacional", {
-  dados <- data.frame(ano = c(2020L, 2020L, 2021L),
-                      pm25_media_anual = c(18, 22, 20))
+  dados <- data.frame(
+    ano = c(2020L, 2020L, 2021L),
+    pm25_media_anual = c(18, 22, 20)
+  )
   res <- vigiar_serie_temporal(dados, nivel = "nacional")
   nrow(res) == 2
 })
@@ -206,24 +229,31 @@ cat("\n--- 5. Series temporais ---\n\n")
 cat("\n--- 6. Resumos ---\n\n")
 .check("vigiar_resumo_pm25 retorna stats", {
   out <- new_vigiar_tbl(
-    data.frame(cod_municipio = 1:3, sigla_uf = c("SP","RJ","MG"),
-               ano = 2022L, pm25_media_anual = c(22.5, 18.3, 15.7)),
-    subclass = "vigiar_pm25", tabela = "df_anual")
+    data.frame(
+      cod_municipio = 1:3, sigla_uf = c("SP", "RJ", "MG"),
+      ano = 2022L, pm25_media_anual = c(22.5, 18.3, 15.7)
+    ),
+    subclass = "vigiar_pm25", tabela = "df_anual"
+  )
   res <- vigiar_resumo_pm25(out)
   "media" %in% names(res) && res$n_observacoes == 3
 })
 .check("vigiar_resumo_saude retorna indicadores", {
   out <- new_vigiar_tbl(
-    data.frame(indicador = c("A","B"), estimativa = c(4.5, 12000),
-               desfecho = c("X","Y"), ano = 2022L),
-    subclass = "vigiar_health", tabela = "tb_brasil")
+    data.frame(
+      indicador = c("A", "B"), estimativa = c(4.5, 12000),
+      desfecho = c("X", "Y"), ano = 2022L
+    ),
+    subclass = "vigiar_health", tabela = "tb_brasil"
+  )
   res <- vigiar_resumo_saude(out)
   res$n_indicadores == 2 && res$n_desfechos == 2
 })
 .check("vigiar_resumo S3 dispatcher", {
   out <- new_vigiar_tbl(
     data.frame(x = 1:5, ano = 2020:2024),
-    tabela = "generica")
+    tabela = "generica"
+  )
   res <- vigiar_resumo(out)
   inherits(res, "tbl_df") && res$n_observacoes == 5
 })
@@ -274,16 +304,21 @@ cat("\n--- 8. Dicionario ---\n\n")
 .check("vigiar_dicionario retorna tibble", {
   dict <- vigiar_dicionario()
   inherits(dict, "tbl_df") && nrow(dict) > 0 &&
-  all(c("table_id", "original_name", "standard_name") %in% names(dict))
+    all(c("table_id", "original_name", "standard_name") %in% names(dict))
 })
 .check("vigiar_variaveis filtra por dominio", {
   pm25_vars <- vigiar_variaveis("pm25")
   all(pm25_vars$table_id %in%
-      c("df_anual", "df_mensal", "df_dias", "df_dias_conama"))
+        c("df_anual", "df_mensal", "df_dias", "df_dias_conama"))
 })
 .check("vigiar_descrever_variavel erro amigavel", {
-  inherits(tryCatch(vigiar_descrever_variavel("pm25", "var_inexistente"),
-                    error = identity), "error")
+  inherits(
+    tryCatch(
+      vigiar_descrever_variavel("pm25", "var_inexistente"),
+      error = identity
+    ),
+    "error"
+  )
 })
 .check("vigiar_tabelas_documentadas retorna vetor", {
   tabs <- vigiar_tabelas_documentadas()
@@ -359,7 +394,7 @@ if (online) {
   .check("tb_brasil estrutura esperada", {
     vigiar_conectar()
     df <- vigiar_baixar("tb_brasil", limite = 5)
-    all(c("Indicador","est","low","high","desfecho","ano") %in% names(df))
+    all(c("Indicador", "est", "low", "high", "desfecho", "ano") %in% names(df))
   })
   .check("df_indoor download", {
     vigiar_conectar()
@@ -390,8 +425,10 @@ if (online) {
 
 cat("\n")
 cat("============================================================\n")
-cat(sprintf("  RESULTADO: %d passaram, %d falharam, %d ignorados\n",
-            pass, fail, skip))
+cat(sprintf(
+  "  RESULTADO: %d passaram, %d falharam, %d ignorados\n",
+  pass, fail, skip
+))
 cat("============================================================\n")
 
 if (fail > 0) {

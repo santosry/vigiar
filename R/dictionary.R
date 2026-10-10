@@ -21,7 +21,8 @@
 #' @export
 vigiar_dicionario <- function() {
   path <- system.file("extdata", "vigiar_variable_dictionary.csv",
-                      package = "vigiar", mustWork = TRUE)
+    package = "vigiar", mustWork = TRUE
+  )
   tbl <- tryCatch(
     utils::read.csv(path, stringsAsFactors = FALSE, encoding = "UTF-8"),
     error = function(e) {
@@ -55,13 +56,17 @@ vigiar_dicionario <- function() {
 vigiar_variaveis <- function(dominio = "all") {
   dominio <- match.arg(
     dominio,
-    c("pm25", "populacao_exposta", "indicadores_saude",
-      "fracao_atribuivel", "exposicao_indoor", "municipios", "all")
+    c(
+      "pm25", "populacao_exposta", "indicadores_saude",
+      "fracao_atribuivel", "exposicao_indoor", "municipios", "all"
+    )
   )
 
   dict <- vigiar_dicionario()
 
-  if (dominio == "all") return(dict)
+  if (dominio == "all") {
+    return(dict)
+  }
 
   table_map <- list(
     pm25                = c("df_anual", "df_mensal", "df_dias", "df_dias_conama"),
@@ -142,8 +147,10 @@ vigiar_convencoes <- function() {
 #' @export
 vigiar_schema <- function(dominio = "all") {
   vars <- vigiar_variaveis(dominio)
-  vars[, c("table_id", "standard_name", "type_processed",
-           "description", "unit")]
+  vars[, c(
+    "table_id", "standard_name", "type_processed",
+    "description", "unit"
+  )]
 }
 
 # -- Internal helpers ----------------------------------------------------------
@@ -153,6 +160,8 @@ vigiar_schema <- function(dominio = "all") {
     vigiar_dicionario(),
     error = function(e) NULL
   )
-  if (is.null(dict)) return(NULL)
+  if (is.null(dict)) {
+    return(NULL)
+  }
   dict[dict$table_id == tabela, ]
 }

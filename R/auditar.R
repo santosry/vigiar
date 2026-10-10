@@ -42,8 +42,8 @@ vigiar_variaveis_nao_documentadas <- function() {
     if (length(missing) > 0) {
       for (col in missing) {
         undocumented[[length(undocumented) + 1]] <- data.frame(
-          tabela   = tab,
-          coluna   = col,
+          tabela = tab,
+          coluna = col,
           problema = "Variavel presente nos dados mas ausente no dicionario",
           stringsAsFactors = FALSE
         )
@@ -82,8 +82,8 @@ vigiar_variaveis_orfas <- function() {
     if (!tab %in% names(.vigiar_env$esquema)) {
       # Entire table is orphan
       orfaos[[length(orfaos) + 1]] <- data.frame(
-        tabela   = tab,
-        coluna   = "(tabela inteira)",
+        tabela = tab,
+        coluna = "(tabela inteira)",
         problema = "Tabela documentada nao existe no esquema atual",
         stringsAsFactors = FALSE
       )
@@ -95,8 +95,8 @@ vigiar_variaveis_orfas <- function() {
     if (length(extra) > 0) {
       for (col in extra) {
         orfaos[[length(orfaos) + 1]] <- data.frame(
-          tabela   = tab,
-          coluna   = col,
+          tabela = tab,
+          coluna = col,
           problema = "Variavel documentada nao existe nos dados atuais",
           stringsAsFactors = FALSE
         )
@@ -132,7 +132,7 @@ vigiar_validar_dicionario <- function() {
   }
 
   nao_doc <- vigiar_variaveis_nao_documentadas()
-  orfas   <- vigiar_variaveis_orfas()
+  orfas <- vigiar_variaveis_orfas()
 
   dict <- vigiar_dicionario()
   n_dict_cols <- nrow(dict)
@@ -195,15 +195,17 @@ vigiar_comparar_schema <- function() {
     documented <- intersect(live_cols, dict_cols)
 
     results[[length(results) + 1]] <- data.frame(
-      tabela         = tab,
-      colunas_live   = length(live_cols),
-      colunas_dict   = length(dict_cols),
-      documentadas   = length(documented),
+      tabela = tab,
+      colunas_live = length(live_cols),
+      colunas_dict = length(dict_cols),
+      documentadas = length(documented),
       nao_documentadas = length(setdiff(live_cols, dict_cols)),
-      orfas          = length(setdiff(dict_cols, live_cols)),
-      coverage       = if (length(live_cols) > 0) {
+      orfas = length(setdiff(dict_cols, live_cols)),
+      coverage = if (length(live_cols) > 0) {
         round(100 * length(documented) / length(live_cols), 1)
-      } else NA_real_,
+      } else {
+        NA_real_
+      },
       stringsAsFactors = FALSE
     )
   }

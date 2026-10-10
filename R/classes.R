@@ -13,10 +13,10 @@
 #' @return An object of class \code{vigiar_tbl} (and subclasses).
 #' @keywords internal
 new_vigiar_tbl <- function(x, subclass = character(0), tabela = NULL,
-                            metadados = NULL) {
+                           metadados = NULL) {
   x <- tibble::as_tibble(x)
   class(x) <- c(subclass, "vigiar_tbl", class(x))
-  attr(x, "vigiar_tabela")    <- tabela
+  attr(x, "vigiar_tabela") <- tabela
   attr(x, "vigiar_metadados") <- metadados
   attr(x, "vigiar_processado_em") <- Sys.time()
   x
@@ -72,9 +72,11 @@ summary.vigiar_tbl <- function(object, ...) {
   if (any(na_counts > 0)) {
     cat("\nValores ausentes:\n")
     for (nm in names(na_counts[na_counts > 0])) {
-      cat(sprintf("  %-30s %d (%.1f%%)\n",
-                  nm, na_counts[[nm]],
-                  100 * na_counts[[nm]] / nrow(object)))
+      cat(sprintf(
+        "  %-30s %d (%.1f%%)\n",
+        nm, na_counts[[nm]],
+        100 * na_counts[[nm]] / nrow(object)
+      ))
     }
   }
 
@@ -107,8 +109,10 @@ validate.vigiar_tbl <- function(x, ...) {
   }
 
   if (length(issues) > 0) {
-    warning("Problemas de validacao encontrados: ",
-            paste(names(issues), collapse = ", "))
+    warning(
+      "Problemas de validacao encontrados: ",
+      paste(names(issues), collapse = ", ")
+    )
   }
 
   invisible(issues)

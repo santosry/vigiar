@@ -66,29 +66,29 @@ process_pm25 <- function(dados, tipo = c("anual", "mensal", "dias", "dias_conama
 
   # -- Standardise column names ---------------------------------------------
   rename_map <- list(
-    muni              = "cod_municipio",
-    ID_MUNI           = "cod_municipio",
-    UF                = "sigla_uf",
-    UF_SIGLA          = "sigla_uf",
-    UF_NOME           = "nome_uf",
-    ano               = "ano",
-    mes               = "mes",
-    mes_nome          = "mes_nome",
-    pm25              = "pm25_media",
-    Media_pm25        = "pm25_media_anual",
-    t_dias             = "pm25_media_periodo",
-    n_dias             = "n_dias_criticos",
-    n_dias_conama     = "n_dias_criticos_conama",
-    LAT               = "latitude",
-    LON               = "longitude",
-    Categoria_pm25    = "categoria_oms",
+    muni = "cod_municipio",
+    ID_MUNI = "cod_municipio",
+    UF = "sigla_uf",
+    UF_SIGLA = "sigla_uf",
+    UF_NOME = "nome_uf",
+    ano = "ano",
+    mes = "mes",
+    mes_nome = "mes_nome",
+    pm25 = "pm25_media",
+    Media_pm25 = "pm25_media_anual",
+    t_dias = "pm25_media_periodo",
+    n_dias = "n_dias_criticos",
+    n_dias_conama = "n_dias_criticos_conama",
+    LAT = "latitude",
+    LON = "longitude",
+    Categoria_pm25 = "categoria_oms",
     Categoria_pm25_conama = "categoria_conama",
-    Regiao            = "regiao",
-    regiao            = "regiao",
-    "Regi\u00e3o"     = "regiao",
-    Municipio         = "nome_municipio",
-    municipio         = "nome_municipio",
-    "Munic\u00edpio"  = "nome_municipio"
+    Regiao = "regiao",
+    regiao = "regiao",
+    "Regi\u00e3o" = "regiao",
+    Municipio = "nome_municipio",
+    municipio = "nome_municipio",
+    "Munic\u00edpio" = "nome_municipio"
   )
 
   for (old_name in names(rename_map)) {
@@ -109,9 +109,11 @@ process_pm25 <- function(dados, tipo = c("anual", "mensal", "dias", "dias_conama
   }
 
   # Numeric columns
-  for (col in c("pm25_media", "pm25_media_anual", "pm25_media_periodo",
-                "n_dias_criticos", "n_dias_criticos_conama",
-                "latitude", "longitude")) {
+  for (col in c(
+    "pm25_media", "pm25_media_anual", "pm25_media_periodo",
+    "n_dias_criticos", "n_dias_criticos_conama",
+    "latitude", "longitude"
+  )) {
     if (col %in% names(dados)) {
       dados[[col]] <- as.numeric(dados[[col]])
     }
@@ -124,16 +126,16 @@ process_pm25 <- function(dados, tipo = c("anual", "mensal", "dias", "dias_conama
 
   # -- Build return object -------------------------------------------------
   metadados <- list(
-    tipo         = tipo,
-    fonte        = "VIGIAR -- Ministerio da Saude",
-    tabela_raw   = switch(tipo,
+    tipo = tipo,
+    fonte = "VIGIAR -- Ministerio da Saude",
+    tabela_raw = switch(tipo,
       anual       = "df_anual",
       mensal      = "df_mensal",
       dias        = "df_dias",
       dias_conama = "df_dias_conama"
     ),
     unidade_pm25 = "\u00b5g/m\u00b3",
-    processador  = "process_pm25"
+    processador = "process_pm25"
   )
 
   new_vigiar_tbl(
@@ -186,8 +188,8 @@ process_populacao_exposta <- function(dados, ...) {
 
   new_vigiar_tbl(
     dados,
-    subclass  = c("vigiar_population"),
-    tabela    = "pop",
+    subclass = c("vigiar_population"),
+    tabela = "pop",
     metadados = list(
       fonte       = "VIGIAR -- Ministerio da Saude",
       tabela_raw  = "pop",
@@ -212,9 +214,11 @@ process_populacao_exposta <- function(dados, ...) {
 #' process_indicadores_saude(bruto, agregacao = "brasil")
 #' @export
 process_indicadores_saude <- function(dados,
-                                       agregacao = c("brasil", "uf",
-                                                     "municipio", "quartis"),
-                                       ...) {
+                                      agregacao = c(
+                                        "brasil", "uf",
+                                        "municipio", "quartis"
+                                      ),
+                                      ...) {
   agregacao <- match.arg(agregacao)
   dados <- tibble::as_tibble(dados)
 
@@ -242,9 +246,11 @@ process_indicadores_saude <- function(dados,
   }
 
   # Numeric columns
-  for (col in c("populacao_exposta", "estimativa", "ic_inferior",
-                "ic_superior", "ano", "cod_municipio", "codigo_localidade",
-                "latitude", "longitude", "quartil_1", "quartil_2", "quartil_3")) {
+  for (col in c(
+    "populacao_exposta", "estimativa", "ic_inferior",
+    "ic_superior", "ano", "cod_municipio", "codigo_localidade",
+    "latitude", "longitude", "quartil_1", "quartil_2", "quartil_3"
+  )) {
     if (col %in% names(dados)) dados[[col]] <- as.numeric(dados[[col]])
   }
 
@@ -262,8 +268,8 @@ process_indicadores_saude <- function(dados,
 
   new_vigiar_tbl(
     dados,
-    subclass  = c("vigiar_health"),
-    tabela    = tabela_raw,
+    subclass = c("vigiar_health"),
+    tabela = tabela_raw,
     metadados = list(
       fonte       = "VIGIAR -- Ministerio da Saude",
       tabela_raw  = tabela_raw,
@@ -304,15 +310,17 @@ process_fracao_atribuivel <- function(dados, ...) {
     }
   }
 
-  for (col in c("populacao_exposta", "fracao_atribuivel", "ic_inferior",
-                "ic_superior", "ano", "codigo_localidade")) {
+  for (col in c(
+    "populacao_exposta", "fracao_atribuivel", "ic_inferior",
+    "ic_superior", "ano", "codigo_localidade"
+  )) {
     if (col %in% names(dados)) dados[[col]] <- as.numeric(dados[[col]])
   }
 
   new_vigiar_tbl(
     dados,
-    subclass  = c("vigiar_attributable_fraction", "vigiar_health"),
-    tabela    = "tb_fracao",
+    subclass = c("vigiar_attributable_fraction", "vigiar_health"),
+    tabela = "tb_fracao",
     metadados = list(
       fonte       = "VIGIAR -- Ministerio da Saude",
       tabela_raw  = "tb_fracao",
@@ -339,27 +347,27 @@ process_exposicao_indoor <- function(dados, tipo = c("exposicao", "desfecho"), .
   dados <- tibble::as_tibble(dados)
 
   rename_map <- list(
-    Code          = "cod_uf",
-    State.x       = "sigla_uf",
-    Ano           = "ano",
-    parametro     = "parametro",
-    sexo          = "sexo",
-    pop           = "populacao",
+    Code = "cod_uf",
+    State.x = "sigla_uf",
+    Ano = "ano",
+    parametro = "parametro",
+    sexo = "sexo",
+    pop = "populacao",
     comb_sol_perc = "perc_combustiveis_solidos",
-    comb_sol      = "prop_combustiveis_solidos",
-    pop_exposta   = "populacao_exposta",
-    percent_comb  = "percentual_combustiveis",
-    indicador     = "indicador",
-    est           = "estimativa",
-    low           = "ic_inferior",
-    up            = "ic_superior",
-    Quartis       = "quartis",
-    cor_comb      = "cor_combustiveis",
-    cor_pop       = "cor_populacao",
-    cor_est       = "cor_estimativa",
-    CV            = "coeficiente_variacao",
-    cor_CV        = "cor_cv",
-    Classifc_CV   = "classificacao_cv",
+    comb_sol = "prop_combustiveis_solidos",
+    pop_exposta = "populacao_exposta",
+    percent_comb = "percentual_combustiveis",
+    indicador = "indicador",
+    est = "estimativa",
+    low = "ic_inferior",
+    up = "ic_superior",
+    Quartis = "quartis",
+    cor_comb = "cor_combustiveis",
+    cor_pop = "cor_populacao",
+    cor_est = "cor_estimativa",
+    CV = "coeficiente_variacao",
+    cor_CV = "cor_cv",
+    Classifc_CV = "classificacao_cv",
     CV_comb_sol_perc = "cv_perc_combustiveis"
   )
   for (old_name in names(rename_map)) {
@@ -369,10 +377,12 @@ process_exposicao_indoor <- function(dados, tipo = c("exposicao", "desfecho"), .
   }
 
   # Numeric
-  for (col in c("cod_uf", "ano", "populacao", "populacao_exposta",
-                "perc_combustiveis_solidos", "prop_combustiveis_solidos",
-                "percentual_combustiveis", "estimativa", "ic_inferior",
-                "ic_superior", "coeficiente_variacao", "cv_perc_combustiveis")) {
+  for (col in c(
+    "cod_uf", "ano", "populacao", "populacao_exposta",
+    "perc_combustiveis_solidos", "prop_combustiveis_solidos",
+    "percentual_combustiveis", "estimativa", "ic_inferior",
+    "ic_superior", "coeficiente_variacao", "cv_perc_combustiveis"
+  )) {
     if (col %in% names(dados)) dados[[col]] <- as.numeric(dados[[col]])
   }
 
@@ -380,8 +390,8 @@ process_exposicao_indoor <- function(dados, tipo = c("exposicao", "desfecho"), .
 
   new_vigiar_tbl(
     dados,
-    subclass  = c("vigiar_indoor", "vigiar_health"),
-    tabela    = tabela_raw,
+    subclass = c("vigiar_indoor", "vigiar_health"),
+    tabela = tabela_raw,
     metadados = list(
       fonte       = "VIGIAR -- Ministerio da Saude",
       tabela_raw  = tabela_raw,
@@ -442,8 +452,8 @@ process_municipios <- function(dados, ...) {
 
   new_vigiar_tbl(
     dados,
-    subclass  = c("vigiar_municipios"),
-    tabela    = "df_muni",
+    subclass = c("vigiar_municipios"),
+    tabela = "df_muni",
     metadados = list(
       fonte       = "VIGIAR -- Ministerio da Saude",
       tabela_raw  = "df_muni",
@@ -474,8 +484,8 @@ process_ufs <- function(dados, contexto = "uf") {
 
   new_vigiar_tbl(
     dados,
-    subclass  = c("vigiar_uf"),
-    tabela    = contexto,
+    subclass = c("vigiar_uf"),
+    tabela = contexto,
     metadados = list(
       fonte       = "VIGIAR -- Ministerio da Saude",
       processador = "process_ufs"

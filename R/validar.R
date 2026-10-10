@@ -31,7 +31,7 @@ vigiar_padronizar_colunas <- function(dados, tabela) {
       old <- names(dados)[i]
       match_row <- dict[dict$original_name == old, ]
       if (nrow(match_row) == 1 && !is.na(match_row$standard_name) &&
-          nzchar(match_row$standard_name)) {
+            nzchar(match_row$standard_name)) {
         names(dados)[i] <- match_row$standard_name
       }
     }
@@ -52,7 +52,9 @@ vigiar_padronizar_colunas <- function(dados, tabela) {
 #' vigiar_validar_ibge(data.frame(cod_municipio = c(330455L, 355030L)))
 #' @export
 vigiar_validar_ibge <- function(dados, col_codigo = "cod_municipio") {
-  if (!col_codigo %in% names(dados)) return(dados)
+  if (!col_codigo %in% names(dados)) {
+    return(dados)
+  }
 
   codigos <- dados[[col_codigo]]
   codigos <- as.integer(codigos)
@@ -116,7 +118,9 @@ vigiar_validar_datas <- function(dados) {
 #' vigiar_validar_unidades(data.frame(pm25_media = c(12.3, 18.9)))
 #' @export
 vigiar_validar_unidades <- function(dados, col_pm25 = "pm25_media") {
-  if (!col_pm25 %in% names(dados)) return(dados)
+  if (!col_pm25 %in% names(dados)) {
+    return(dados)
+  }
 
   valores <- as.numeric(dados[[col_pm25]])
   n_implausible <- sum(!is.na(valores) & (valores < 0 | valores > 1000))

@@ -5,9 +5,11 @@ library(vigiar)
 # ── Helper data ───────────────────────────────────────────────────────────────
 
 .make_pm25_data <- function(n_muni = 10, years = 2018:2022, with_issues = FALSE) {
-  municipios <- c(330010, 330015, 330020, 330022, 330023,
-                  330025, 330030, 330033, 330040, 330045,
-                  330050, 330060, 330070, 330080, 330090)
+  municipios <- c(
+    330010, 330015, 330020, 330022, 330023,
+    330025, 330030, 330033, 330040, 330045,
+    330050, 330060, 330070, 330080, 330090
+  )
   municipios <- municipios[seq_len(min(n_muni, length(municipios)))]
 
   rows <- list()
@@ -133,7 +135,7 @@ test_that("vigiar_checar_cobertura_temporal detects invalid years", {
 })
 
 test_that("vigiar_checar_cobertura_espacial checks RJ coverage", {
-  codigos <- c(330010, 330015, 330020, 330022, 355030)  # 4 RJ + 1 SP
+  codigos <- c(330010, 330015, 330020, 330022, 355030) # 4 RJ + 1 SP
   dados <- data.frame(cod_municipio = as.integer(codigos))
   diag <- new_vigiar_diagnostic("test", dados)
   diag <- vigiar_checar_cobertura_espacial(diag, dados, "cod_municipio", uf = "RJ", escopo = "rj")
@@ -181,7 +183,7 @@ test_that("vigiar_checar_quebra_serie detects large changes", {
   dados <- data.frame(
     cod_municipio = c(1L, 1L, 1L),
     ano = c(2020L, 2021L, 2022L),
-    pm25 = c(20, 5, 45)  # Large swings
+    pm25 = c(20, 5, 45) # Large swings
   )
   diag <- new_vigiar_diagnostic("test", dados)
   diag <- vigiar_checar_quebra_serie(diag, dados, "cod_municipio", "ano", "pm25")
@@ -284,10 +286,12 @@ test_that("vigiar_diagnosticar_serie respects escopo = nacional", {
     ano = c(2022L, 2022L, 2022L),
     pm25 = c(22.5, 18.3, 15.7)
   )
-  diag <- vigiar_diagnosticar_serie(dados, escopo = "nacional",
-                                     col_muni = "cod_municipio",
-                                     col_pm25 = "pm25",
-                                     uf = NULL)
+  diag <- vigiar_diagnosticar_serie(dados,
+    escopo = "nacional",
+    col_muni = "cod_municipio",
+    col_pm25 = "pm25",
+    uf = NULL
+  )
   expect_s3_class(diag, "vigiar_diagnostic")
 })
 
@@ -297,9 +301,11 @@ test_that("vigiar_diagnosticar_serie with uf = NULL skips RJ checks", {
     ano = c(2022L, 2022L),
     pm25 = c(22.5, 15.7)
   )
-  diag <- vigiar_diagnosticar_serie(dados, uf = NULL,
-                                     col_muni = "cod_municipio",
-                                     col_pm25 = "pm25")
+  diag <- vigiar_diagnosticar_serie(dados,
+    uf = NULL,
+    col_muni = "cod_municipio",
+    col_pm25 = "pm25"
+  )
   # Should not have RJ-specific warnings
   problemas <- vapply(diag$resultados, function(x) x$severidade == "problema", logical(1))
   # Only check that it completes without error

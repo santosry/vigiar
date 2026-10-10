@@ -7,7 +7,7 @@
 
 # 5 representative municipalities from different RJ macro-regions
 sample_municipios <- c(
-  "330455"  # Rio de Janeiro (Metropolitana I)
+  "330455" # Rio de Janeiro (Metropolitana I)
 )
 
 # Years: 2020-2022
@@ -18,11 +18,11 @@ set.seed(2026)
 
 pm25_rj_sample <- expand.grid(
   cod_municipio = c(
-    330455,  # Rio de Janeiro - Metropolitana I
-    330170,  # Duque de Caxias - Metropolitana I
-    330330,  # Niterói - Metropolitana II
-    330350,  # Nova Iguaçu - Metropolitana I
-    330490   # São Gonçalo - Metropolitana II
+    330455, # Rio de Janeiro - Metropolitana I
+    330170, # Duque de Caxias - Metropolitana I
+    330330, # Niterói - Metropolitana II
+    330350, # Nova Iguaçu - Metropolitana I
+    330490 # São Gonçalo - Metropolitana II
   ),
   ano = sample_anos,
   stringsAsFactors = FALSE
@@ -57,7 +57,7 @@ pm25_rj_sample$pm25_categoria <- cut(
 # Add latitude/longitude (approximate)
 coords <- data.frame(
   cod_municipio = c(330455, 330170, 330330, 330350, 330490),
-  latitude  = c(-22.91, -22.79, -22.88, -22.76, -22.83),
+  latitude = c(-22.91, -22.79, -22.88, -22.76, -22.83),
   longitude = c(-43.20, -43.31, -43.10, -43.45, -43.05)
 )
 

@@ -49,8 +49,10 @@ test_that("snapshots round-trip through disk", {
     vigiar_salvar_snapshot(snap, path),
     "ja existe"
   )
-  expect_error(vigiar_carregar_snapshot(file.path(tempdir(), "nao-existe.rds")),
-               "nao encontrado")
+  expect_error(
+    vigiar_carregar_snapshot(file.path(tempdir(), "nao-existe.rds")),
+    "nao encontrado"
+  )
 })
 
 test_that("vigiar_comparar_snapshots reports differences", {
@@ -115,7 +117,7 @@ test_that("vigiar_baixar_com_cache stores, reuses and refreshes data", {
   expect_equal(nrow(r1), 3L)
 
   r2 <- suppressMessages(vigiar_baixar_com_cache("df_anual"))
-  expect_equal(calls, 1L)  # served from cache
+  expect_equal(calls, 1L) # served from cache
   expect_equal(r1, r2)
 
   suppressMessages(vigiar_baixar_com_cache("df_anual", refresh = TRUE))
@@ -178,6 +180,8 @@ test_that("schema lock helpers validate inputs", {
   .vigiar_local_reset()
   expect_error(vigiar_esquema_lock(), "Nenhuma sessao ativa")
   expect_error(vigiar_esquema_verificar(), "Nenhuma sessao ativa")
-  expect_error(vigiar_esquema_carregar_lock(file.path(tempdir(), "nope.json")),
-               "nao encontrado")
+  expect_error(
+    vigiar_esquema_carregar_lock(file.path(tempdir(), "nope.json")),
+    "nao encontrado"
+  )
 })

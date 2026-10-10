@@ -65,12 +65,16 @@ dictionary <- do.call(rbind, rows)
 # ── Write outputs ─────────────────────────────────────────────────────────────
 dir.create("inst/extdata", showWarnings = FALSE, recursive = TRUE)
 write.csv(dictionary, "inst/extdata/vigiar_variable_dictionary.csv",
-          row.names = FALSE, fileEncoding = "UTF-8")
+  row.names = FALSE, fileEncoding = "UTF-8"
+)
 write.csv(catalogo, "inst/extdata/vigiar_table_catalogue.csv",
-          row.names = FALSE, fileEncoding = "UTF-8")
+  row.names = FALSE, fileEncoding = "UTF-8"
+)
 
-message(sprintf("Dictionary written: %d variables across %d tables.",
-                nrow(dictionary), length(unique(dictionary$table_id))))
+message(sprintf(
+  "Dictionary written: %d variables across %d tables.",
+  nrow(dictionary), length(unique(dictionary$table_id))
+))
 
 # ── Helper functions ──────────────────────────────────────────────────────────
 
@@ -95,40 +99,44 @@ message(sprintf("Dictionary written: %d variables across %d tables.",
     percent_comb = "percentual_combustiveis",
     Quartis = "quartis"
   )
-  if (nome %in% names(map)) return(map[[nome]])
+  if (nome %in% names(map)) {
+    return(map[[nome]])
+  }
   # Default: snake_case
   tolower(gsub("[^a-zA-Z0-9]+", "_", nome))
 }
 
 .vigiar_inferir_descricao <- function(nome, tabela) {
   desc_map <- c(
-    muni       = "Codigo IBGE do municipio (6 ou 7 digitos)",
-    ID_MUNI    = "Codigo IBGE do municipio (6 ou 7 digitos)",
-    UF         = "Sigla da Unidade Federativa (2 letras)",
-    UF_SIGLA   = "Sigla da Unidade Federativa (2 letras)",
-    UF_NOME    = "Nome completo da Unidade Federativa",
-    ano        = "Ano de referencia",
-    mes        = "Mes de referencia (1–12)",
-    pm25       = "Concentracao media de PM2.5 (µg/m³)",
+    muni = "Codigo IBGE do municipio (6 ou 7 digitos)",
+    ID_MUNI = "Codigo IBGE do municipio (6 ou 7 digitos)",
+    UF = "Sigla da Unidade Federativa (2 letras)",
+    UF_SIGLA = "Sigla da Unidade Federativa (2 letras)",
+    UF_NOME = "Nome completo da Unidade Federativa",
+    ano = "Ano de referencia",
+    mes = "Mes de referencia (1–12)",
+    pm25 = "Concentracao media de PM2.5 (µg/m³)",
     Media_pm25 = "Media anual de concentracao de PM2.5 (µg/m³)",
-    n_dias     = "Numero de dias acima do limite OMS (15 µg/m³)",
+    n_dias = "Numero de dias acima do limite OMS (15 µg/m³)",
     n_dias_conama = "Numero de dias acima do limite CONAMA (50 µg/m³)",
-    LAT        = "Latitude (graus decimais)",
-    LON        = "Longitude (graus decimais)",
-    Indicador  = "Nome do indicador epidemiologico",
-    n          = "Populacao exposta",
-    est        = "Estimativa pontual",
-    low        = "Limite inferior do intervalo de confianca (95%)",
-    high       = "Limite superior do intervalo de confianca (95%)",
-    desfecho   = "Desfecho de saude analisado",
-    pop        = "Populacao residente",
-    categoria  = "Categoria de concentracao de PM2.5",
-    Code       = "Codigo da UF",
-    Ano        = "Ano de referencia (indoor)",
+    LAT = "Latitude (graus decimais)",
+    LON = "Longitude (graus decimais)",
+    Indicador = "Nome do indicador epidemiologico",
+    n = "Populacao exposta",
+    est = "Estimativa pontual",
+    low = "Limite inferior do intervalo de confianca (95%)",
+    high = "Limite superior do intervalo de confianca (95%)",
+    desfecho = "Desfecho de saude analisado",
+    pop = "Populacao residente",
+    categoria = "Categoria de concentracao de PM2.5",
+    Code = "Codigo da UF",
+    Ano = "Ano de referencia (indoor)",
     pop_exposta = "Populacao exposta a combustiveis solidos",
     comb_sol_perc = "Percentual de domicilios usando combustiveis solidos"
   )
-  if (nome %in% names(desc_map)) return(desc_map[[nome]])
+  if (nome %in% names(desc_map)) {
+    return(desc_map[[nome]])
+  }
   ""
 }
 
@@ -141,15 +149,25 @@ message(sprintf("Dictionary written: %d variables across %d tables.",
     n = "habitantes", est = "varia conforme indicador",
     percent_comb = "%", comb_sol_perc = "%"
   )
-  if (nome %in% names(unit_map)) return(unit_map[[nome]])
+  if (nome %in% names(unit_map)) {
+    return(unit_map[[nome]])
+  }
   ""
 }
 
 .vigiar_tipo_processado <- function(tipo_raw, nome) {
   # Refine type based on column semantics
-  if (grepl("^(muni|ID_MUNI|UF_COD|Code|cod)$", nome)) return("integer")
-  if (grepl("^(ano|Ano|mes)$", nome)) return("integer")
-  if (grepl("^(LAT|LON|lat|long)$", nome)) return("numeric")
-  if (nome %in% c("n_dias", "n_dias_conama")) return("integer")
+  if (grepl("^(muni|ID_MUNI|UF_COD|Code|cod)$", nome)) {
+    return("integer")
+  }
+  if (grepl("^(ano|Ano|mes)$", nome)) {
+    return("integer")
+  }
+  if (grepl("^(LAT|LON|lat|long)$", nome)) {
+    return("numeric")
+  }
+  if (nome %in% c("n_dias", "n_dias_conama")) {
+    return("integer")
+  }
   tipo_raw
 }

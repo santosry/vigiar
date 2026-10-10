@@ -24,7 +24,7 @@
 #' snap$n_rows
 #' @export
 vigiar_snapshot <- function(dados = NULL, tabela = NULL, ...,
-                             congelar_esquema = FALSE) {
+                            congelar_esquema = FALSE) {
   if (is.null(dados)) {
     if (is.null(tabela)) {
       stop("Forneca 'dados' ou 'tabela' para criar um snapshot.")
@@ -38,18 +38,18 @@ vigiar_snapshot <- function(dados = NULL, tabela = NULL, ...,
   tabela <- tabela %||% attr(dados, "vigiar_tabela") %||% "desconhecida"
 
   snapshot <- list(
-    tabela         = tabela,
-    dados          = dados,
-    criado_em      = Sys.time(),
+    tabela = tabela,
+    dados = dados,
+    criado_em = Sys.time(),
     checksum_sha256 = vigiar_checksum(dados),
-    n_rows          = nrow(dados),
-    n_cols          = ncol(dados),
-    colunas         = names(dados),
-    r_version       = R.version.string,
-    vigiar_version  = as.character(utils::packageVersion("vigiar")),
-    platform        = R.version$platform,
-    parametros      = list(...),
-    sessao_criada   = .vigiar_env$sessao$created_at %||% NA
+    n_rows = nrow(dados),
+    n_cols = ncol(dados),
+    colunas = names(dados),
+    r_version = R.version.string,
+    vigiar_version = as.character(utils::packageVersion("vigiar")),
+    platform = R.version$platform,
+    parametros = list(...),
+    sessao_criada = .vigiar_env$sessao$created_at %||% NA
   )
 
   if (congelar_esquema && !is.null(.vigiar_env$esquema)) {
@@ -281,7 +281,7 @@ vigiar_cache_dir <- function(dir = NULL) {
 #' }
 #' @export
 vigiar_baixar_com_cache <- function(tabela, max_age = 86400,
-                                     refresh = FALSE, ...) {
+                                    refresh = FALSE, ...) {
   if (is.null(.vigiar_env$sessao)) {
     stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
   }
@@ -309,7 +309,7 @@ vigiar_baixar_com_cache <- function(tabela, max_age = 86400,
       if (inherits(cached, "vigiar_cached_data")) {
         cli::cli_alert_success(paste0(
           "Cache hit: {tabela} (",
-          round(as.numeric(cache_age, units="mins"), 1), "min atras)"
+          round(as.numeric(cache_age, units = "mins"), 1), "min atras)"
         ))
         return(cached$dados)
       }
@@ -362,21 +362,26 @@ vigiar_cache_info <- function() {
   }
 
   entries <- lapply(files, function(f) {
-    tryCatch({
-      c <- readRDS(f)
-      info <- file.info(f)
-      idade <- difftime(Sys.time(), info$mtime, units = "mins")
-      list(
-        tabela   = c$tabela %||% basename(tools::file_path_sans_ext(f)),
-        linhas   = c$n_rows %||% NA_integer_,
-        colunas  = c$n_cols %||% NA_integer_,
-        idade    = paste0(round(as.numeric(idade), 1), " min"),
-        checksum = substr(c$checksum %||% "", 1, 16)
-      )
-    }, error = function(e) {
-      list(tabela = basename(f), linhas = NA, colunas = NA,
-           idade = "? min", checksum = "ERRO")
-    })
+    tryCatch(
+      {
+        c <- readRDS(f)
+        info <- file.info(f)
+        idade <- difftime(Sys.time(), info$mtime, units = "mins")
+        list(
+          tabela   = c$tabela %||% basename(tools::file_path_sans_ext(f)),
+          linhas   = c$n_rows %||% NA_integer_,
+          colunas  = c$n_cols %||% NA_integer_,
+          idade    = paste0(round(as.numeric(idade), 1), " min"),
+          checksum = substr(c$checksum %||% "", 1, 16)
+        )
+      },
+      error = function(e) {
+        list(
+          tabela = basename(f), linhas = NA, colunas = NA,
+          idade = "? min", checksum = "ERRO"
+        )
+      }
+    )
   })
 
   do.call(rbind.data.frame, entries) |>
@@ -455,14 +460,16 @@ vigiar_esquema_lock <- function(caminho = "vigiar_schema_lock.json") {
   lock <- list(
     locked_at = format(Sys.time()),
     vigiar_version = as.character(utils::packageVersion("vigiar")),
-    n_tables  = length(.vigiar_env$esquema),
-    tabelas   = names(.vigiar_env$esquema),
-    esquema   = .vigiar_env$esquema
+    n_tables = length(.vigiar_env$esquema),
+    tabelas = names(.vigiar_env$esquema),
+    esquema = .vigiar_env$esquema
   )
   class(lock) <- "vigiar_schema_lock"
 
-  json <- jsonlite::toJSON(lock, auto_unbox = TRUE, pretty = TRUE,
-                            null = "null", force = TRUE)
+  json <- jsonlite::toJSON(lock,
+    auto_unbox = TRUE, pretty = TRUE,
+    null = "null", force = TRUE
+  )
 
   dir.create(dirname(caminho), showWarnings = FALSE, recursive = TRUE)
   writeLines(json, caminho)
@@ -492,7 +499,8 @@ vigiar_esquema_carregar_lock <- function(caminho = "vigiar_schema_lock.json") {
   # simplifyVector = FALSE devolve list, mas o resto do codigo espera chr).
   if (!is.null(lock$tabelas)) {
     lock$tabelas <- vapply(lock$tabelas, as.character, character(1),
-                           USE.NAMES = FALSE)
+      USE.NAMES = FALSE
+    )
   }
   class(lock) <- "vigiar_schema_lock"
   lock

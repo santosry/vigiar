@@ -23,7 +23,7 @@
 #' @return A data.frame with decoded, type-converted columns.
 #' @keywords internal
 .vigiar_parse_dados <- function(resposta, tabela,
-                                 raw = FALSE, schema_check = TRUE) {
+                                raw = FALSE, schema_check = TRUE) {
   data_section <- resposta$results[[1L]]$result$data
 
   if (is.null(data_section$dsr)) {
@@ -31,8 +31,8 @@
     return(data.frame())
   }
 
-  ds  <- data_section$dsr$DS[[1L]]
-  ph  <- ds$PH[[1L]]
+  ds <- data_section$dsr$DS[[1L]]
+  ph <- ds$PH[[1L]]
   dm0 <- ph$DM0
 
   if (is.null(dm0) || length(dm0) == 0L) {
@@ -42,8 +42,8 @@
 
   # ---- Schema extraction ----
   descriptor <- data_section$descriptor
-  col_names  <- vapply(descriptor$Select, `[[`, "", "Name", USE.NAMES = FALSE)
-  n_cols     <- length(col_names)
+  col_names <- vapply(descriptor$Select, `[[`, "", "Name", USE.NAMES = FALSE)
+  n_cols <- length(col_names)
 
   value_dicts <- ds$ValueDicts %||% list()
 
@@ -58,8 +58,8 @@
 
   # ---- Row reconstruction (bitmask-based) ----
   prev_row <- rep(NA, n_cols)
-  rows     <- vector("list", length(dm0))
-  out_idx  <- 0L
+  rows <- vector("list", length(dm0))
+  out_idx <- 0L
 
   for (i in seq_along(dm0)) {
     entry <- dm0[[i]]
@@ -77,20 +77,22 @@
       if (!null_key %in% names(entry)) null_key <- character(0)
     }
     null_mask <- if (length(null_key) > 0) as.integer(entry[[null_key]] %||% 0L) else 0L
-    changed     <- entry$C %||% list()
+    changed <- entry$C %||% list()
 
     row_vals <- vector("list", n_cols)
-    cursor   <- 1L
+    cursor <- 1L
 
     for (col in seq_len(n_cols)) {
       bit <- bitwShiftL(1L, col - 1L)
       repete <- bitwAnd(repeat_mask, bit) != 0L
-      nulo   <- bitwAnd(null_mask, bit) != 0L
+      nulo <- bitwAnd(null_mask, bit) != 0L
 
       if (repete) {
         if (i == 1L) {
-          warning(sprintf("[%s] Linha 1 com mascara R=%d inesperada.",
-                          tabela, repeat_mask))
+          warning(sprintf(
+            "[%s] Linha 1 com mascara R=%d inesperada.",
+            tabela, repeat_mask
+          ))
           row_vals[[col]] <- NA
         } else {
           row_vals[[col]] <- prev_row[[col]]
@@ -105,7 +107,7 @@
         if (nzchar(dn) && !is.null(value_dicts[[dn]])) {
           dict <- value_dicts[[dn]]
           if (is.numeric(val)) {
-            idx <- as.integer(val) + 1L  # 0-based dict
+            idx <- as.integer(val) + 1L # 0-based dict
             if (idx >= 1L && idx <= length(dict)) {
               val <- dict[[idx]]
             }
@@ -117,20 +119,25 @@
       }
     }
 
-    prev_row     <- row_vals
-    out_idx      <- out_idx + 1L
+    prev_row <- row_vals
+    out_idx <- out_idx + 1L
     rows[[out_idx]] <- row_vals
   }
   rows <- rows[seq_len(out_idx)]
 
-  if (raw) return(rows)
+  if (raw) {
+    return(rows)
+  }
 
   # ---- Build data.frame ----
-  if (length(rows) == 0L) return(data.frame())
+  if (length(rows) == 0L) {
+    return(data.frame())
+  }
 
   n_rows <- length(rows)
   df <- as.data.frame(matrix(nrow = n_rows, ncol = n_cols),
-                      stringsAsFactors = FALSE)
+    stringsAsFactors = FALSE
+  )
   names(df) <- col_names
   for (i in seq_len(n_rows)) {
     for (j in seq_len(n_cols)) {

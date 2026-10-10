@@ -28,10 +28,12 @@
 #' }
 #' @export
 vigiar_benchmark <- function(tabela,
-                              strategies = c("direct", "year_asc_desc",
-                                             "minimal_columns"),
-                              repeticoes = 3L,
-                              timeout = 120) {
+                             strategies = c(
+                               "direct", "year_asc_desc",
+                               "minimal_columns"
+                             ),
+                             repeticoes = 3L,
+                             timeout = 120) {
   if (is.null(.vigiar_env$esquema)) {
     stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
   }
@@ -65,27 +67,36 @@ vigiar_benchmark <- function(tabela,
       cli::cli_progress_step("Repeticao {rep}/{repeticoes}")
 
       t_start <- Sys.time()
-      result <- tryCatch({
-        switch(strategy,
-          direct = {
-            vigiar_baixar(tabela, limite = 10000, timeout = timeout)
-          },
-          year_asc_desc = {
-            d1 <- vigiar_baixar(tabela, colunas = col_min,
-                                ordenar_por = "ano", direcao = "asc",
-                                limite = 10000, timeout = timeout)
-            d2 <- vigiar_baixar(tabela, colunas = col_min,
-                                ordenar_por = "ano", direcao = "desc",
-                                limite = 10000, timeout = timeout)
-            dados <- rbind(d1, d2)
-            dados[!duplicated(dados), ]
-          },
-          minimal_columns = {
-            vigiar_baixar(tabela, colunas = col_min,
-                          limite = 10000, timeout = timeout)
-          }
-        )
-      }, error = function(e) NULL)
+      result <- tryCatch(
+        {
+          switch(strategy,
+            direct = {
+              vigiar_baixar(tabela, limite = 10000, timeout = timeout)
+            },
+            year_asc_desc = {
+              d1 <- vigiar_baixar(tabela,
+                colunas = col_min,
+                ordenar_por = "ano", direcao = "asc",
+                limite = 10000, timeout = timeout
+              )
+              d2 <- vigiar_baixar(tabela,
+                colunas = col_min,
+                ordenar_por = "ano", direcao = "desc",
+                limite = 10000, timeout = timeout
+              )
+              dados <- rbind(d1, d2)
+              dados[!duplicated(dados), ]
+            },
+            minimal_columns = {
+              vigiar_baixar(tabela,
+                colunas = col_min,
+                limite = 10000, timeout = timeout
+              )
+            }
+          )
+        },
+        error = function(e) NULL
+      )
 
       t_end <- Sys.time()
       elapsed <- as.numeric(difftime(t_end, t_start, units = "secs"))
@@ -155,14 +166,16 @@ vigiar_benchmark <- function(tabela,
 #' }
 #' @export
 vigiar_benchmark_tabelas <- function(tabelas = NULL, repeticoes = 2L,
-                                      timeout = 120) {
+                                     timeout = 120) {
   if (is.null(.vigiar_env$esquema)) {
     stop("Nenhuma sessao ativa. Execute vigiar_conectar() primeiro.")
   }
 
   if (is.null(tabelas)) {
-    tabelas <- c("df_anual", "df_mensal", "df_muni",
-                 "pop", "tb_brasil", "df_indoor")
+    tabelas <- c(
+      "df_anual", "df_mensal", "df_muni",
+      "pop", "tb_brasil", "df_indoor"
+    )
   }
   tabelas <- intersect(tabelas, names(.vigiar_env$esquema))
 
@@ -241,13 +254,16 @@ vigiar_health_check <- function(timeout = 120) {
   # 1. Connection
   cli::cli_h2("1. Conexao")
   conn_ok <- FALSE
-  tryCatch({
-    vigiar_conectar(timeout = timeout)
-    conn_ok <- TRUE
-    cli::cli_alert_success("Dashbord conectado")
-  }, error = function(e) {
-    cli::cli_alert_danger("Falha na conexao: {e$message}")
-  })
+  tryCatch(
+    {
+      vigiar_conectar(timeout = timeout)
+      conn_ok <- TRUE
+      cli::cli_alert_success("Dashbord conectado")
+    },
+    error = function(e) {
+      cli::cli_alert_danger("Falha na conexao: {e$message}")
+    }
+  )
 
   if (!conn_ok) {
     return(invisible(list(online = FALSE, error = "Conexao falhou")))
@@ -274,12 +290,15 @@ vigiar_health_check <- function(timeout = 120) {
 
   # 4. Schema compliance
   cli::cli_h2("4. Compliance de Esquema")
-  compliance <- tryCatch({
-    vigiar_validar_dicionario()
-  }, error = function(e) {
-    cli::cli_alert_danger("Validacao de dicionario falhou: {e$message}")
-    NULL
-  })
+  compliance <- tryCatch(
+    {
+      vigiar_validar_dicionario()
+    },
+    error = function(e) {
+      cli::cli_alert_danger("Validacao de dicionario falhou: {e$message}")
+      NULL
+    }
+  )
 
   # 5. Summary
   elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))

@@ -14,7 +14,7 @@
 #' @return A nested list ready for JSON serialisation.
 #' @keywords internal
 .vigiar_construir_query <- function(tabela, colunas = NULL, ordenar_por = NULL,
-                                     limite = NULL, modelo_id, direcao = 1L) {
+                                    limite = NULL, modelo_id, direcao = 1L) {
   if (is.null(colunas)) {
     colunas <- names(.vigiar_env$esquema[[tabela]])
   }
@@ -49,7 +49,7 @@
 
   if (!is.null(ordenar_por)) {
     query_cmd$SemanticQueryDataShapeCommand$Query$OrderBy <- list(list(
-      Direction  = direcao,
+      Direction = direcao,
       Expression = list(
         Column = list(
           Expression = list(SourceRef = list(Source = tabela)),
@@ -67,12 +67,12 @@
   }
 
   list(
-    version       = 1L,
+    version = 1L,
     cancelQueries = list(),
-    queries       = list(list(
-      Query              = list(Commands = list(query_cmd)),
-      CacheKey           = "",
-      QueryId            = "",
+    queries = list(list(
+      Query = list(Commands = list(query_cmd)),
+      CacheKey = "",
+      QueryId = "",
       ApplicationContext = list(
         Sources   = list(),
         DatasetId = as.character(modelo_id)
@@ -90,9 +90,10 @@
 #' @return Parsed API response as an R list.
 #' @keywords internal
 .vigiar_executar_query <- function(sessao, query_body, timeout = 120) {
-  req_id    <- uuid_v4()
+  req_id <- uuid_v4()
   body_json <- jsonlite::toJSON(
-    query_body, auto_unbox = TRUE, null = "null", digits = NA
+    query_body,
+    auto_unbox = TRUE, null = "null", digits = NA
   )
 
   url <- sprintf(
@@ -119,7 +120,7 @@
         httr2::req_perform()
     },
     max_tries = 3,
-    context   = "queryData"
+    context = "queryData"
   )
 
   raw_body <- httr2::resp_body_raw(resp)

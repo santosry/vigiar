@@ -19,7 +19,8 @@ RJ_MUNICIPIOS <- data.frame(
     330430, 330440, 330450, 330452, 330455, 330460, 330470, 330475,
     330480, 330490, 330500, 330510, 330513, 330515, 330520, 330530,
     330540, 330550, 330555, 330560, 330570, 330575, 330580, 330590,
-    330600, 330610, 330615, 330620),
+    330600, 330610, 330615, 330620
+  ),
   municipio = c(
     "Angra dos Reis", "Aperibe", "Araruama", "Areal",
     "Armacao dos Buzios", "Arraial do Cabo", "Barra do Pirai", "Italva",
@@ -43,7 +44,8 @@ RJ_MUNICIPIOS <- data.frame(
     "Sao Jose do Vale do Rio Preto", "Sao Pedro da Aldeia", "Sao Sebastiao do Alto", "Sapucaia",
     "Saquarema", "Seropedica", "Silva Jardim", "Sumidouro",
     "Tangua", "Teresopolis", "Trajano de Moraes", "Tres Rios",
-    "Valenca", "Varre-Sai", "Vassouras", "Volta Redonda"),
+    "Valenca", "Varre-Sai", "Vassouras", "Volta Redonda"
+  ),
   macrorregiao_saude = c(
     "Baia da Ilha Grande", "Noroeste", "Baixada Litoranea", "Centro-Sul",
     "Baixada Litoranea", "Baixada Litoranea", "Medio Paraiba", "Noroeste",
@@ -67,7 +69,8 @@ RJ_MUNICIPIOS <- data.frame(
     "Serrana", "Baixada Litoranea", "Serrana", "Centro-Sul",
     "Baixada Litoranea", "Metropolitana I", "Baixada Litoranea", "Serrana",
     "Metropolitana II", "Serrana", "Serrana", "Centro-Sul",
-    "Medio Paraiba", "Noroeste", "Centro-Sul", "Medio Paraiba"),
+    "Medio Paraiba", "Noroeste", "Centro-Sul", "Medio Paraiba"
+  ),
   regiao_saude = c(
     "Baia da Ilha Grande", "Noroeste", "Baixada Litoranea", "Centro-Sul",
     "Baixada Litoranea", "Baixada Litoranea", "Medio Paraiba", "Noroeste",
@@ -91,7 +94,8 @@ RJ_MUNICIPIOS <- data.frame(
     "Serrana", "Baixada Litoranea", "Serrana", "Centro-Sul",
     "Baixada Litoranea", "Metropolitana I", "Baixada Litoranea", "Serrana",
     "Metropolitana II", "Serrana", "Serrana", "Centro-Sul",
-    "Medio Paraiba", "Noroeste", "Centro-Sul", "Medio Paraiba"),
+    "Medio Paraiba", "Noroeste", "Centro-Sul", "Medio Paraiba"
+  ),
   stringsAsFactors = FALSE
 )
 
@@ -156,7 +160,7 @@ vigiar_rj_resumo <- function(dados, agregacao = c("municipio", "macrorregiao", "
 
   # Filter to RJ only
   dados_rj <- dados[dados[[col_muni]] >= RJ_MUNI_RANGE[1] &
-                     dados[[col_muni]] <= RJ_MUNI_RANGE[2], ]
+                      dados[[col_muni]] <= RJ_MUNI_RANGE[2], ]
 
   if (nrow(dados_rj) == 0) {
     warning("Nenhum municipio do RJ encontrado nos dados.")
@@ -165,8 +169,9 @@ vigiar_rj_resumo <- function(dados, agregacao = c("municipio", "macrorregiao", "
 
   # Merge with registry
   merged <- merge(dados_rj, RJ_MUNICIPIOS,
-                  by.x = col_muni, by.y = "codigo_ibge",
-                  all.x = TRUE)
+    by.x = col_muni, by.y = "codigo_ibge",
+    all.x = TRUE
+  )
 
   # Aggregate
   if (agregacao == "municipio") {
@@ -190,10 +195,13 @@ vigiar_rj_resumo <- function(dados, agregacao = c("municipio", "macrorregiao", "
     dplyr::summarise(
       n_municipios = dplyr::n_distinct(.data[[col_muni]]),
       dplyr::across(dplyr::all_of(num_cols),
-                    list(media = ~mean(.x, na.rm = TRUE),
-                         dp = ~sd(.x, na.rm = TRUE),
-                         n = ~sum(!is.na(.x))),
-                    .names = "{.col}_{.fn}"),
+        list(
+          media = ~ mean(.x, na.rm = TRUE),
+          dp = ~ sd(.x, na.rm = TRUE),
+          n = ~ sum(!is.na(.x))
+        ),
+        .names = "{.col}_{.fn}"
+      ),
       .groups = "drop"
     )
 
@@ -230,7 +238,13 @@ vigiar_rj_series <- function(dados, agregacao = c("macrorregiao", "regiao_saude"
 #' @export
 vigiar_validar_rj <- function(dados, col_muni = NULL) {
   if (is.null(col_muni)) {
-    col_muni <- intersect(c("cod_municipio", "muni", "id_muni", "ID_MUNI", "codigo_ibge", "cod_ibge", "codigo_municipio"), names(dados))[1]
+    col_muni <- intersect(
+      c(
+        "cod_municipio", "muni", "id_muni", "ID_MUNI", "codigo_ibge",
+        "cod_ibge", "codigo_municipio"
+      ),
+      names(dados)
+    )[1]
   }
   if (is.na(col_muni)) stop("Coluna de codigo de municipio nao encontrada.")
 
@@ -296,9 +310,11 @@ vigiar_baixar_rj <- function(tabela, strategy = c("auto", "direct", "year"), ...
   strategy <- match.arg(strategy)
 
   # For small tables: direct download works fine
-  tabelas_pequenas <- c("df_muni", "df_mes", "df_ano", "pop",
-                        "tb_brasil", "tb_uf", "tb_fracao", "tb_quartis",
-                        "legenda", "medidas", "aux_uf")
+  tabelas_pequenas <- c(
+    "df_muni", "df_mes", "df_ano", "pop",
+    "tb_brasil", "tb_uf", "tb_fracao", "tb_quartis",
+    "legenda", "medidas", "aux_uf"
+  )
 
   if (strategy == "auto") {
     if (tabela %in% tabelas_pequenas) {
@@ -313,7 +329,7 @@ vigiar_baixar_rj <- function(tabela, strategy = c("auto", "direct", "year"), ...
   }
 
   if (strategy == "year") {
-    return(.vigiar_baixar_rj_year(tabela, ...))
+    .vigiar_baixar_rj_year(tabela, ...)
   }
 }
 
@@ -340,14 +356,18 @@ vigiar_baixar_rj <- function(tabela, strategy = c("auto", "direct", "year"), ...
 
   # Query 1: ASC order (earliest years, all municipalities)
   message("Baixando primeiros anos (ASC)...")
-  d1 <- vigiar_baixar(tabela, colunas = colunas_essenciais,
-                      ordenar_por = "ano", direcao = "asc", ...)
+  d1 <- vigiar_baixar(tabela,
+    colunas = colunas_essenciais,
+    ordenar_por = "ano", direcao = "asc", ...
+  )
   d1 <- .vigiar_filtrar_rj(d1)
 
   # Query 2: DESC order (latest years, all municipalities)
   message("Baixando ultimos anos (DESC)...")
-  d2 <- vigiar_baixar(tabela, colunas = colunas_essenciais,
-                      ordenar_por = "ano", direcao = "desc", ...)
+  d2 <- vigiar_baixar(tabela,
+    colunas = colunas_essenciais,
+    ordenar_por = "ano", direcao = "desc", ...
+  )
   d2 <- .vigiar_filtrar_rj(d2)
 
   # Combine and deduplicate
